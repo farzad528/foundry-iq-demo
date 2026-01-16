@@ -173,18 +173,19 @@ export async function retrieveFromKnowledgeBase(
   // If messages is null, params should already contain the complete payload (intents format)
   // Otherwise, use the standard messages format
   const payload: any = messages !== null ? { messages, ...params } : { ...params }
+  
+  // Remove client-only and configuration parameters that are not valid for retrieve operation
   delete payload.xMsUserToken
   delete payload.globalHeaders // Don't send globalHeaders in body, only as HTTP headers
-
-  // 🔍 DEBUG: Log the complete request payload being sent
-  console.log('═══════════════════════════════════════════════════════════')
-  console.log('📤 [CLIENT] Sending request to Knowledge Base')
-  console.log('═══════════════════════════════════════════════════════════')
-  console.log('📍 Knowledge Base ID:', knowledgeBaseId)
-  console.log('🔐 Has User ACL Token:', !!userAclToken)
-  console.log('📦 Complete Payload:', JSON.stringify(payload, null, 2))
-  console.log('📋 Headers:', JSON.stringify(headers, null, 2))
-  console.log('───────────────────────────────────────────────────────────')
+  delete payload.reasoningEffort // Configuration parameter, not valid for retrieve
+  delete payload.retrievalReasoningEffort // Configuration parameter, not valid for retrieve
+  delete payload.answerInstructions // Configuration parameter, not valid for retrieve
+  delete payload.retrievalInstructions // Configuration parameter, not valid for retrieve
+  delete payload.outputMode // Configuration parameter, not valid for retrieve
+  delete payload.models // Configuration parameter, not valid for retrieve
+  delete payload.knowledgeSources // Configuration parameter, not valid for retrieve
+  delete payload.outputConfiguration // Configuration parameter, not valid for retrieve
+  delete payload.requestLimits // Configuration parameter, not valid for retrieve
 
   const response = await fetch(`${KNOWLEDGE_BASES_BASE_PATH}/${knowledgeBaseId}/retrieve`, {
     method: 'POST',
@@ -196,15 +197,12 @@ export async function retrieveFromKnowledgeBase(
     let errorMessage = `Failed to retrieve from knowledge base (${response.status})`
     let detailedError = ''
     
-    console.log('❌ [CLIENT] Request failed with status:', response.status, response.statusText)
-    
     try {
       const errorData = await response.json()
-      console.error('❌ [CLIENT] API Error Response:', errorData)
+      console.error('API Error Response:', errorData)
       
       // Extract detailed error information
       if (errorData.azureError) {
-        console.error('❌ Azure Error Details:', errorData.azureError)
         if (typeof errorData.azureError === 'object') {
           detailedError = errorData.azureError.error?.message || errorData.azureError.message || JSON.stringify(errorData.azureError)
         } else {
@@ -212,7 +210,6 @@ export async function retrieveFromKnowledgeBase(
         }
       }
       if (errorData.details) {
-        console.error('❌ Error Details:', errorData.details)
         detailedError = detailedError ? `${detailedError} | ${errorData.details}` : errorData.details
       }
       
@@ -223,21 +220,17 @@ export async function retrieveFromKnowledgeBase(
         errorMessage = `${errorMessage}\n\nDetails: ${detailedError}`
       }
     } catch (parseError) {
-      console.error('❌ [CLIENT] Failed to parse error response:', parseError)
+      console.error('Failed to parse error response:', parseError)
       try {
         const textError = await response.text()
-        console.error('❌ [CLIENT] Error response text:', textError)
         errorMessage = `${errorMessage}\n\nRaw error: ${textError}`
       } catch {
         // Ignore
       }
     }
-    console.log('═══════════════════════════════════════════════════════════')
     throw new Error(errorMessage)
   }
 
-  console.log('✅ [CLIENT] Request successful')
-  console.log('═══════════════════════════════════════════════════════════')
   return response.json()
 }
 
