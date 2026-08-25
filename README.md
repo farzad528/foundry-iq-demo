@@ -1,3 +1,5 @@
+
+
 # Microsoft Foundry IQ Demo
 <img width="1289" height="495" alt="image" src="https://github.com/user-attachments/assets/7ec01135-f72f-4113-aaaf-8b637fcf27b4" />
 
@@ -40,7 +42,7 @@ AZURE_OPENAI_API_KEY=<openai-key>
 |-------|-------------|
 | `/knowledge` | Manage knowledge bases and data sources |
 | `/playground` | Query knowledge bases with runtime controls |
-| `/agents` | Microsoft Foundry Agent Service integration |
+| `/agents` | Microsoft Foundry Agent Service integration (coming soon) |
 
 ## Resources
 
