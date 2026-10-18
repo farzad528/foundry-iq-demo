@@ -1,39 +1,32 @@
-# Local REST Client environment (avoid committing secrets)
-rest-client.env.local.json
-# Dependencies
-node_modules/
+# Current app artifacts and dependencies
+/node_modules/
+/dist/
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+*.log
 
-# Next.js
+# Private environments, credentials and operational state
+.env*
+!.env.example
+rest-client.env.local.json
+*.http.mcp.json
+quotas.json
+.azure/
+.copilot-azure/
+
+# Preserve ignored legacy artifacts/private work during the root migration
 /.next/
 /out/
-
-# Environment variables
-.env*.local
-.env
-.env.production
+/build/
+/worker/
+/.vercel/
 .env.azure-swa
 DEPLOYMENT_COMPLETE.md
-
-# Production
-/build
-
-# Miscellaneous
-.DS_Store
 *.tsbuildinfo
 next-env.d.ts
 
-# IDE
+# Local editor and OS files
 .vscode/
 .idea/
 .claude/
-
-# System files
+.DS_Store
 Thumbs.db
-
-
-
-# HTTP test files
-*.http.mcp.json
