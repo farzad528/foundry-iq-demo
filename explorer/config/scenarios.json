@@ -1,0 +1,452 @@
+[
+  {
+    "id": "manufacturing",
+    "name": "Manufacturing",
+    "tag": "OPERATIONS & SUPPLY CHAIN",
+    "icon": "\u25c8",
+    "description": "Connect equipment manuals, safety procedures, and maintenance records.",
+    "question": "What should an operator check before restarting pump P-104 after a seal failure?",
+    "sources": [
+      {
+        "name": "equipment-manuals",
+        "kind": "azureBlob",
+        "title": "Equipment manuals",
+        "detail": "Azure Blob \u00b7 2 synthetic Markdown files",
+        "files": [
+          {
+            "title": "P-104 restart checklist",
+            "text": "Before restarting P-104: isolate and lock out the pump, confirm replacement seal installation, inspect alignment, verify lubrication, and complete the supervisor sign-off.",
+            "url": "/samples/p104-restart.md"
+          },
+          {
+            "title": "Mechanical seal inspection",
+            "text": "Inspect the replacement seal for damage, verify flush connections are open, and confirm the pump is primed before a controlled restart.",
+            "url": "/samples/seal-inspection.md"
+          }
+        ]
+      },
+      {
+        "name": "maintenance-records",
+        "kind": "searchIndex",
+        "title": "Maintenance records",
+        "detail": "Search index \u00b7 1 synthetic record",
+        "files": [
+          {
+            "title": "P-104 maintenance record",
+            "text": "Work order WO-104: mechanical seal replaced. Alignment verification and supervisor restart authorization are pending.",
+            "url": "/samples/wo104.md"
+          }
+        ]
+      }
+    ],
+    "answer": "Keep P-104 isolated until alignment verification and supervisor authorization are complete. The maintenance record lists both as pending. [ref_id:2]\n\nBefore restart, verify seal installation, alignment, lubrication, and the supervisor sign-off. [ref_id:0] Inspect the seal and flush connections, then prime the pump before a controlled restart. [ref_id:1]",
+    "fixture": {
+      "response": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "Keep P-104 isolated until alignment verification and supervisor authorization are complete. The maintenance record lists both as pending. [ref_id:2]\n\nBefore restart, verify seal installation, alignment, lubrication, and the supervisor sign-off. [ref_id:0] Inspect the seal and flush connections, then prime the pump before a controlled restart. [ref_id:1]"
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "id": "0",
+          "type": "azureBlob",
+          "activitySource": 1,
+          "sourceData": {
+            "title": "P-104 restart checklist",
+            "text": "Before restarting P-104: isolate and lock out the pump, confirm replacement seal installation, inspect alignment, verify lubrication, and complete the supervisor sign-off.",
+            "url": "/samples/p104-restart.md"
+          },
+          "knowledgeSourceName": "equipment-manuals"
+        },
+        {
+          "id": "1",
+          "type": "azureBlob",
+          "activitySource": 1,
+          "sourceData": {
+            "title": "Mechanical seal inspection",
+            "text": "Inspect the replacement seal for damage, verify flush connections are open, and confirm the pump is primed before a controlled restart.",
+            "url": "/samples/seal-inspection.md"
+          },
+          "knowledgeSourceName": "equipment-manuals"
+        },
+        {
+          "id": "2",
+          "type": "searchIndex",
+          "activitySource": 2,
+          "sourceData": {
+            "title": "P-104 maintenance record",
+            "text": "Work order WO-104: mechanical seal replaced. Alignment verification and supervisor restart authorization are pending.",
+            "url": "/samples/wo104.md"
+          },
+          "knowledgeSourceName": "maintenance-records"
+        }
+      ],
+      "activity": [
+        {
+          "id": 0,
+          "type": "modelQueryPlanning",
+          "elapsedMs": 326,
+          "inputTokens": 482,
+          "outputTokens": 98
+        },
+        {
+          "id": 1,
+          "type": "azureBlob",
+          "knowledgeSourceName": "equipment-manuals",
+          "elapsedMs": 714,
+          "azureBlobArguments": {
+            "search": "What should an operator check before restarting pump P-104 after a seal failure?"
+          }
+        },
+        {
+          "id": 2,
+          "type": "searchIndex",
+          "knowledgeSourceName": "maintenance-records",
+          "elapsedMs": 408,
+          "searchIndexArguments": {
+            "search": "What should an operator check before restarting pump P-104 after a seal failure?"
+          }
+        },
+        {
+          "id": 9,
+          "type": "modelAnswerSynthesis",
+          "elapsedMs": 592,
+          "inputTokens": 1220,
+          "outputTokens": 165
+        }
+      ]
+    }
+  },
+  {
+    "id": "retail",
+    "name": "Retail operations",
+    "tag": "POLICY & FIELD ENABLEMENT",
+    "icon": "\u25a6",
+    "description": "Ground store decisions in operating policies and event playbooks.",
+    "question": "Can a store run a weekend pop-up, and which safety checks are required?",
+    "sources": [
+      {
+        "name": "store-policies",
+        "kind": "azureBlob",
+        "title": "Store policies",
+        "detail": "Azure Blob \u00b7 1 synthetic policy",
+        "files": [
+          {
+            "title": "Weekend pop-up policy",
+            "text": "Weekend pop-ups require store manager approval, a staffed checkout, and an agreed inventory plan. No event may obstruct emergency exits.",
+            "url": "/samples/popup-policy.md"
+          }
+        ]
+      },
+      {
+        "name": "event-playbooks",
+        "kind": "searchIndex",
+        "title": "Event playbooks",
+        "detail": "Search index \u00b7 1 synthetic playbook",
+        "files": [
+          {
+            "title": "Pop-up safety checklist",
+            "text": "Confirm unobstructed exits, safe electrical connections, accessible walkways, and an assigned crowd steward before opening.",
+            "url": "/samples/popup-safety.md"
+          }
+        ]
+      }
+    ],
+    "answer": "Yes, with store manager approval, a staffed checkout, and an agreed inventory plan. [ref_id:0]\n\nBefore opening, check emergency exits, electrical connections, accessible walkways, and the assigned crowd steward. [ref_id:1]",
+    "fixture": {
+      "response": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "Yes, with store manager approval, a staffed checkout, and an agreed inventory plan. [ref_id:0]\n\nBefore opening, check emergency exits, electrical connections, accessible walkways, and the assigned crowd steward. [ref_id:1]"
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "id": "0",
+          "type": "azureBlob",
+          "activitySource": 1,
+          "sourceData": {
+            "title": "Weekend pop-up policy",
+            "text": "Weekend pop-ups require store manager approval, a staffed checkout, and an agreed inventory plan. No event may obstruct emergency exits.",
+            "url": "/samples/popup-policy.md"
+          },
+          "knowledgeSourceName": "store-policies"
+        },
+        {
+          "id": "1",
+          "type": "searchIndex",
+          "activitySource": 2,
+          "sourceData": {
+            "title": "Pop-up safety checklist",
+            "text": "Confirm unobstructed exits, safe electrical connections, accessible walkways, and an assigned crowd steward before opening.",
+            "url": "/samples/popup-safety.md"
+          },
+          "knowledgeSourceName": "event-playbooks"
+        }
+      ],
+      "activity": [
+        {
+          "id": 0,
+          "type": "modelQueryPlanning",
+          "elapsedMs": 326,
+          "inputTokens": 482,
+          "outputTokens": 98
+        },
+        {
+          "id": 1,
+          "type": "azureBlob",
+          "knowledgeSourceName": "store-policies",
+          "elapsedMs": 714,
+          "azureBlobArguments": {
+            "search": "Can a store run a weekend pop-up, and which safety checks are required?"
+          }
+        },
+        {
+          "id": 2,
+          "type": "searchIndex",
+          "knowledgeSourceName": "event-playbooks",
+          "elapsedMs": 408,
+          "searchIndexArguments": {
+            "search": "Can a store run a weekend pop-up, and which safety checks are required?"
+          }
+        },
+        {
+          "id": 9,
+          "type": "modelAnswerSynthesis",
+          "elapsedMs": 592,
+          "inputTokens": 1220,
+          "outputTokens": 165
+        }
+      ]
+    }
+  },
+  {
+    "id": "finance",
+    "name": "Financial research",
+    "tag": "RESEARCH & COMPLIANCE",
+    "icon": "\u2197",
+    "description": "Compare financial disclosures with internal research guidelines.",
+    "question": "What changed in Contoso revenue, and how should an analyst qualify the comparison?",
+    "sources": [
+      {
+        "name": "financial-disclosures",
+        "kind": "azureBlob",
+        "title": "Financial disclosures",
+        "detail": "Azure Blob \u00b7 1 fictional disclosure",
+        "files": [
+          {
+            "title": "Contoso annual disclosure",
+            "text": "Fictional example: Contoso revenue increased from $80M to $92M, or 15%. The prior year excluded the acquired services business.",
+            "url": "/samples/contoso-disclosure.md"
+          }
+        ]
+      },
+      {
+        "name": "research-guidelines",
+        "kind": "searchIndex",
+        "title": "Research guidelines",
+        "detail": "Search index \u00b7 1 synthetic guideline",
+        "files": [
+          {
+            "title": "Comparison guidelines",
+            "text": "Analysts must distinguish reported growth from organic growth and disclose acquisition-related changes in the comparison perimeter.",
+            "url": "/samples/comparison-guidelines.md"
+          }
+        ]
+      }
+    ],
+    "answer": "In this fictional dataset, revenue grew from $80M to $92M, an increase of 15%. The prior year excluded the acquired services business. [ref_id:0]\n\nQualify the comparison as reported growth; organic growth cannot be established from the supplied disclosure. Disclose the acquisition-related change in scope. [ref_id:1]",
+    "fixture": {
+      "response": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "In this fictional dataset, revenue grew from $80M to $92M, an increase of 15%. The prior year excluded the acquired services business. [ref_id:0]\n\nQualify the comparison as reported growth; organic growth cannot be established from the supplied disclosure. Disclose the acquisition-related change in scope. [ref_id:1]"
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "id": "0",
+          "type": "azureBlob",
+          "activitySource": 1,
+          "sourceData": {
+            "title": "Contoso annual disclosure",
+            "text": "Fictional example: Contoso revenue increased from $80M to $92M, or 15%. The prior year excluded the acquired services business.",
+            "url": "/samples/contoso-disclosure.md"
+          },
+          "knowledgeSourceName": "financial-disclosures"
+        },
+        {
+          "id": "1",
+          "type": "searchIndex",
+          "activitySource": 2,
+          "sourceData": {
+            "title": "Comparison guidelines",
+            "text": "Analysts must distinguish reported growth from organic growth and disclose acquisition-related changes in the comparison perimeter.",
+            "url": "/samples/comparison-guidelines.md"
+          },
+          "knowledgeSourceName": "research-guidelines"
+        }
+      ],
+      "activity": [
+        {
+          "id": 0,
+          "type": "modelQueryPlanning",
+          "elapsedMs": 326,
+          "inputTokens": 482,
+          "outputTokens": 98
+        },
+        {
+          "id": 1,
+          "type": "azureBlob",
+          "knowledgeSourceName": "financial-disclosures",
+          "elapsedMs": 714,
+          "azureBlobArguments": {
+            "search": "What changed in Contoso revenue, and how should an analyst qualify the comparison?"
+          }
+        },
+        {
+          "id": 2,
+          "type": "searchIndex",
+          "knowledgeSourceName": "research-guidelines",
+          "elapsedMs": 408,
+          "searchIndexArguments": {
+            "search": "What changed in Contoso revenue, and how should an analyst qualify the comparison?"
+          }
+        },
+        {
+          "id": 9,
+          "type": "modelAnswerSynthesis",
+          "elapsedMs": 592,
+          "inputTokens": 1220,
+          "outputTokens": 165
+        }
+      ]
+    }
+  },
+  {
+    "id": "fabric",
+    "name": "Business performance",
+    "tag": "FABRIC + ENTERPRISE CONTENT",
+    "icon": "\u2318",
+    "description": "Explore a cross-source analytical question with a transparent SQL example.",
+    "question": "Which region missed its Q3 target, and what recovery action does the playbook recommend?",
+    "requiresIdentity": true,
+    "sources": [
+      {
+        "name": "sales-data-agent",
+        "kind": "fabricDataAgent",
+        "title": "Sales analytics",
+        "detail": "Fabric Data Agent \u00b7 synthetic replay \u00b7 identity required live",
+        "files": [
+          {
+            "title": "Q3 regional performance",
+            "text": "Synthetic result: North actual $920K vs $1M target (-8%); South actual $1.1M vs $1M target (+10%).",
+            "url": "/samples/regional-performance.csv"
+          }
+        ]
+      },
+      {
+        "name": "sales-playbook",
+        "kind": "remoteSharePoint",
+        "title": "Sales recovery playbook",
+        "detail": "Remote SharePoint \u00b7 synthetic replay \u00b7 identity required live",
+        "files": [
+          {
+            "title": "Regional recovery plan",
+            "text": "For a region below quarterly target, review stalled opportunities, assign executive sponsors to the top five deals, and run a weekly conversion review.",
+            "url": "/samples/recovery-plan.md"
+          }
+        ]
+      }
+    ],
+    "answer": "North missed its Q3 target by $80,000 (8%), while South exceeded its target by 10%. [ref_id:0]\n\nFor North, review stalled opportunities, assign executive sponsors to the five largest deals, and run a weekly conversion review. [ref_id:1]",
+    "sql": "SELECT region, SUM(actual_revenue) AS actual, SUM(target_revenue) AS target\nFROM regional_sales\nWHERE fiscal_year = 2026 AND fiscal_quarter = 3\nGROUP BY region\nHAVING SUM(actual_revenue) < SUM(target_revenue);",
+    "fixture": {
+      "response": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "North missed its Q3 target by $80,000 (8%), while South exceeded its target by 10%. [ref_id:0]\n\nFor North, review stalled opportunities, assign executive sponsors to the five largest deals, and run a weekly conversion review. [ref_id:1]"
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "id": "0",
+          "type": "fabricDataAgent",
+          "activitySource": 1,
+          "sourceData": {
+            "title": "Q3 regional performance",
+            "text": "Synthetic result: North actual $920K vs $1M target (-8%); South actual $1.1M vs $1M target (+10%).",
+            "url": "/samples/regional-performance.csv"
+          },
+          "knowledgeSourceName": "sales-data-agent"
+        },
+        {
+          "id": "1",
+          "type": "remoteSharePoint",
+          "activitySource": 2,
+          "sourceData": {
+            "title": "Regional recovery plan",
+            "text": "For a region below quarterly target, review stalled opportunities, assign executive sponsors to the top five deals, and run a weekly conversion review.",
+            "url": "/samples/recovery-plan.md"
+          },
+          "knowledgeSourceName": "sales-playbook"
+        }
+      ],
+      "activity": [
+        {
+          "id": 0,
+          "type": "modelQueryPlanning",
+          "elapsedMs": 326,
+          "inputTokens": 482,
+          "outputTokens": 98
+        },
+        {
+          "id": 1,
+          "type": "fabricDataAgent",
+          "knowledgeSourceName": "sales-data-agent",
+          "elapsedMs": 714,
+          "fabricDataAgentArguments": {
+            "search": "Which region missed its Q3 target, and what recovery action does the playbook recommend?"
+          }
+        },
+        {
+          "id": 2,
+          "type": "remoteSharePoint",
+          "knowledgeSourceName": "sales-playbook",
+          "elapsedMs": 408,
+          "remoteSharePointArguments": {
+            "search": "Which region missed its Q3 target, and what recovery action does the playbook recommend?"
+          }
+        },
+        {
+          "id": 9,
+          "type": "modelAnswerSynthesis",
+          "elapsedMs": 592,
+          "inputTokens": 1220,
+          "outputTokens": 165
+        }
+      ]
+    }
+  }
+]

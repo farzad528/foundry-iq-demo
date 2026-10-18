@@ -1,0 +1,1 @@
+{"name":"foundry-iq-explorer","version":"1.0.0","private":true,"type":"module","scripts":{"dev":"node --env-file-if-exists=.env.local scripts/dev.mjs","build":"node scripts/build.mjs","test":"node --test scripts/verify.mjs"},"engines":{"node":">=22"}}
