@@ -8,7 +8,7 @@
     "question": "What should an operator check before restarting pump P-104 after a seal failure?",
     "sources": [
       {
-        "name": "equipment-manuals",
+        "name": "foundryiq-customer-demos-manuals",
         "kind": "azureBlob",
         "title": "Equipment manuals",
         "detail": "Azure Blob \u00b7 2 synthetic Markdown files",
@@ -26,7 +26,7 @@
         ]
       },
       {
-        "name": "maintenance-records",
+        "name": "foundryiq-customer-demos-maintenance",
         "kind": "searchIndex",
         "title": "Maintenance records",
         "detail": "Search index \u00b7 1 synthetic record",
@@ -62,7 +62,7 @@
             "text": "Before restarting P-104: isolate and lock out the pump, confirm replacement seal installation, inspect alignment, verify lubrication, and complete the supervisor sign-off.",
             "url": "/samples/p104-restart.md"
           },
-          "knowledgeSourceName": "equipment-manuals"
+          "knowledgeSourceName": "foundryiq-customer-demos-manuals"
         },
         {
           "id": "1",
@@ -73,7 +73,7 @@
             "text": "Inspect the replacement seal for damage, verify flush connections are open, and confirm the pump is primed before a controlled restart.",
             "url": "/samples/seal-inspection.md"
           },
-          "knowledgeSourceName": "equipment-manuals"
+          "knowledgeSourceName": "foundryiq-customer-demos-manuals"
         },
         {
           "id": "2",
@@ -84,7 +84,7 @@
             "text": "Work order WO-104: mechanical seal replaced. Alignment verification and supervisor restart authorization are pending.",
             "url": "/samples/wo104.md"
           },
-          "knowledgeSourceName": "maintenance-records"
+          "knowledgeSourceName": "foundryiq-customer-demos-maintenance"
         }
       ],
       "activity": [
@@ -98,7 +98,7 @@
         {
           "id": 1,
           "type": "azureBlob",
-          "knowledgeSourceName": "equipment-manuals",
+          "knowledgeSourceName": "foundryiq-customer-demos-manuals",
           "elapsedMs": 714,
           "azureBlobArguments": {
             "search": "What should an operator check before restarting pump P-104 after a seal failure?"
@@ -107,7 +107,7 @@
         {
           "id": 2,
           "type": "searchIndex",
-          "knowledgeSourceName": "maintenance-records",
+          "knowledgeSourceName": "foundryiq-customer-demos-maintenance",
           "elapsedMs": 408,
           "searchIndexArguments": {
             "search": "What should an operator check before restarting pump P-104 after a seal failure?"
