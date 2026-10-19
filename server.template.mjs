@@ -90,7 +90,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
           return respond({
             configured: !!(env.AZURE_SEARCH_ENDPOINT && env.AZURE_SEARCH_API_KEY && env.SESSION_SECRET && env.FOUNDRY_IQ_QUOTA_CONTAINER_URL),
             liveEnabled: env.FOUNDRY_IQ_LIVE_ENABLED === 'true',
-            contractStatus: 'Published contract only; live Azure compatibility is not yet verified.',
+            contractStatus: 'Pinned preview contract; verify each deployment with indexed/Web canary evidence.',
             apiVersion: API_VERSION,
             available: catalog.filter(item => item.execution === 'live').map(item => item.id),
             capabilities: Object.fromEntries(catalog.filter(item => item.execution === 'live').map(item => [item.id, capabilities(item, env)])),
@@ -232,7 +232,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
           requestId,
           upstreamRequestId,
           upstreamStatus,
-          contractStatus: 'Live service compatibility must be established by the approved Azure canary.',
+          contractStatus: 'Pinned preview contract; verify each deployment with indexed/Web canary evidence.',
         }, normalized.normalized.partial ? 206 : 200);
       } catch (error) {
         let failure = error;

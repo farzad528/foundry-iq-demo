@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "subscriptionId": {
+      "value": "ee787b9b-a25f-4d20-86e9-45fcea5253dd"
+    },
+    "environmentName": {
+      "value": "foundryiq-customer-demos"
+    },
+    "location": {
+      "value": "westus2"
+    },
+    "sessionId": {
+      "value": "d432e314-2aaa-47fc-ae17-779393c6dc8d"
+    },
+    "deployedBy": {
+      "value": "Farzad Sunavala"
+    },
+    "createdAt": {
+      "value": "2026-10-19T12:46:10.5794938Z"
+    },
+    "resourceGroupName": {
+      "value": "rg-foundryiq-customer-demos"
+    },
+    "planName": {
+      "value": "plan-foundryiq-customer-demos"
+    },
+    "appName": {
+      "value": "app-foundryiq-customer-demos"
+    },
+    "searchServiceName": {
+      "value": "srch-foundryiq-customer-demos"
+    },
+    "storageAccountName": {
+      "value": "stfoundryiqcustomerdemos"
+    },
+    "keyVaultName": {
+      "value": "kv-fiq-customer-demos"
+    },
+    "quotaContainerName": {
+      "value": "demo-quotas"
+    },
+    "liveEnabled": {
+      "value": false
+    }
+  }
+}

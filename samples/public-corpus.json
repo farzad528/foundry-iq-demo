@@ -1,0 +1,133 @@
+{
+  "version": "2026-10-18.2",
+  "license": "MIT",
+  "provenance": "Original fictional demonstration content. No customer records, third-party manuals or real operating procedures. Generated maintenance records are not observed events.",
+  "disclaimer": "Fictional administrative document-review examples only. Never use this corpus as equipment, safety, maintenance or legal instructions.",
+  "dictionary": {
+    "equipmentId": "Fictional asset identifier, not a real installation.",
+    "reviewStatus": "Administrative documentation status: pending, recorded or superseded; never an equipment operating authorization.",
+    "ownerTeam": "Fictional team alias, not a person.",
+    "eventDate": "Synthetic UTC calendar date.",
+    "revision": "Fixture revision for controlled document-change experiments."
+  },
+  "documents": [
+    {
+      "id": "p104-review",
+      "equipmentId": "P-104",
+      "title": "P-104 administrative restart review",
+      "revision": 2,
+      "content": "Fictional review only, not restart instructions. In revision 2, P-104's reviewer acknowledgement remains pending, while the latest owner approval is recorded in MR-0169 revision 2. Earlier pending owner-approval records remain historical snapshots, not the current owner-approval status. The packet remains administratively pending until the reviewer acknowledgement is recorded. No entry authorizes physical operation."
+    },
+    {
+      "id": "p105-review",
+      "equipmentId": "P-105",
+      "title": "P-105 document register",
+      "revision": 1,
+      "content": "Fictional document register. P-105 separates evidence attachments, reviewer acknowledgement and owner approval into distinct records. An archived attachment can be superseded without deleting history. Use the latest dated administrative record, retaining its source identifier. This is not an operating procedure."
+    },
+    {
+      "id": "m201-review",
+      "equipmentId": "M-201",
+      "title": "M-201 review ownership",
+      "revision": 1,
+      "content": "Fictional governance example. Team Delta owns the M-201 document register and Team Cedar reviews its completeness. Ownership and review are separate fields. Missing evidence is explicitly pending rather than inferred from an unrelated completed record. No physical equipment instructions are provided."
+    },
+    {
+      "id": "v302-review",
+      "equipmentId": "V-302",
+      "title": "V-302 evidence register",
+      "revision": 1,
+      "content": "Fictional evidence register. V-302 attachments carry a stable record identifier, a synthetic date and a document revision. An attachment labelled superseded remains historical evidence and must not be described as current. The register describes paperwork, not inspection or operating steps."
+    },
+    {
+      "id": "e402-review",
+      "equipmentId": "E-402",
+      "title": "E-402 missing-information policy",
+      "revision": 1,
+      "content": "Fictional administrative policy. If E-402 records omit an approval date or reviewer acknowledgement, report that value as missing. Do not estimate dates or infer approval from a title. Public guidance is contextual information, not evidence that this fictional record was approved."
+    },
+    {
+      "id": "p106-review",
+      "equipmentId": "P-106",
+      "title": "P-106 revision register",
+      "revision": 1,
+      "content": "Fictional revision register. P-106 records identify the document revision they describe. An older record can explain history but cannot establish the current revision's status. A controlled demo change increments the revision and changes one explicitly labelled field. This is not equipment advice."
+    },
+    {
+      "id": "f701-review",
+      "equipmentId": "F-701",
+      "title": "F-701 administrative exception register",
+      "revision": 1,
+      "content": "Fictional paperwork example. F-701 distinguishes pending acknowledgements from recorded acknowledgements. An exception note states a missing document, not permission to bypass a real policy. Answers must cite the specific administrative record rather than manufacture evidence."
+    },
+    {
+      "id": "t801-review",
+      "equipmentId": "T-801",
+      "title": "T-801 evidence versus guidance",
+      "revision": 1,
+      "content": "Fictional comparison example. T-801 internal evidence is the synthetic record register. Public Web guidance is external context and cannot establish what happened to this fictional asset. A useful comparison identifies the source of each claim and states unresolved gaps explicitly."
+    },
+    {
+      "id": "m202-review",
+      "equipmentId": "M-202",
+      "title": "M-202 review-team handoff",
+      "revision": 1,
+      "content": "Fictional handoff register. Team Birch records M-202 document attachments and Team Cedar records review status. The handoff retains both source identifiers. A recorded attachment is not automatically a recorded owner approval. This corpus contains no real people or operating authorization."
+    },
+    {
+      "id": "v303-review",
+      "equipmentId": "V-303",
+      "title": "V-303 duplicate-record handling",
+      "revision": 1,
+      "content": "Fictional data-quality policy. V-303 records are joined by exact identifiers, not their position in a list. Duplicate identifiers are a data-quality error. Missing records remain missing. Titles and dates alone cannot establish that two records represent the same event."
+    },
+    {
+      "id": "p107-review",
+      "equipmentId": "P-107",
+      "title": "P-107 current-record interpretation",
+      "revision": 1,
+      "content": "Fictional register interpretation. P-107's latest synthetic record describes a documentation state only. Recorded means the corresponding paperwork entry exists. It does not mean physical equipment is safe, certified, available or authorized to operate."
+    },
+    {
+      "id": "f702-review",
+      "equipmentId": "F-702",
+      "title": "F-702 unanswered-question policy",
+      "revision": 1,
+      "content": "Fictional grounding policy. F-702's register contains documentation metadata, not sensor measurements, operating thresholds or live conditions. Questions about those missing facts should be answered as unsupported by this corpus. Never substitute general knowledge for missing source evidence."
+    }
+  ],
+  "recordRecipe": {
+    "count": 200,
+    "firstDate": "2026-01-01",
+    "ownerTeams": ["Team Delta", "Team Cedar", "Team Birch"],
+    "recordTypes": ["attachment review", "reviewer acknowledgement", "owner approval", "revision review"],
+    "statuses": ["pending", "recorded", "superseded"],
+    "overrides": {
+      "MR-0169": { "reviewStatus": "recorded", "revision": 2 }
+    },
+    "algorithm": "For zero-based i in 0..199: id=MR- plus i+1 padded to four digits; document=documents[i modulo 12]; ownerTeam=ownerTeams[i modulo 3]; recordType=recordTypes[floor(i/12) modulo 4]; reviewStatus=statuses[floor(i/12) modulo 3]; eventDate=firstDate plus i UTC days. Every P-104 reviewer acknowledgement and owner approval starts pending. Apply explicit record overrides last. Content contains all fields and the fixture disclaimer.",
+    "revision": 1
+  },
+  "evaluation": [
+    {
+      "question": "Which administrative acknowledgements and approvals are pending for P-104?",
+      "expected": "At revision 2, reviewer acknowledgement remains pending and the latest owner approval MR-0169 is recorded. Earlier pending owner-approval records are historical. Never claim this authorizes operation.",
+      "sources": ["p104-review", "generated P-104 maintenance records"]
+    },
+    {
+      "question": "What is the live operating pressure of F-702?",
+      "expected": "Unanswerable: no live measurements or operating thresholds.",
+      "sources": ["f702-review"]
+    },
+    {
+      "question": "Compare synthetic inspection documentation with public guidance on recordkeeping.",
+      "expected": "Only after Web approval: distinguish synthetic record evidence from cited Web summaries, without claiming real compliance.",
+      "sources": ["t801-review", "approved Web source"]
+    }
+  ],
+  "documentChange": {
+    "target": "p104-review",
+    "instruction": "For a separately approved controlled change, update the fictional document and a matching latest record using recordRecipe.overrides[recordId] with reviewStatus and an incremented revision, regenerate/reingest and verify retrieval changes. Do not claim a local file edit updated Search.",
+    "requiresFreshIngestionAndRetrieve": true
+  }
+}

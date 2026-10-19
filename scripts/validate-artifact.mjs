@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { once } from 'node:events';
-import { archiveFiles } from './source-files.mjs';
+import { archiveFiles, operationalFiles } from './source-files.mjs';
 
 process.chdir(fileURLToPath(new URL('..', import.meta.url)));
 const { default: application } = await import('../dist/server/index.mjs');
@@ -33,6 +33,14 @@ with zipfile.ZipFile('dist/source.zip') as z:
 `], { input: JSON.stringify(archiveFiles) }).toString());
 assert.ok(entries.includes('AGENTS.md') && entries.includes('package-lock.json') && entries.includes('assets/PROVENANCE.md'));
 assert.ok(entries.every(name => !/quota.*\.json|deployment|hosting\.json/.test(name)));
+assert.ok(operationalFiles.every(path => !entries.includes(path)));
+assert.ok(entries.includes('samples/public-corpus.json'));
+const corpusResponse = await application.fetch(new Request(origin + '/samples/public-corpus.json'), { PUBLIC_ORIGIN: origin });
+assert.equal(corpusResponse.status, 200);
+const corpus = await corpusResponse.json();
+assert.equal(corpus.documents.length, 12);
+assert.equal(corpus.recordRecipe.count, 200);
+assert.equal(corpus.license, 'MIT');
 const download = await application.fetch(new Request(origin + '/download'), { PUBLIC_ORIGIN: origin });
 assert.equal(download.headers.get('content-type'), 'application/zip');
 assert.deepEqual(Buffer.from(await download.arrayBuffer()), readFileSync('dist/source.zip'));

@@ -7,5 +7,11 @@ export const archiveFiles = Object.freeze([
   'scripts/source-files.mjs', 'scripts/test-support.mjs', 'scripts/fixtures/published-response.json',
   'samples/comparison-guidelines.md', 'samples/contoso-disclosure.md', 'samples/p104-restart.md',
   'samples/popup-policy.md', 'samples/popup-safety.md', 'samples/recovery-plan.md',
-  'samples/regional-performance.csv', 'samples/seal-inspection.md', 'samples/wo104.md',
+  'samples/regional-performance.csv', 'samples/seal-inspection.md', 'samples/wo104.md', 'samples/public-corpus.json',
+]);
+
+export const operationalFiles = Object.freeze([
+  'config/knowledge-definitions.json', 'scripts/provision-search.mjs',
+  'scripts/package-appservice.mjs', 'scripts/capture-canary.mjs',
+  'scripts/local-live.mjs', 'scripts/public-hosting.mjs',
 ]);

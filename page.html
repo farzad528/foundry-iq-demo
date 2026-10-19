@@ -126,10 +126,10 @@
         <div class="field"><label for="output">Output mode</label><select id="output"><option value="answerSynthesis">Synthesized answer</option><option value="extractiveData">Extractive data</option></select></div>
         <div class="row">
           <div class="field"><label for="runtime">Runtime limit (s)</label><input id="runtime" type="number" min="10" max="120" value="60" placeholder="Service default"></div>
-          <div class="field"><label for="tokens">Output limit (tokens)</label><input id="tokens" type="number" min="100" max="10000" value="4000" placeholder="Service default"></div>
+          <div class="field"><label for="tokens">Output limit (tokens)</label><input id="tokens" type="number" min="5001" max="10000" value="5001" placeholder="Service default"></div>
         </div>
         <label class="hint"><input id="include-activity" type="checkbox" checked> Request activity diagnostics</label>
-        <p class="hint">Request field: maxOutputSizeInTokens. Clear a limit to omit its service override. The app always enforces its own total runtime ceiling.</p>
+        <p class="hint">Request field: maxOutputSize (tokens). Clear a limit to omit its service override. The app always enforces its own total runtime ceiling.</p>
         <p class="hint" id="control-hint">The last run's effective request stays fixed when controls change. Replays are fixed examples.</p>
         <details><summary class="hint">Source parameters</summary><div id="source-controls"></div></details>
       </div>
@@ -139,7 +139,7 @@
       <div class="topline"><div class="eyebrow">THE AGENTIC RETRIEVAL PLAYGROUND</div><span class="pill" id="mode-badge">LIVE KNOWLEDGE BASE</span></div>
       <h1>Your knowledge.<br>Every answer, explained.</h1>
       <p class="intro">Explore a public knowledge base. Follow the question from query planning to a grounded answer, right down to the source.</p>
-      <p class="hint" id="contract-status">Published preview contract; live Azure compatibility remains unverified.</p>
+      <p class="hint" id="contract-status">Pinned preview contract; verify each deployment with indexed/Web canary evidence.</p>
       <p class="notice" id="privacy">Public demo: do not enter sensitive information.</p>
       <div class="overline"><span class="section-title" id="current-title"></span><span class="muted hint" id="source-count"></span></div>
       <div class="composer">
@@ -172,7 +172,7 @@ SESSION_SECRET (shared Key Vault reference)
 FOUNDRY_IQ_QUOTA_CONTAINER_URL
 FOUNDRY_IQ_LIVE_ENABLED</pre>
     <p id="connection-status" role="status">Checking…</p>
-    <div class="notice">Live Azure compatibility and Web domain approval remain prerequisites. A replay or mocked test is not a live verification. Fabric, Work IQ, remote SharePoint, and OneLake are out of scope for anonymous live retrieval.</div>
+    <div class="notice">Each live deployment requires compatibility evidence and approved Web domains. A replay or mocked test is not a live verification. Fabric, Work IQ, remote SharePoint, and OneLake are out of scope for anonymous live retrieval.</div>
     <p>Download reproducible code, neutral icons, and approved public synthetic sources. No runtime credentials, logs, or quota state are included.</p>
     <a class="primary" href="/download">Download sanitized source ↓</a>
   </dialog>

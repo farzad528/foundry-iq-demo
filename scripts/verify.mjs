@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, statSync } from 'node:fs';
-import { request as httpRequest } from 'node:http';
+import { readFileSync, statSync, existsSync } from 'node:fs';
+import { mkdtemp, readFile, realpath, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { request as httpRequest, createServer } from 'node:http';
 import { once } from 'node:events';
 import { createApplication } from '../dist/server/index.mjs';
 import { BlobQuotaCoordinator, anonymousSession } from '../dist/server/lib/quota.mjs';
@@ -10,7 +13,7 @@ import { normalizeResponse, safeUrl } from '../dist/server/lib/normalize.mjs';
 import { createNodeServer, clientIp } from '../lib/http.mjs';
 import { publicCatalog, knowledgeBases } from '../config/knowledge-bases.mjs';
 import { FakeBlob } from './test-support.mjs';
-import { archiveFiles } from './source-files.mjs';
+import { archiveFiles, operationalFiles } from './source-files.mjs';
 
 const samples = JSON.parse(readFileSync(new URL('../config/scenarios.json', import.meta.url)));
 const catalog = publicCatalog(samples);
@@ -34,7 +37,7 @@ const requestFor = scenario => ({
   outputMode: 'answerSynthesis',
   includeActivity: true,
   maxRuntimeInSeconds: 60,
-  maxOutputSizeInTokens: 4000,
+  maxOutputSize: 5001,
   knowledgeSourceParams: scenario.sources.map(source => ({
     kind: source.kind, knowledgeSourceName: source.name, includeReferences: true, includeReferenceSourceData: true,
   })),
@@ -131,8 +134,11 @@ test('invalid types, duplicates, unknown fields and source membership are reject
     body => { body.scenarioId = 'private-kb'; },
     body => { body.request.maxRuntimeInSeconds = '60'; },
     body => { body.request.maxRuntimeInSeconds = 121; },
-    body => { body.request.maxOutputSizeInTokens = 0; },
-    body => { body.request.maxOutputSize = 4000; },
+    body => { body.request.maxOutputSize = 0; },
+    body => { body.request.maxOutputSize = 5000; },
+    body => { body.request.maxOutputSize = 10001; },
+    body => { body.request.maxOutputSizeInTokens = 4000; },
+    body => { delete body.request.maxOutputSize; body.request.maxOutputSizeInTokens = 4000; },
     body => { body.request.includeActivity = 'true'; },
     body => { body.request.outputMode = 'invalid'; },
     body => { body.request.messages.push(body.request.messages[0]); },
@@ -160,6 +166,19 @@ test('invalid types, duplicates, unknown fields and source membership are reject
   assert.equal((await post(app, '{')).status, 400);
 });
 
+test('actual-service output token bounds match UI, canaries and explicit request snapshots', async () => {
+  const page = readFileSync(new URL('../page.html', import.meta.url), 'utf8');
+  assert.match(page, /id="tokens"[^>]*min="5001"[^>]*max="10000"[^>]*value="5001"/);
+  const { app } = setup();
+  for (const maxOutputSize of [5001, 10000]) {
+    const body = bodyFor();
+    body.request.maxOutputSize = maxOutputSize;
+    const response = await post(app, body);
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).effectiveRequest.body.maxOutputSize, maxOutputSize);
+  }
+});
+
 test('minimal is indexed/extractive only; medium is gated by deployment capability', async () => {
   const { app } = setup();
   const body = bodyFor();
@@ -178,7 +197,7 @@ test('minimal is indexed/extractive only; medium is gated by deployment capabili
   assert.equal((await post(app, medium, { env: { FOUNDRY_IQ_MEDIUM_ENABLED: 'true' } })).status, 200);
 });
 
-test('published OData route, exact normalized snapshot, explicit token field, no invented defaults', async () => {
+test('published OData route, exact normalized snapshot, request-level maxOutputSize token budget, no invented defaults', async () => {
   const body = bodyFor();
   body.request.messages[0].content[0].text = '  An arbitrary question  ';
   delete body.request.maxRuntimeInSeconds;
@@ -200,8 +219,8 @@ test('published OData route, exact normalized snapshot, explicit token field, no
   assert.equal(result.requestId, sent.id);
   assert.equal(result.effectiveRequest.sent, true);
   assert.equal(sent.body.messages[0].content[0].text, 'An arbitrary question');
-  assert.equal(sent.body.maxOutputSizeInTokens, 4000);
-  assert.equal(Object.hasOwn(sent.body, 'maxOutputSize'), false);
+  assert.equal(sent.body.maxOutputSize, 5001);
+  assert.equal(Object.hasOwn(sent.body, 'maxOutputSizeInTokens'), false);
   for (const field of ['maxRuntimeInSeconds', 'includeActivity', 'knowledgeSourceParams']) assert.equal(Object.hasOwn(sent.body, field), false);
   const serialized = JSON.stringify(result);
   assert.ok(!serialized.includes(env.AZURE_SEARCH_API_KEY));
@@ -236,6 +255,20 @@ test('normalizer joins arbitrary reference IDs and activity IDs, not array offse
   assert.equal(normalized.references.find(item => item.id === 'manual-a').passage, 'The checklist requires recorded approval.');
   assert.equal(normalized.references[0].kind, 'web');
   assert.equal(normalized.activities.find(activity => activity.id === 88).elapsedMs, undefined);
+});
+
+test('actual Blob sourceData.snippet is a returned passage, not missing or invented evidence', () => {
+  const snippet = '# Fictional review\n\nRevision 2; reviewer acknowledgement remains pending.';
+  const input = { response: [{ content: [{ type: 'text', text: 'Reviewer acknowledgement is pending.[ref_id:0]' }] }],
+    activity: [{ id: 7, type: 'azureBlob', knowledgeSourceName: 'foundryiq-customer-demos-manuals' }],
+    references: [{ id: '0', type: 'azureBlob', activitySource: 7,
+      blobUrl: 'https://example.blob.core.windows.net/demo-content/manuals/review.md',
+      sourceData: { uid: 'opaque-service-key', blob_url: 'https://example.blob.core.windows.net/demo-content/manuals/review.md', snippet } }] };
+  const { normalized } = normalizeResponse(input);
+  assert.equal(normalized.references[0].passage, snippet);
+  assert.equal(normalized.references[0].activityLinked, true);
+  assert.equal(normalized.citations[0].resolved, true);
+  assert.equal(normalized.references[0].annotation.sourceData.snippet, snippet);
 });
 
 test('missing/duplicate citations and absent passages/timings remain explicit', () => {
@@ -583,4 +616,611 @@ test('prebuilt artifact and sanitized ZIP are deterministic, allowlisted and sta
   const source = readFileSync(new URL('../dist/server/index.mjs', import.meta.url), 'utf8');
   assert.ok(!source.includes('__DATA__') && !source.includes('__ARCHIVE__'));
   assert.ok(statSync(new URL('../dist/server/index.mjs', import.meta.url)).size > 10000);
+});
+
+test('public corpus is original, versioned and included without operator configuration', async () => {
+  const corpus = JSON.parse(readFileSync(new URL('../samples/public-corpus.json', import.meta.url)));
+  assert.equal(corpus.license, 'MIT');
+  assert.equal(corpus.documents.length, 12);
+  assert.equal(corpus.recordRecipe.count, 200);
+  assert.match(corpus.disclaimer, /fictional/i);
+  assert.ok(archiveFiles.includes('samples/public-corpus.json'));
+  assert.ok(operationalFiles.every(path => !archiveFiles.includes(path)));
+});
+
+const operatorToolsPresent = operationalFiles.every(path => existsSync(new URL('../' + path, import.meta.url)));
+test('repository-only operators are deliberately omitted from the standalone app ZIP', { skip: !operatorToolsPresent
+  && 'App-only source ZIP: provisioning/capture/packaging tools intentionally excluded.' }, async t => {
+  const { loadInputs, expandCorpus, buildPlan, provision, parseArgs, outsideOutput, operatorCredential, OperatorError } = await import('./provision-search.mjs');
+  const { captureCanaries, canaryRequests } = await import('./capture-canary.mjs');
+  const { runtimeFiles, packageRuntime } = await import('./package-appservice.mjs');
+  const { localEnvironment, localLive } = await import('./local-live.mjs');
+  const inputs = await loadInputs();
+  const { definitions, corpus } = inputs;
+  const directory = await mkdtemp(join(tmpdir(), 'foundryiq-operator-tests-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const operatorEnv = {
+    ...env, AZURE_SEARCH_ENDPOINT: `https://${definitions.searchService}.search.windows.net`,
+    FOUNDRY_MODEL_ENDPOINT: `https://${definitions.foundry.resource}.openai.azure.com`,
+  };
+
+  await t.test('deterministic exact 12/200 corpus, explicit approval statuses and controlled revisions', () => {
+    const a = expandCorpus(corpus);
+    assert.deepEqual(a, expandCorpus(corpus));
+    assert.equal(a.documents.length, 12);
+    assert.equal(a.records.length, 200);
+    assert.equal(new Set(a.records.map(record => record.id)).size, 200);
+    for (const record of a.records.filter(record => record.equipmentId === 'P-104'
+      && ['reviewer acknowledgement', 'owner approval'].includes(record.recordType))) {
+      assert.equal(record.reviewStatus, corpus.recordRecipe.overrides[record.id]?.reviewStatus || 'pending');
+    }
+    const changed = structuredClone(corpus);
+    changed.recordRecipe.overrides['MR-0013'] = { reviewStatus: 'recorded', revision: 2 };
+    const b = expandCorpus(changed);
+    assert.equal(b.records[12].revision, 2);
+    assert.equal(b.records[12].reviewStatus, 'recorded');
+    assert.deepEqual(b.records[11], a.records[11]);
+    changed.recordRecipe.overrides['missing-record'] = { reviewStatus: 'recorded', revision: 2 };
+    assert.throws(() => expandCorpus(changed), OperatorError);
+    const invalid = structuredClone(corpus);
+    invalid.recordRecipe.firstDate = '2026-99-99';
+    assert.throws(() => expandCorpus(invalid), OperatorError);
+  });
+
+  await t.test('hybrid/model/source definitions match the exact runtime catalog', () => {
+    const plan = buildPlan(definitions, corpus, operatorEnv);
+    assert.equal(definitions.foundry.kind, 'AIServices');
+    assert.equal(plan.index.fields.find(field => field.name === 'contentVector').dimensions, 1536);
+    assert.equal(plan.index.vectorSearch.profiles[0].vectorizer, 'foundry-vectorizer');
+    assert.deepEqual(plan.knowledgeBases.map(kb => kb.name), knowledgeBases.map(kb => kb.id));
+    for (let i = 0; i < 2; i++) assert.deepEqual(plan.knowledgeBases[i].knowledgeSources.map(source => source.name),
+      knowledgeBases[i].sources.map(source => source.name));
+    assert.deepEqual(plan.sources[2].webParameters.domains.allowedDomains, [{ address: 'osha.gov', includeSubpages: true }]);
+    assert.throws(() => buildPlan(definitions, corpus, { ...operatorEnv,
+      FOUNDRY_MODEL_ENDPOINT: 'https://unapproved.openai.azure.com' }, true), OperatorError);
+  });
+
+  await t.test('dry runs and failed explicit approvals cannot dispatch Azure calls', async () => {
+    let calls = 0;
+    const request = async () => { calls++; throw new Error('Network forbidden'); };
+    assert.equal((await provision({ ...inputs, request })).azureCalls, 0);
+    assert.equal((await captureCanaries({ definitions, fetchImpl: request })).azureCalls, 0);
+    assert.equal((await localLive({ ...inputs, request })).azureCalls, 0);
+    await assert.rejects(provision({ ...inputs, env: operatorEnv, apply: true, request }), /separate/);
+    await assert.rejects(captureCanaries({ definitions, env: operatorEnv, execute: true, fetchImpl: request }), /requires/);
+    await assert.rejects(localLive({ ...inputs, action: 'ingest', request }), /requires/);
+    await assert.rejects(localLive({ ...inputs, action: 'capture', request }), /requires/);
+    assert.equal(calls, 0);
+    assert.throws(() => parseArgs(['--apply', '--apply'], ['--apply']), OperatorError);
+    await assert.rejects(outsideOutput(resolve('capture.json')), /outside/);
+    assert.equal(await outsideOutput(join(directory, 'safe.json')), join(await realpath(directory), 'safe.json'));
+  });
+
+  await t.test('local ingestion explicitly permits only loopback without weakening public HTTPS', () => {
+    const local = { ...operatorEnv, PUBLIC_ORIGIN: 'http://127.0.0.1:3000' };
+    assert.throws(() => buildPlan(definitions, corpus, local, true), /HTTPS/);
+    assert.equal(buildPlan(definitions, corpus, local, true, { local: true }).publicDocumentUrl,
+      'http://127.0.0.1:3000/samples/public-corpus.json');
+    for (const origin of ['http://example.test:3000', 'http://localhost:3000', 'https://example.test']) {
+      assert.throws(() => buildPlan(definitions, corpus, { ...local, PUBLIC_ORIGIN: origin }, true, { local: true }),
+        /canonical PUBLIC_ORIGIN|exact HTTP 127/);
+    }
+  });
+
+  function localDouble({ foreign = false, modelMismatch = false, location = definitions.location } = {}) {
+    const calls = [];
+    const secrets = new Map();
+    const blob = new FakeBlob();
+    blob.state.enabled = false;
+    blob.state.count = 765;
+    blob.state.day = '2026-10-18';
+    const upload = blob.upload.bind(blob);
+    blob.upload = async (text, length, options) => {
+      if (options.conditions.ifNoneMatch === '*') throw { statusCode: 412 };
+      return upload(text, length, options);
+    };
+    const result = (body, status = 200) => ({ body, response: Response.json(body, { status }) });
+    const request = async (address, options = {}, scope) => {
+      const url = new URL(address);
+      calls.push({ url, method: options.method || 'GET', scope });
+      if (url.hostname.endsWith('.vault.azure.net')) {
+        const name = url.pathname.split('/').at(-1);
+        if (options.method === 'PUT') secrets.set(name, JSON.parse(options.body).value);
+        return secrets.has(name) ? result({ value: secrets.get(name) }) : result({}, 404);
+      }
+      if (url.pathname.endsWith('/listAdminKeys')) return result({ primaryKey: env.AZURE_SEARCH_API_KEY });
+      if (url.hostname.endsWith('.search.windows.net')) {
+        const name = url.pathname.split('/').at(-1);
+        const sources = [definitions.manualSource, definitions.maintenanceSource, ...(name.endsWith('-web') ? [definitions.webSource] : [])];
+        return result({ name, description: '[foundryiq-customer-demos] test', knowledgeSources: sources.map(name => ({ name })) });
+      }
+      if (url.pathname.includes('/deployments/')) {
+        const kind = url.pathname.endsWith(definitions.foundry.retrievalDeployment) ? 'retrieval' : 'embedding';
+        return result({ properties: { provisioningState: 'Succeeded',
+          model: { name: definitions.foundry[kind + 'Model'], version: modelMismatch ? 'wrong' : definitions.foundry[kind + 'Version'] } },
+        sku: { name: 'Standard', capacity: definitions.foundry[kind + 'Capacity'] } });
+      }
+      return result({ id: url.pathname, kind: 'AIServices', location,
+        tags: { 'app-onboard-session-id': foreign ? 'someone-else' : definitions.onboardingSessionId, environment: definitions.owner },
+        properties: { allowSharedKeyAccess: false, allowBlobPublicAccess: false, enableRbacAuthorization: true,
+          allowProjectManagement: true, endpoints: { 'OpenAI Language Model Instance API': operatorEnv.FOUNDRY_MODEL_ENDPOINT + '/' } } });
+    };
+    return { calls, secrets, blob, request, quotaBlob: blob, credential: {} };
+  }
+
+  await t.test('local configuration isolates dedicated secrets, origin and proxy from inherited environments', () => {
+    const local = localEnvironment(definitions, env, 32123);
+    assert.equal(local.PUBLIC_ORIGIN, 'http://127.0.0.1:32123');
+    assert.equal(local.FOUNDRY_IQ_TRUST_APP_SERVICE_PROXY, 'false');
+    assert.equal(local.FOUNDRY_IQ_MEDIUM_ENABLED, 'false');
+    assert.equal(local.AZURE_SEARCH_ENDPOINT, `https://${definitions.searchService}.search.windows.net`);
+    assert.equal(local.AZURE_CLIENT_ID, undefined);
+    assert.ok(Object.isFrozen(local));
+    for (const port of [0, 65536, 3.5, '3000']) assert.throws(() => localEnvironment(definitions, env, port), OperatorError);
+    assert.throws(() => localEnvironment(definitions, { ...env, SESSION_SECRET: '@Microsoft.KeyVault(test)' }), OperatorError);
+  });
+
+  await t.test('CLI auth selects the subscription and verifies tenant without mutually exclusive CLI flags', async () => {
+    let options;
+    class Credential {
+      constructor(value) { options = value; }
+    }
+    const request = async (url, _options, auth) => {
+      assert.ok(url.startsWith(`https://management.azure.com/subscriptions/${definitions.subscriptionId}?`));
+      assert.ok(auth.credential instanceof Credential);
+      assert.equal(auth.scope, 'https://management.azure.com/.default');
+      return { response: { ok: true }, body: { subscriptionId: definitions.subscriptionId, tenantId: definitions.tenantId } };
+    };
+    assert.ok(await operatorCredential(definitions, { Credential, request }) instanceof Credential);
+    assert.deepEqual(options, { subscription: definitions.subscriptionId, processTimeoutInMs: 10000 });
+    await assert.rejects(operatorCredential(definitions, { Credential, request: async () => ({
+      response: { ok: true }, body: { subscriptionId: definitions.subscriptionId, tenantId: 'wrong-tenant' },
+    }) }), /subscription\/tenant/);
+  });
+
+  await t.test('local bootstrap exclusively seeds stable Vault secrets and never resets the ledger', async () => {
+    const fake = localDouble();
+    const before = structuredClone(fake.blob.state);
+    const options = { ...inputs, ...fake, action: 'initialize' };
+    const first = await localLive(options);
+    const session = fake.secrets.get('session-secret');
+    assert.equal(first.secretsCreated, 2);
+    assert.ok(session.length >= 32 && session !== env.SESSION_SECRET);
+    assert.equal(fake.secrets.get('search-api-key'), env.AZURE_SEARCH_API_KEY);
+    assert.deepEqual(fake.blob.state, before);
+    assert.equal(fake.blob.lease, null);
+    const second = await localLive(options);
+    assert.equal(second.secretsCreated, 0);
+    assert.equal(second.secretsReused, 2);
+    assert.equal(fake.secrets.get('session-secret'), session);
+    assert.equal(fake.calls.filter(call => call.url.pathname.endsWith('/listAdminKeys')).length, 1);
+    assert.equal(fake.calls.filter(call => call.method === 'PUT').length, 2);
+    assert.deepEqual(fake.blob.state, before);
+    assert.ok(fake.calls.every(call => !call.url.href.includes(session) && !call.url.href.includes(env.AZURE_SEARCH_API_KEY)));
+  });
+
+  await t.test('ARM region display names normalize without accepting a different deployment region', async () => {
+    const same = localDouble({ location: 'West US 2' });
+    assert.equal((await localLive({ ...inputs, ...same, action: 'initialize' })).initialized, true);
+    const other = localDouble({ location: 'East US 2' });
+    await assert.rejects(localLive({ ...inputs, ...other, action: 'initialize' }), /ownership\/topology/);
+    assert.equal(other.secrets.size, 0);
+    assert.equal(other.blob.state.count, 765);
+  });
+
+  await t.test('foreign topology, wrong models and missing secrets fail closed before live startup', async () => {
+    for (const issue of [{ foreign: true }, { modelMismatch: true }]) {
+      const fake = localDouble(issue);
+      await assert.rejects(localLive({ ...inputs, ...fake, action: 'initialize' }), OperatorError);
+      assert.equal(fake.secrets.size, 0);
+      assert.equal(fake.calls.filter(call => call.method === 'PUT').length, 0);
+    }
+    const fake = localDouble();
+    await assert.rejects(localLive({ ...inputs, ...fake, action: 'start' }), /secrets/);
+    fake.blob.state.enabled = true;
+    await assert.rejects(localLive({ ...inputs, ...fake, action: 'initialize' }), /Pause/);
+    assert.equal(fake.secrets.size, 0);
+    assert.equal(fake.blob.state.count, 765);
+  });
+
+  await t.test('local kill switch preserves counters and can pause without Search, Vault or models', async () => {
+    const fake = localDouble();
+    await localLive({ ...inputs, ...fake, action: 'initialize' });
+    const enabled = await localLive({ ...inputs, ...fake, action: 'enable-live' });
+    assert.equal(enabled.enabled, true);
+    assert.equal(enabled.count, 765);
+    fake.calls.length = 0;
+    const disabled = await localLive({ ...inputs, ...fake, action: 'disable-live' });
+    assert.equal(disabled.enabled, false);
+    assert.equal(disabled.count, 765);
+    assert.equal(fake.calls.length, 1);
+    assert.ok(fake.calls[0].url.pathname.includes('Microsoft.Storage/storageAccounts/'));
+    assert.equal(fake.blob.lease, null);
+  });
+
+  await t.test('prebuilt local live startup serves only IPv4 loopback without Python or a production credential fallback', async () => {
+    const probe = createServer();
+    probe.listen(0, '127.0.0.1');
+    await once(probe, 'listening');
+    const port = probe.address().port;
+    await new Promise(resolve => probe.close(resolve));
+    const fake = localDouble();
+    fake.secrets.set('search-api-key', env.AZURE_SEARCH_API_KEY);
+    fake.secrets.set('session-secret', env.SESSION_SECRET);
+    const { server, origin } = await localLive({ ...inputs, ...fake, action: 'start', port, log: () => {} });
+    t.after(() => new Promise(resolve => { server.closeAllConnections(); server.close(resolve); }));
+    assert.equal(server.address().address, '127.0.0.1');
+    assert.equal(origin, `http://127.0.0.1:${port}`);
+    assert.equal((await fetch(origin + '/healthz')).status, 200);
+    const config = await (await fetch(origin + '/api/config')).json();
+    assert.equal(config.liveEnabled, true);
+    assert.ok(!JSON.stringify(config).includes(env.SESSION_SECRET) && !JSON.stringify(config).includes(env.AZURE_SEARCH_API_KEY));
+    assert.ok(fake.calls.every(call => call.method === 'GET'));
+    const retrieve = () => fetch(origin + '/api/retrieve', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyFor()) });
+    const paused = await retrieve();
+    assert.equal(paused.status, 503);
+    assert.equal((await paused.json()).errorCode, 'live_disabled');
+    fake.blob.state.enabled = true;
+    fake.blob.state.count = 1000;
+    const daily = await retrieve();
+    assert.equal(daily.status, 429);
+    const denied = await daily.json();
+    assert.equal(denied.errorCode, 'daily_limit');
+    assert.equal(denied.effectiveRequest.sent, false);
+    assert.equal(fake.blob.state.count, 1000);
+    fake.blob.available = false;
+    const unavailable = await retrieve();
+    assert.equal(unavailable.status, 503);
+    assert.equal((await unavailable.json()).errorCode, 'quota_unavailable');
+  });
+
+  function ingestionDouble({ unowned = false, partialIndex = false, malformedVectors = false, manualUpdateNoContent = false } = {}) {
+    const calls = [];
+    const blobs = new Map();
+    let indexerWasRun = false;
+    const oldStart = new Date(Date.now() - 60000).toISOString();
+    const quota = { count: 765, enabled: false };
+    const container = {
+      getBlockBlobClient: name => ({
+        getProperties: async () => { throw { statusCode: 404 }; },
+        upload: async (text, length, options) => {
+          assert.equal(length, Buffer.byteLength(text));
+          assert.equal(options.conditions.ifNoneMatch, '*');
+          blobs.set(name, options.metadata);
+        },
+      }),
+      async *listBlobsFlat() { for (const [name, metadata] of blobs) yield { name, metadata }; },
+    };
+    const quotaBlob = {
+      upload: async (text, length, options) => {
+        assert.equal(JSON.parse(text).enabled, false);
+        assert.equal(options.conditions.ifNoneMatch, '*');
+        throw { statusCode: 412 };
+      },
+      getProperties: async () => ({ contentLength: 99 }),
+    };
+    const result = (body, status = 200) => ({ body, response: Response.json(body, { status, headers: { date: new Date().toUTCString() } }) });
+    const request = async (address, options = {}, scope) => {
+      const url = new URL(address);
+      calls.push({ url, ...options, scope });
+      if (url.hostname === 'management.azure.com') return result({ id: url.pathname,
+        kind: 'AIServices', properties: { allowProjectManagement: true } });
+      if (url.pathname.endsWith('/embeddings')) {
+        const rows = JSON.parse(options.body).input;
+        return result({ data: rows.map((_, i) => ({ index: malformedVectors ? 0 : i, embedding: Array(1536).fill(i) })).reverse() });
+      }
+      if (url.pathname.endsWith('/docs/index')) return result({ value: JSON.parse(options.body).value.map((row, i) => ({
+        key: row.id, status: !(partialIndex && i === 0),
+      })) });
+      if (url.pathname.endsWith('/status')) return result({ lastResult: {
+        startTime: manualUpdateNoContent && !indexerWasRun ? oldStart : new Date().toISOString(),
+        endTime: new Date().toISOString(), status: 'success', itemsFailed: 0, itemsProcessed: 12,
+      } });
+      if (url.pathname.endsWith('/run')) {
+        indexerWasRun = true;
+        return result(null, 202);
+      }
+      if (options.method === 'PUT') {
+        const body = JSON.parse(options.body);
+        if (body.kind === 'azureBlob' && manualUpdateNoContent) {
+          assert.equal(options.headers['If-Match'], '"owned-manual"');
+          return { body: null, response: new Response(null, { status: 204, headers: { date: new Date().toUTCString() } }) };
+        }
+        assert.equal(options.headers['If-None-Match'], '*');
+        if (body.kind === 'azureBlob') body.azureBlobParameters.createdResources = { indexer: `${definitions.manualSource}-indexer` };
+        return result(body, 201);
+      }
+      if (manualUpdateNoContent && url.pathname === `/knowledgesources/${definitions.manualSource}`) {
+        return result({ name: definitions.manualSource, kind: 'azureBlob', description: '[foundryiq-customer-demos] test',
+          '@odata.etag': '"owned-manual"', azureBlobParameters: { createdResources: { indexer: `${definitions.manualSource}-indexer` } } });
+      }
+      return unowned ? result({ name: url.pathname.split('/').at(-1), description: 'another owner' }) : result({}, 404);
+    };
+    return { calls, blobs, quota, container, quotaBlob, request };
+  }
+
+  const { publicHosting, publicHostingOrigin, publicHostingTarget } = await import('./public-hosting.mjs');
+  function publicDouble({ foreignHost = false, partial = false, uncertain = false, changed = false, unresolved = false,
+    remoteDebuggingEnabled = false, missingDebugging = false, mappedReferences = false, duplicateReference = false,
+    pagedReferences = false, wrongReferenceSecret = false, referenceIdentityType = 'SystemAssigned' } = {}) {
+    const fake = localDouble();
+    fake.secrets.set('search-api-key', env.AZURE_SEARCH_API_KEY);
+    fake.secrets.set('session-secret', env.SESSION_SECRET);
+    const hostname = `${publicHostingTarget.app}-test.westus2-01.azurewebsites.net`;
+    const origin = `https://${hostname}`;
+    const principal = '11111111-2222-3333-4444-555555555555';
+    const prefix = `/subscriptions/${definitions.subscriptionId}/resourceGroups/${definitions.resourceGroup}/providers/`;
+    const appId = prefix + `Microsoft.Web/sites/${publicHostingTarget.app}`;
+    const planId = prefix + `Microsoft.Web/serverfarms/${publicHostingTarget.plan}`;
+    const rows = expandCorpus(corpus).records.map(record => ({ ...record,
+      url: `http://127.0.0.1:3000/samples/public-corpus.json#${record.id}`, contentVector: [1, 2, 3] }));
+    if (changed) rows[0].revision = 999;
+    const result = (body, status = 200) => ({ body, response: Response.json(body, { status }) });
+    const request = async (address, options = {}, scope) => {
+      const url = new URL(address);
+      const own = url.pathname.startsWith(appId) || url.pathname === planId
+        || url.pathname.includes('/roleAssignments') || url.hostname.endsWith('.search.windows.net');
+      if (!own) return fake.request(address, options, scope);
+      fake.calls.push({ url, ...options, scope });
+      if (url.pathname.endsWith('/roleAssignments')) {
+        const resourceScope = url.pathname.split('/providers/Microsoft.Authorization')[0];
+        const role = resourceScope.includes('/secrets/') ? '4633458b-17de-408a-b874-0445c86b69e6' : 'ba92f5b4-2d11-453d-a403-e96b0029c9fe';
+        return result({ value: [{ properties: { scope: resourceScope, principalId: principal,
+          roleDefinitionId: `/subscriptions/${definitions.subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${role}` } }] });
+      }
+      if (url.pathname.endsWith('/config/web')) return result({ properties: { linuxFxVersion: 'NODE|24-lts',
+        appCommandLine: 'npm start', alwaysOn: true, minTlsVersion: '1.2', scmMinTlsVersion: '1.2',
+        ftpsState: 'Disabled', ...(missingDebugging ? { remoteDebugEnabled: false } : { remoteDebuggingEnabled }),
+        healthCheckPath: '/healthz' } });
+      if (url.pathname.includes('/basicPublishingCredentialsPolicies/')) return result({ properties: { allow: false } });
+      if (url.pathname.endsWith('/config/configreferences/appsettings')) {
+        const references = [['AZURE_SEARCH_API_KEY', 'search-api-key'], ['SESSION_SECRET', 'session-secret']]
+          .map(([name, secretName]) => ({ name, id: url.pathname + '/' + name, properties: {
+            status: unresolved ? 'AccessToKeyVaultDenied' : 'Resolved', identityType: referenceIdentityType,
+            vaultName: definitions.keyVault, secretName: wrongReferenceSecret ? 'unapproved-secret' : secretName,
+          } }));
+        if (mappedReferences) return result({ properties: Object.fromEntries(references.map(item => [item.name, item.properties])) });
+        return result({ value: duplicateReference ? [...references, references[0]] : references,
+          nextLink: pagedReferences ? address + '&nextPage=2' : null });
+      }
+      if (url.pathname === appId || url.pathname === planId) return result({
+        id: url.pathname, location: 'West US 2',
+        tags: { 'app-onboard-session-id': foreignHost ? 'other-owner' : publicHostingTarget.sessionId, environment: definitions.owner },
+        identity: { type: 'SystemAssigned', principalId: principal }, sku: { name: 'S1', capacity: 1 },
+        properties: { reserved: true, httpsOnly: true, serverFarmId: planId, defaultHostName: hostname },
+      });
+      if (url.pathname.endsWith('/docs/search')) {
+        assert.equal(JSON.parse(options.body).select.includes('contentVector'), false);
+        return result({ '@odata.count': rows.length, value: rows.map(({ contentVector, ...row }) => ({ ...row })) });
+      }
+      if (url.pathname.endsWith('/docs/index')) {
+        const updates = JSON.parse(options.body).value;
+        for (const [i, update] of updates.entries()) {
+          assert.deepEqual(Object.keys(update).sort(), ['@search.action', 'id', 'url']);
+          assert.equal(update['@search.action'], 'merge');
+          if (!(partial && i === 0)) rows.find(row => row.id === update.id).url = update.url;
+        }
+        if (uncertain) throw new Error(env.AZURE_SEARCH_API_KEY);
+        return result({ value: updates.map((row, i) => ({ key: row.id, status: !(partial && i === 0),
+          statusCode: partial && i === 0 ? 503 : 200 })) }, partial ? 207 : 200);
+      }
+      return result({ name: definitions.maintenanceIndex, description: '[foundryiq-customer-demos] owned',
+        fields: [{ name: 'id', key: true, type: 'Edm.String' }, { name: 'url', type: 'Edm.String' },
+          { name: 'contentVector', dimensions: 1536, retrievable: false }] });
+    };
+    return { ...fake, request, origin, rows };
+  }
+
+  await t.test('public operator dry runs and missing approval make no cloud calls; actual hostname is mandatory', async () => {
+    let calls = 0;
+    const request = async () => { calls++; throw new Error('Network forbidden'); };
+    assert.equal((await publicHosting({ ...inputs, request })).azureCalls, 0);
+    await assert.rejects(publicHosting({ ...inputs, action: 'update-citation-urls', request }), /approved/);
+    await assert.rejects(publicHosting({ ...inputs, action: 'verify', origin: 'http://127.0.0.1:3000', request }), /HTTPS/);
+    assert.equal(calls, 0);
+    for (const host of ['example.test', 'other.azurewebsites.net', `${publicHostingTarget.app}.scm.azurewebsites.net`,
+      `${publicHostingTarget.app}.azurewebsites.net/path`, `${publicHostingTarget.app}.azurewebsites.net:443`]) {
+      assert.throws(() => publicHostingOrigin(host), OperatorError);
+    }
+  });
+
+  await t.test('public URL merge updates exactly 200 URLs without content/vector/ledger mutation and is idempotent', async () => {
+    const fake = publicDouble();
+    const before = structuredClone(fake.rows);
+    const options = { ...inputs, ...fake, action: 'update-citation-urls', urlUpdateApproved: true };
+    const updated = await publicHosting(options);
+    assert.equal(updated.updated, 200);
+    assert.equal(updated.paidRetrieveCalls, 0);
+    assert.equal(updated.ledgerTouched, false);
+    assert.equal(fake.blob.state.count, 765);
+    assert.deepEqual(fake.rows.map(({ url, ...row }) => row), before.map(({ url, ...row }) => row));
+    assert.ok(fake.rows.every(row => row.url === `${fake.origin}/samples/public-corpus.json#${row.id}`));
+    assert.equal((await publicHosting(options)).updated, 0);
+    assert.equal(fake.calls.filter(call => call.url.pathname.endsWith('/docs/index')).length, 1);
+    assert.ok(fake.calls.every(call => !call.url.pathname.includes('retrieve') && !call.url.pathname.includes('embeddings')));
+    assert.ok(!JSON.stringify(updated).includes(env.AZURE_SEARCH_API_KEY) && !JSON.stringify(updated).includes(env.SESSION_SECRET));
+  });
+
+  await t.test('foreign host, mismatched origin/corpus and unresolved app references stop before any URL write', async () => {
+    for (const issue of [{ foreignHost: true }, { changed: true }, { unresolved: true }, { origin: 'https://other.example.test' }]) {
+      const fake = publicDouble(issue);
+      await assert.rejects(publicHosting({ ...inputs, ...fake, action: 'update-citation-urls',
+        urlUpdateApproved: true, origin: issue.origin || fake.origin }), OperatorError);
+      assert.equal(fake.calls.filter(call => call.url.pathname.endsWith('/docs/index')).length, 0);
+    }
+  });
+
+  await t.test('actual SiteConfig remoteDebuggingEnabled must be explicitly false; the misspelled alias never qualifies', async () => {
+    for (const issue of [{ remoteDebuggingEnabled: true }, { missingDebugging: true }]) {
+      const fake = publicDouble(issue);
+      await assert.rejects(publicHosting({ ...inputs, ...fake, action: 'update-citation-urls',
+        urlUpdateApproved: true }), /runtime\/security/);
+      assert.equal(fake.calls.filter(call => call.url.pathname.endsWith('/docs/index')).length, 0);
+    }
+  });
+
+  await t.test('actual Vault reference collection requires unique, complete and correctly scoped app-MI resolutions', async () => {
+    for (const issue of [{ mappedReferences: true }, { duplicateReference: true }, { pagedReferences: true },
+      { wrongReferenceSecret: true }, { referenceIdentityType: 'UserAssigned' }]) {
+      const fake = publicDouble(issue);
+      await assert.rejects(publicHosting({ ...inputs, ...fake, action: 'update-citation-urls',
+        urlUpdateApproved: true }), /reference collection/);
+      assert.equal(fake.calls.filter(call => call.url.pathname.endsWith('/docs/index')).length, 0);
+    }
+  });
+
+  await t.test('hosting declarations use canonical debug and lowercase live settings understood by the runtime', async () => {
+    const hosting = await readFile(new URL('../infra/hosting-resources.bicep', import.meta.url), 'utf8');
+    assert.match(hosting, /remoteDebuggingEnabled:\s*false/);
+    assert.doesNotMatch(hosting, /remoteDebugEnabled:/);
+    assert.match(hosting, /FOUNDRY_IQ_LIVE_ENABLED:\s*liveEnabled\s*\?\s*'true'\s*:\s*'false'/);
+  });
+
+  await t.test('partial and uncertain URL writes fail explicitly with no automatic retry or secret diagnostics', async () => {
+    for (const issue of [{ partial: true }, { uncertain: true }]) {
+      const fake = publicDouble(issue);
+      await assert.rejects(publicHosting({ ...inputs, ...fake, action: 'update-citation-urls', urlUpdateApproved: true }),
+        error => error instanceof OperatorError && /partial|uncertain/.test(error.message)
+          && !error.message.includes(env.AZURE_SEARCH_API_KEY));
+      assert.equal(fake.calls.filter(call => call.url.pathname.endsWith('/docs/index')).length, 1);
+      assert.ok(fake.rows.every(row => row.contentVector.join(',') === '1,2,3'));
+    }
+  });
+
+  await t.test('local ingestion keeps Search, ARM, Vault and model token audiences explicit on the real request path', async t => {
+    const local = localDouble();
+    local.secrets.set('search-api-key', env.AZURE_SEARCH_API_KEY);
+    local.secrets.set('session-secret', env.SESSION_SECRET);
+    const ingestion = ingestionDouble();
+    const scopes = [];
+    const credential = { getToken: async scope => {
+      assert.equal(typeof scope, 'string');
+      scopes.push(scope);
+      return { token: 'unit-test-token-not-a-credential', expiresOnTimestamp: Date.now() + 60000 };
+    } };
+    t.mock.method(globalThis, 'fetch', async (address, options) => {
+      const hostname = new URL(address).hostname;
+      const scope = hostname === 'management.azure.com' ? 'https://management.azure.com/.default'
+        : hostname.endsWith('.vault.azure.net') ? 'https://vault.azure.net/.default'
+          : hostname.endsWith('.search.windows.net') ? 'https://search.azure.com/.default'
+            : 'https://cognitiveservices.azure.com/.default';
+      assert.equal(scopes.at(-1), scope);
+      const request = hostname === 'management.azure.com' || hostname.endsWith('.vault.azure.net')
+        ? local.request : ingestion.request;
+      return (await request(address, options, scope)).response;
+    });
+    const result = await localLive({ ...inputs, credential, container: ingestion.container,
+      quotaBlob: ingestion.quotaBlob, action: 'ingest', paidApproved: true, webApproved: true });
+    assert.equal(result.applied, true);
+    assert.equal(scopes.filter(scope => scope === 'https://cognitiveservices.azure.com/.default').length, 8);
+    assert.ok(scopes.includes('https://search.azure.com/.default'));
+  });
+
+  await t.test('operator ingestion orders vectors by exact index, checks all 200 and never resets the ledger', async () => {
+    const fake = ingestionDouble();
+    const result = await provision({ ...inputs, env: operatorEnv, apply: true, paidApproved: true, webApproved: true,
+      ...fake, credential: {} });
+    assert.equal(result.liveAcceptance, false);
+    assert.equal(fake.blobs.size, 12);
+    assert.equal(fake.quota.count, 765);
+    assert.equal(fake.calls.filter(call => call.url.pathname.endsWith('/embeddings')).length, 8);
+    const documents = JSON.parse(fake.calls.find(call => call.url.pathname.endsWith('/docs/index')).body).value;
+    assert.equal(documents.length, 200);
+    assert.equal(documents[1].contentVector[0], 1);
+    assert.equal(fake.calls.filter(call => call.url.pathname.endsWith('/run')).length, 0);
+    assert.equal(fake.calls.filter(call => call.url.pathname.startsWith('/knowledgebases/') && call.method === 'PUT').length, 2);
+  });
+
+  await t.test('unowned objects, malformed embeddings and partial indexing halt without retries/KB publication', async () => {
+    for (const issue of [{ unowned: true }, { malformedVectors: true }, { partialIndex: true }]) {
+      const fake = ingestionDouble(issue);
+      await assert.rejects(provision({ ...inputs, env: operatorEnv, apply: true, paidApproved: true, webApproved: true,
+        ...fake, credential: {} }), OperatorError);
+      assert.equal(fake.calls.filter(call => call.url.pathname.startsWith('/knowledgebases/') && call.method === 'PUT').length, 0);
+      if (issue.unowned) assert.equal(fake.blobs.size, 0);
+      if (issue.malformedVectors) assert.equal(fake.calls.filter(call => call.url.pathname.endsWith('/embeddings')).length, 1);
+    }
+  });
+
+  await t.test('owned Blob source204 update reads generated resources before one explicit fresh indexer run', async () => {
+    const fake = ingestionDouble({ manualUpdateNoContent: true });
+    const result = await provision({ ...inputs, env: operatorEnv, apply: true, paidApproved: true, webApproved: true,
+      ...fake, credential: {} });
+    assert.equal(result.blobIngestionVerified, true);
+    assert.equal(fake.quota.count, 765);
+    assert.equal(fake.calls.filter(call => call.url.pathname.endsWith('/embeddings')).length, 8);
+    assert.equal(fake.calls.filter(call => call.url.pathname.endsWith('/run')).length, 1);
+    assert.equal(fake.calls.filter(call => call.url.pathname === `/knowledgesources/${definitions.manualSource}`
+      && !call.method).length, 2);
+  });
+
+  await t.test('sanitized indexed/Web captures charge shared quotas before every dispatch', async () => {
+    const blob = new FakeBlob();
+    const coordinator = new BlobQuotaCoordinator(blob);
+    const output = join(directory, 'success');
+    let calls = 0;
+    const result = await captureCanaries({ definitions, env: operatorEnv, execute: true, paidApproved: true,
+      webApproved: true, output, coordinator, evidence: 'protocol-double-NOT-AZURE',
+      fetchImpl: async (address, options) => {
+        assert.equal(blob.state.count, ++calls);
+        assert.ok(address.includes("/knowledgebases('foundryiq-customer-demos-"));
+        assert.equal(options.redirect, 'error');
+        const body = JSON.parse(options.body);
+        assert.equal(body.maxOutputSize, 5001);
+        assert.equal(Object.hasOwn(body, 'maxOutputSizeInTokens'), false);
+        return Response.json({ ...fixture, diagnostic: operatorEnv.AZURE_SEARCH_API_KEY });
+      } });
+    assert.equal(calls, 2);
+    assert.equal(blob.state.count, 2);
+    assert.equal(blob.state.slots.length, 0);
+    assert.equal(result.liveAcceptance, false);
+    const capture = await readFile(result.captured[0], 'utf8');
+    assert.ok(!capture.includes(operatorEnv.AZURE_SEARCH_API_KEY) && !capture.includes(operatorEnv.SESSION_SECRET));
+    assert.equal(JSON.parse(capture).evidence, 'protocol-double-NOT-AZURE');
+    assert.equal(canaryRequests().length, 2);
+  });
+
+  await t.test('failed/partial canaries retain safe evidence, charge once and stop without a Web retry', async () => {
+    for (const mode of ['partial', 'network']) {
+      const blob = new FakeBlob();
+      let calls = 0;
+      const output = join(directory, mode);
+      await assert.rejects(captureCanaries({ definitions, env: operatorEnv, execute: true, paidApproved: true,
+        webApproved: true, output, coordinator: new BlobQuotaCoordinator(blob), evidence: 'protocol-double-NOT-AZURE',
+        fetchImpl: async () => {
+          calls++;
+          if (mode === 'network') throw new Error(operatorEnv.AZURE_SEARCH_API_KEY);
+          return Response.json(fixture, { status: 206 });
+        } }), OperatorError);
+      assert.equal(calls, 1);
+      assert.equal(blob.state.count, 1);
+      assert.equal(blob.state.slots.length, 0);
+      const capture = JSON.parse(await readFile(join(output, 'indexed.json'), 'utf8'));
+      assert.equal(capture.response.status, mode === 'partial' ? 206 : null);
+      assert.ok(!JSON.stringify(capture).includes(operatorEnv.AZURE_SEARCH_API_KEY));
+    }
+  });
+
+  await t.test('denied quota performs no Retrieve and capture directories cannot be clobbered', async () => {
+    const blob = new FakeBlob();
+    blob.state.enabled = false;
+    let calls = 0;
+    const output = join(directory, 'denied');
+    const options = { definitions, env: operatorEnv, execute: true, paidApproved: true, webApproved: true,
+      output, coordinator: new BlobQuotaCoordinator(blob), fetchImpl: async () => { calls++; } };
+    await assert.rejects(captureCanaries(options), /paused/);
+    await assert.rejects(captureCanaries(options), { code: 'EEXIST' });
+    assert.equal(calls, 0);
+    assert.equal(blob.state.count, 0);
+  });
+
+  await t.test('prebuilt runtime uses an explicit source boundary and locked production packages', async () => {
+    const files = await runtimeFiles();
+    assert.ok(files.includes('dist/server/index.mjs') && files.includes('scripts/start.mjs'));
+    assert.ok(files.some(path => path.startsWith('node_modules/@azure/identity/')));
+    assert.ok(!files.some(path => /^(?:infra|config|samples|\.git|\.github)\//.test(path) || operationalFiles.includes(path)));
+    assert.equal((await packageRuntime()).azureCalls, 0);
+    await assert.rejects(packageRuntime({ output: resolve('runtime.zip') }), /outside/);
+  });
 });

@@ -34,7 +34,7 @@ export const knowledgeBases = [
         name: 'foundryiq-customer-demos-web-guidance',
         kind: 'web',
         title: 'Public Web guidance',
-        detail: 'Remote cited summaries; allowed domains await operator approval',
+        detail: 'Remote cited summaries; domains configured and approved by the operator',
         files: [],
       },
     ],

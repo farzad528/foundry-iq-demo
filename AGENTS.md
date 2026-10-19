@@ -58,6 +58,18 @@ No environment file or Azure credentials are required for synthetic replay.
 Never overwrite an existing `.env.local`; use `.env.example` only as an optional
 template. Existing private environments and ignored artifacts must stay private.
 
+Full-repository local live operation uses `npm run start:live` after separately
+approved backend setup. `scripts/local-live.mjs` binds only `127.0.0.1`, uses
+subscription-selected `AzureCliCredential` with ARM tenant verification, resolves dedicated Vault
+secrets in memory and injects shared Blob coordination. It never loads private
+env files or adds a developer-auth fallback to production. This operator and
+`config/knowledge-definitions.json` remain outside the app-only source ZIP.
+Operator initialization is explicit, create-if-missing only, and never resets
+ledger state or replaces an existing session secret.
+Inject the Blob coordinator from the same prebuilt module tree as the handler;
+mixing source and built error classes turns expected quota 429/503 responses
+into generic 500 errors.
+
 Smoke `/healthz`, `/api/config`, `/`, local assets, `/download`, and an explicitly
 selected synthetic replay with **live disabled**. Verify keyboard tabs,
 citation focus, retained requests and responsive layout when a browser is
@@ -71,7 +83,8 @@ Local tests and Storage doubles do not establish live dependency readiness.
   claim controls changed recorded evidence/timings.
 - Retain the pinned published preview request contract and typed capability
   checks, exact KB/source allowlists, indexed-only minimal/extractive rules,
-  operator-gated medium effort, and explicit `maxOutputSizeInTokens`.
+  operator-gated medium effort, and explicit request-level `maxOutputSize` in
+  tokens. `maxOutputSizeInTokens` is a stored KB default, not a Retrieve field.
 - Preserve 64-KiB request, 8,000-character question and 1-MiB upstream limits,
   streaming byte enforcement, cancellation and total runtime budgets.
 - Never add automatic Search retries. Every upstream attempt consumes quota.
@@ -102,11 +115,13 @@ pushes, PR changes, branch changes or history rewriting without authorization.
 Use the repository's normal reviewed pull-request flow for authorized
 publication; never bypass branch protection or change repository settings.
 
-Live is OFF by default. Existing planned resource names are not verified
-inventory. Real indexed/Web response captures, actual overlapping-instance Blob
-coordination/restart, proxy validation, document-change/both-source grounding,
-cost/latency measurements and public HTTPS/mobile/keyboard acceptance are still
-pending. Do not claim public readiness or treat fixtures as real captures.
+Live is OFF by default. Resource names are not automatic inventory or proof of
+another deployment's health. Each target needs real indexed/Web captures,
+Blob coordination/restart, document-change/both-source grounding, cost/latency
+and anonymous HTTPS/mobile/keyboard evidence. The dedicated hosted demo's
+accepted scope and remaining limits are documented in `README.md`; that
+acceptance does not authorize another rollout or establish its proxy contract
+or billed cost. Do not treat fixtures as real captures.
 Web approval, terms, domains and boundary/cost review are separate gates.
 Visitor auth, Fabric, Work IQ, remote SharePoint and OneLake live integration
 remain out of scope. The neutral original SVGs are MIT-licensed placeholders,

@@ -51,7 +51,7 @@ function payload() {
     retrievalReasoningEffort: { kind: $('effort').value },
     outputMode: $('output').value,
     ...($('runtime').value ? { maxRuntimeInSeconds: Number($('runtime').value) } : {}),
-    ...($('tokens').value ? { maxOutputSizeInTokens: Number($('tokens').value) } : {}),
+    ...($('tokens').value ? { maxOutputSize: Number($('tokens').value) } : {}),
     knowledgeSourceParams: sourceParams(),
   };
 }
@@ -174,7 +174,7 @@ function setTab(next) {
 function renderInspector() {
   if (tab === 'request') {
     const snapshot = lastRequest;
-    $('inspect').innerHTML = `<p class="hint">${snapshot ? 'Retained request for the last run; editing controls does not change it.' : 'Draft request; the effective sent payload will be retained after a run.'}<br>api-version=2026-08-01-preview · maxOutputSizeInTokens</p>
+    $('inspect').innerHTML = `<p class="hint">${snapshot ? 'Retained request for the last run; editing controls does not change it.' : 'Draft request; the effective sent payload will be retained after a run.'}<br>api-version=2026-08-01-preview · maxOutputSize (tokens)</p>
       <pre>${esc(pretty(snapshot || payload()))}</pre><button class="plain" id="copy">Copy request</button>
       <details><summary class="hint">Sanitized service response</summary><pre>${esc(result ? pretty(result.data) : 'Run retrieval to inspect the service response.')}</pre></details>`;
     $('copy').onclick = async () => {
@@ -198,7 +198,7 @@ function renderInspector() {
   }
   const references = result?.normalized.references || [];
   $('inspect').innerHTML = `<div class="eyebrow">${result ? 'CITED EVIDENCE · LAST RUN' : 'KNOWLEDGE MANIFEST'}</div>
-    <p class="hint">${result ? 'Inspect passages and the safe original annotation. Sensitive URL parameters and credential fields are redacted.' : 'Live entries describe planned public sources; catalog membership is not evidence that any source was queried.'}</p>` +
+    <p class="hint">${result ? 'Inspect passages and the safe original annotation. Sensitive URL parameters and credential fields are redacted.' : 'Live entries identify configured public sources; catalog membership is not evidence that any source was queried.'}</p>` +
     (result ? references.map((reference, index) => {
       const link = safeLink(reference.url);
       return `<article tabindex="-1" id="reference-${index}" class="source-card ${reference.id === selectedRef ? 'selected-ref' : ''}">

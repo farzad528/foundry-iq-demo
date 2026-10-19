@@ -27,6 +27,11 @@ print(base64.b64encode(b.getvalue()).decode())
 `], { input: JSON.stringify(archiveFiles), maxBuffer: 10 * 1024 * 1024 }).toString().trim();
 
 const fixtures = JSON.parse(readFileSync('config/scenarios.json', 'utf8'));
+const corpus = JSON.parse(readFileSync('samples/public-corpus.json', 'utf8'));
+if (corpus.license !== 'MIT' || corpus.documents?.length !== 12 || corpus.recordRecipe?.count !== 200
+  || new Set(corpus.documents.map(doc => doc.id)).size !== 12) {
+  throw new Error('Public fictional corpus must contain 12 distinct documents and the 200-record recipe.');
+}
 const catalog = publicCatalog(fixtures);
 const html = readFileSync('page.html', 'utf8').replace('__SCENARIOS__', () => JSON.stringify(catalog).replace(/</g, '\\u003c'));
 const samples = Object.fromEntries(archiveFiles.filter(path => path.startsWith('samples/')).map(path => ['/' + path, readFileSync(path, 'utf8')]));

@@ -7,13 +7,13 @@ AI Search owns planning, retrieval, Web summarization, and answer synthesis.
 There is no visitor sign-in, separately hosted agent, browser credential,
 Cloudflare, or arbitrary endpoint/knowledge-base proxy.
 
-**Status:** application contract tests are not live acceptance. No demo resources,
-real Azure response capture, approved Web domains, measured costs/latency, or
-published Azure URL are established by this source. Live queries are disabled
-by default. Both indexed and indexed-plus-Web canaries and public-host acceptance
-remain required before claiming compatibility or release. This is not a
-public-ready or deployed application. Publishing source does not authorize
-provisioning, paid canaries, uploads, or deployment.
+**Hosted demo:** [Foundry IQ Explorer](https://app-foundryiq-customer-demos.azurewebsites.net)
+passed separately approved anonymous public-demo acceptance on **2026-10-19**,
+including real indexed and Web retrieval. See [deployment evidence and limits](#hosted-demo-evidence-and-limits).
+This is a deployment-specific snapshot, not an uptime guarantee or evidence that
+a fresh checkout is configured. Live queries remain **disabled by default** in
+source and example parameters. Publishing or merging source does not authorize
+provisioning, paid canaries, uploads, or deployment; CI is build/test only.
 
 ## Local replay and production artifact
 
@@ -33,8 +33,8 @@ group; choose an explicitly labeled **Synthetic replay** to run offline. Each
 replay accepts only its curated question. Controls do not alter replay evidence,
 activity, or timings. A failed live query never falls back to a replay.
 No environment file is required for offline replay. `.env.example` documents
-optional local settings and planned, non-secret resource names, not discovered
-resources. If needed, copy it to `.env.local` **only if that file does not already
+optional local settings and fixed, non-secret resource names; it does not
+discover resources. If needed, copy it to `.env.local` **only if that file does not already
 exist**. Existing private environments are not migrated, overwritten, or uploaded.
 Review legacy local settings privately rather than reusing them automatically.
 
@@ -55,9 +55,10 @@ HTTPS origin before any separately approved public hosting. Startup is
 `npm start` **from the repository root**. A prebuilt runtime bundle needs the
 root `scripts/start.mjs`, `lib/`, `dist/`, `package.json`, lockfile and production
 dependencies (`npm ci --omit=dev`); Python is not a runtime dependency.
-The repository includes no deployment workflow, infrastructure templates, or
-automatically provisioned services. Hosting/resource/cost approval is a separate
-gate; these runtime requirements are not deployment authorization.
+The full repository includes separately gated local infrastructure/operator
+scaffolds described below, but no deployment workflow or automatically
+provisioned services. Hosting/resource/cost approval is a separate gate; these
+runtime requirements are not deployment authorization.
 `/healthz` checks the HTTP host without calling Search, Storage, or a model;
 it is liveness, not proof of live dependency readiness.
 
@@ -89,6 +90,9 @@ tests; it excludes Git history, CI metadata, dependencies, build outputs,
 private environments, operational state, logs and deployment files. Validation
 compares its complete entry list and bytes with the allowlisted root files,
 checks deterministic metadata and verifies that `/download` serves that artifact.
+The public fictional corpus is included. Repository-only infrastructure,
+knowledge definitions and provisioning/capture/runtime-packaging tools are not;
+their tests are explicitly skipped when absent from the app-only ZIP.
 
 ## Root layout and local checks
 
@@ -98,6 +102,7 @@ checks deterministic metadata and verifies that `/download` serves that artifact
 | `server.template.mjs`, `lib/` | Built HTTP application, strict protocol, normalization and quota coordination |
 | `config/`, `samples/` | Explicit live catalog and clearly labeled fixed synthetic replays |
 | `scripts/` | Build, prebuilt startup, Node tests, fixture double and ZIP validation |
+| `infra/` | Separately approved backend and additive hosting Bicep; excluded from the app source ZIP and never executed by CI |
 | `dist/` | Ignored generated handler and sanitized source ZIP; never hand-edit |
 | `.github/workflows/azure-static-web-apps.yml` | Build/test-only CI (historical filename), Node 22/24 and build-time Python |
 
@@ -109,13 +114,15 @@ handler; `server.template.mjs` intentionally contains build placeholders.
 
 ## Explicit live deployment dependencies
 
-These are **planned names**, not an inventory of existing resources:
+The accepted dedicated demo uses the identities below. They are not automatic
+resource discovery or proof of another deployment's current health:
 
 | Object | Identity |
 | --- | --- |
 | Resource group / App Service | `rg-foundryiq-customer-demos` / `app-foundryiq-customer-demos` |
 | Search | `srch-foundryiq-customer-demos` |
 | Storage / Key Vault | `stfoundryiqcustomerdemos` / `kv-fiq-customer-demos` |
+| NEW Foundry parent / NEW project | `ai-foundryiq-customer-demos` / `proj-foundryiq-customer-demos` |
 | Indexed KB | `foundryiq-customer-demos-indexed` |
 | Indexed + Web KB | `foundryiq-customer-demos-web` |
 | Shared Blob / search-index sources | `foundryiq-customer-demos-manuals` / `foundryiq-customer-demos-maintenance` |
@@ -128,8 +135,8 @@ does not create an index, infer vector readiness, or silently downgrade it.
 Public KBs must not require document-level caller permission tokens.
 
 Provision the Search/model/storage/monitoring dependencies and permissions only
-through their separately approved owner. No provisioning files or cloud writes
-are included here. Set App Service Key Vault references for `AZURE_SEARCH_API_KEY`
+through their separately approved owner. Scaffolding is local source, not evidence
+of cloud writes. Set App Service Key Vault references for `AZURE_SEARCH_API_KEY`
 and a stable random `SESSION_SECRET` of at least 32 characters. Resolve these
 server-side; an unresolved Search Key Vault expression fails closed. Confirm
 the actual key type accepted by Retrieve during the approved canary. Do not
@@ -162,6 +169,241 @@ sensitive data. Web references are **service-provided cited summaries**, not
 guaranteed verbatim passages. Fabric, Work IQ, remote SharePoint, OneLake, and
 visitor authentication remain out of scope; older fixtures are sample-only.
 
+## Repository-only Azure scaffolds and operator gates
+
+These files exist only in a full checkout, not the UI's app-only source download.
+The dedicated operator target is subscription
+`ee787b9b-a25f-4d20-86e9-45fcea5253dd`, resource group
+`rg-foundryiq-customer-demos`, region `westus2`. Always explicitly select that
+subscription; never change or rely on the shared Azure CLI default.
+`infra/README.md` documents new-name/ownership checks and the local-first
+backend template. ARM upserts are not a new-only ownership guard.
+
+Model hosting is a **new Microsoft Foundry resource, kind `AIServices`, with
+`allowProjectManagement=true`, and a new child Foundry project**. It is not a
+standalone `OpenAI`-kind account, existing-account upgrade, Azure ML hub or
+separately hosted agent. Model deployments belong to the Foundry parent.
+`azureOpenAIParameters`, `/openai/deployments/…` and the OpenAI-compatible
+resource endpoint are model API terminology, not a different resource topology.
+The local-first template includes GPT-5.1 `2025-11-13` Standard capacity 100 and
+text-embedding-3-small `1` Standard capacity 20. Actual availability, capacity,
+permissions and contracts must be checked, not inferred from compilation.
+The operator's necessary resource/container-scoped roles are explicit;
+no subscription-wide access is granted. Secret values are never in IaC.
+
+Local operation uses a **loopback app with real Azure backends**. Public
+hosting uses the separately approved additive App Service scaffold below.
+Insights/Logs and other monitoring resources remain outside that bounded scope.
+The illustrative **$74.98/month non-AI infrastructure scenario is not an all-in
+quote or spend cap**: Search Basic is about $73.73 while provisioned, plus
+assumed Storage/Vault volume. Model/embedding, extra retrieval/semantic, Web,
+transfer and tax are excluded. Verify current selected-model unit prices.
+Web grounding at $14/1,000 transactions can dominate costs; Retrieve can
+produce multiple transactions. Quota attempts are not dollar limits.
+
+`samples/public-corpus.json` contains **12 original MIT-licensed fictional
+documents and a deterministic recipe expanding to exactly 200 records**,
+with a dictionary, provenance, evaluation questions and versioned-change
+instructions. These are administrative review examples, not real equipment
+instructions or a safety/compliance determination. Current revision 2 keeps
+P-104's reviewer acknowledgement pending while MR-0169 records owner approval;
+older pending owner-approval entries remain historical. For controlled-change
+acceptance, edit the matching fictional document and latest record override,
+increment revisions, reingest with approval, then measure changed retrieval.
+A local edit or deterministic mock does not update or prove Search grounding.
+Blob references can return passage text as `sourceData.snippet`; the inspector
+shows that service-returned text without inferring missing content. Private
+Blob URLs still require separate authorization: the demo does not proxy or
+make its private container public. The public corpus JSON includes the source
+documents and record recipe, not a separate full-document endpoint per record.
+
+All operator scripts default to **zero-cloud-call dry runs**:
+
+```powershell
+node scripts\provision-search.mjs
+node scripts\capture-canary.mjs
+node scripts\package-appservice.mjs
+node scripts\local-live.mjs
+node scripts\public-hosting.mjs
+```
+
+After explicit approval and actual backend deployment, the repository-only
+local operator provides these **separate, intentional actions**:
+
+```powershell
+npm run build
+node scripts\local-live.mjs --initialize
+node scripts\local-live.mjs --ingest --paid-ingestion-approved --web-terms-approved
+node scripts\local-live.mjs --enable-live
+node scripts\local-live.mjs --capture --paid-queries-approved --web-terms-approved --output C:\approved-external-evidence\new-run
+npm run start:live
+```
+
+`--initialize` verifies dedicated resource ownership, new Foundry topology and
+exact models. It creates only a missing disabled ledger and only missing Vault
+`search-api-key` / `session-secret` values. The existing Search primary admin
+key is read in memory, never regenerated. The session secret is random and
+stable. A finite 60-second bootstrap lease excludes competing initializers
+within a 30-second operation budget; runtime coordination still uses 15-second
+leases. Existing secrets/counters are reused, never reset. An enabled ledger
+must be paused before any missing secret is initialized. Vault access or
+propagation failures stop explicitly without printing service diagnostics.
+
+`start:live` starts the **prebuilt** app on `http://127.0.0.1:3000` (optional
+`PORT` or `--port`), not on the LAN. It uses an explicit tenant/subscription
+`AzureCliCredential` (subscription-selected, tenant verified through ARM),
+reads dedicated Vault secrets into memory and injects the
+CLI-authenticated Blob coordinator. It does not load `.env.local`, write secret
+files, use the developer default credential chain, or change the production
+managed-identity-only `npm start` path. Local ingestion permits only that exact
+explicit HTTP loopback origin; normal public ingestion still requires HTTPS.
+The app-only source download intentionally excludes this operator and its
+dedicated definitions. It remains a standalone replay/production application.
+
+`node scripts\local-live.mjs --disable-live` pauses the shared switch using a
+lease/ETag write, preserving counters. It requires only the owned Storage
+resource, so Search, models or Vault failure cannot prevent an operator pause.
+Already admitted requests may finish. Re-enabling requires the exact
+knowledge-base membership and stable secrets; it does not prove grounding.
+An existing knowledge-source update can return HTTP 204 with no body. The
+ingestion operator reads back the owned Blob source to resolve its generated
+indexer, then verifies a fresh successful indexer run before publishing the
+knowledge-base definitions. Failed ingestion is not retried automatically;
+inspect the partial state before repeating any paid embedding batches.
+
+These commands are not authorization by themselves. Review the
+[Web source terms and boundary notice](https://learn.microsoft.com/azure/search/agentic-knowledge-source-how-to-web)
+and [Bing grounding terms](https://www.microsoft.com/en-us/bing/apis/grounding-legal-enterprise)
+before passing `--web-terms-approved`. Use only public fictional questions and
+the approved `osha.gov` domain; Web input leaves Azure compliance/Geo boundaries
+and is not covered by the Microsoft DPA. No private content may be entered.
+
+`provision-search.mjs` requires a separate approved execution with `--apply
+--paid-ingestion-approved --web-terms-approved`. Its operator environment needs
+an approved HTTPS `PUBLIC_ORIGIN` (or explicit `--local` and exact HTTP
+`127.0.0.1:<port>` origin), `AZURE_SEARCH_ENDPOINT`
+and `FOUNDRY_MODEL_ENDPOINT` from the new Foundry parent's verified
+OpenAI-compatible resource origin, not its project URL. It uses subscription-
+scoped `AzureCliCredential`, not the app's managed-identity-only runtime chain.
+The operator must already have the approved data-plane permissions;
+the script never grants roles, creates accounts/models or reads/writes secrets.
+It verifies the AIServices parent/project, rejects unowned existing Search
+objects, uses conditional ETags, uploads the twelve owned Blob documents,
+embeds eight batches for the 200-record hybrid index, checks each indexing
+result and Blob ingestion, and creates the two KBs/three sources. OSHA is the
+restricted Web-domain target; the flag is not a substitute for actual terms,
+boundary and cost review. The hosted demo's approval does not authorize another
+operator or deployment. Partial execution is possible: failures stop
+without retries, automatic rollback, deletion or readiness claims.
+Only a missing quota blob can be conditionally initialized disabled. Existing
+quota state is never reset/overwritten; its content and coordination health
+still need independent acceptance.
+
+`capture-canary.mjs` requires `--execute --paid-queries-approved
+--web-terms-approved --output <new-absolute-directory-outside-repository>`,
+the exact Search/quota endpoints, resolved server-only Search/session secrets
+and `FOUNDRY_IQ_LIVE_ENABLED=true` **in the operator process**. The public app
+can remain disabled. The shared ledger must already have been enabled by an
+authorized lease/conditional write; this script never enables it. Every
+indexed/Web Retrieve reserves and consumes shared quota before dispatch,
+including failures/cancellations, and releases its slot conservatively.
+There are no retries. It writes sanitized JSON requests, real HTTP statuses,
+bodies, normalization diagnostics, elapsed time and limitations exclusively
+outside the repository; existing output directories are never clobbered.
+Failure, partial evidence, adapter mismatch or absent grounding stops the
+sequence and retains the failed capture. Never put secrets in arguments,
+chat, shell output or source. The coordinator owns producing these captures
+after approval; the user is not expected to locate nonexistent captures.
+Review the captures for route/output-unit/key-type compatibility and actual
+both-source grounding; HTTP success alone is not acceptance.
+
+`package-appservice.mjs --output <new-absolute-zip-outside-repository>` creates
+a separate deterministic **prebuilt runtime ZIP**, using build-time Python
+and already installed, lockfile-matching production dependencies. It performs
+no installation/upload/deployment. Its explicit runtime boundary contains only
+startup/manifests, compiled handler, the four runtime libraries, source download
+and locked production packages; no private environments, infrastructure,
+operator tools, captures or state. Rebuild first; deploy later only with
+approval. Start with `npm start`; no Python, build or package install runs on
+the host. Provisioning monitoring resources alone does not prove telemetry.
+
+Each deployment needs its own Storage coordination/restart, public
+HTTPS/no-sign-in, arbitrary/unanswerable/both-source, controlled-change and
+cost/latency evidence. Keep proxy trust off without deployed-host proof.
+Local protocol doubles and hand-authored fixtures are never Azure acceptance;
+the accepted dedicated demo's evidence is summarized below.
+
+## Additive public App Service hosting
+
+`infra\hosting.bicep`, `infra\hosting-resources.bicep`, and
+`infra\hosting.parameters.example.json` deploy only the new Linux Standard S1
+plan `plan-foundryiq-customer-demos`, app `app-foundryiq-customer-demos`, its
+settings/publishing policies, and three narrow app-managed-identity grants.
+They reference the existing resource group/backends without creating,
+redeploying or retagging them. **Do not run the old backend entry point for a
+hosting rollout.** Never rerun initialization, ingestion or embedding batches
+just to publish the app or correct citation links.
+
+Use the allowlisted prebuilt runtime ZIP from `package-appservice.mjs` with
+`az webapp deploy --type zip`, explicit subscription and the real artifact path.
+Keep SCM/FTP basic publishing disabled throughout; current Azure CLI supports
+Entra deployment with basic authentication off. Do not use publishing passwords
+or enable basic auth as a workaround. The host runs `npm start` on
+`NODE|24-lts`; remote build/Oryx stay disabled and Python is local build-only.
+Take the exact HTTPS `PUBLIC_ORIGIN` from the deployed app's `defaultHostName`,
+not a guessed DNS name. Preserve the existing stable versionless Vault
+references, shared private ledger/counters and old backend ownership tags.
+
+The app identity receives Secrets User only on the two existing
+`search-api-key` and `session-secret` secrets, and Blob Data Contributor only
+on `demo-quotas`. `liveEnabled=false` is the hosting template's default;
+medium and proxy trust remain false. After approved dependency verification,
+live enablement/disablement uses that template parameter, not imperative
+appsettings drift. `/healthz` is liveness, never proof of Vault/Blob/model
+readiness. Verify resolved references, shared coordination, anonymous HTTPS,
+actual indexed/Web grounding and browser/citation behavior before publication.
+Keep conservative IP grouping unless deployed-host forwarding/bypass proof
+justifies trusted proxy mode.
+
+After hosting and exact grants are ready, the repository-only public operator
+verifies ownership, runtime/security, resolved Vault references, narrow grants,
+owned hybrid schema and all 200 current corpus records. Its dry run makes no
+Azure calls. Verification is read-only; URL updates require a distinct action
+and the actual observed origin:
+
+```powershell
+node scripts\public-hosting.mjs --verify
+node scripts\public-hosting.mjs --update-citation-urls --url-only-update-approved --origin https://ACTUAL-DEFAULT-HOSTNAME
+```
+
+The updater sends only `merge` records containing the key and URL. It does not
+create missing records, change content/revisions/vectors, request embeddings,
+invoke Retrieve, initialize secrets or touch the ledger. It checks every
+per-document result and reads back all 200 protected records/URLs. Partial or
+uncertain writes stop explicitly without automatic retries; inspect state
+before intentionally repeating. Operator secret reads stay in memory and are
+not app-MI proof by themselves. Non-retrievable vectors cannot be byte-compared;
+preservation relies on the URL-only merge payload, not an invented vector
+readback. This operator and infrastructure stay outside both public ZIPs.
+
+S1 adds an illustrative **$58.40/month** at 730 hours to the previous
+approximately $74.98/month backend scenario. Variable AI/Web usage,
+Storage/Vault transactions, egress and taxes are additional; 1,000 attempts/day
+is not a dollar cap. Stopping the app does not stop plan billing. One worker,
+existing LRS and stdout-only observability are demo tradeoffs, not enterprise
+HA. Private original Blob links still require access; public snippets and the
+fictional corpus do not make that container public.
+
+Rollout requires explicit resource/cost/permission and paid-canary approval,
+fresh Azure template/what-if/permission checks and a validated artifact.
+Respect the approved operator-attempt budget, including failures/cancellations;
+do not retry Search automatically. Public live use continues under the shared
+daily ceiling, not a canary lifetime limit. On failure leave live disabled or
+disable it declaratively; never reset counters or rotate stable secrets.
+Cleanup is separately approved and limited to exact new compute/grants:
+**never delete the shared resource group or existing backends.** Git/CI
+publication and aka.ms edits are separate actions, not rollout side effects.
+
 ## Pinned request and response contract
 
 The adapter uses the published `2026-08-01-preview` REST contract:
@@ -173,12 +415,18 @@ api-key: <server only>
 x-ms-client-request-id: <opaque request ID>
 ```
 
-The reference lists **both** `maxOutputSize` and `maxOutputSizeInTokens`.
-This application deliberately retains **only `maxOutputSizeInTokens`** and labels
-its control in tokens. It does not rename the field, send both, or assume the
-generic field has equivalent units. A real canary must verify this choice.
-Limits in the public application are runtime 10-120 seconds and output 100-10,000
-tokens. Omitting optional fields preserves service defaults; a separate total
+Retrieve requests send **only `maxOutputSize`**, still measured in tokens.
+The [knowledge-base defaults documentation](https://learn.microsoft.com/azure/search/agentic-retrieval-how-to-create-knowledge-base#configure-default-retrieve-limits-preview)
+distinguishes the stored `retrieveDefaults.maxOutputSizeInTokens` property from
+the request override `maxOutputSize`. The dedicated service's actual
+`2026-08-01-preview` canary rejected `maxOutputSizeInTokens` as an invalid Retrieve
+parameter. The app rejects that stored-property name in requests, including
+when both names are supplied; it never retries using another field.
+The service also rejected an output budget of 1,000 with "must be greater than
+5000". Limits in the application are runtime 10-120 seconds and output
+5,001-10,000 tokens; the UI and canaries default to 5,001. These are token
+budgets, not promises of consumption or dollar caps.
+Omitting optional fields preserves service defaults; a separate total
 app budget always applies. Low effort / synthesized answer is the UI default.
 Minimal effort uses one semantic intent, extractive output, and indexed sources
 only; `alwaysQuerySource` is omitted because minimal searches all sources.
@@ -284,11 +532,57 @@ generated deployment files, dependency trees, or symlinks. Icon provenance and
 redistribution terms are in `assets/PROVENANCE.md`.
 
 Local tests use a Storage protocol double, **not real Blob or Azure retrieval
-acceptance**. Still required: real indexed and Web contract captures; actual
-Storage coordination under overlapping deployed instances and restart; proxy
-header verification; arbitrary questions; a controlled document-change retrieval;
-both-source grounding; measured costs/latency; and public HTTPS/mobile/keyboard
-checks without sign-in. No local mock result substitutes for these milestones.
+acceptance**. New deployments still need real indexed/Web captures, Storage
+coordination/restart, arbitrary and both-source questions, controlled-change
+retrieval, cost/latency and anonymous HTTPS/mobile/keyboard evidence. No local
+mock result substitutes for those milestones.
+
+## Hosted demo evidence and limits
+
+The dedicated deployment was accepted on **2026-10-19** at
+**https://app-foundryiq-customer-demos.azurewebsites.net**. Its S1 App Service
+uses the existing dedicated Search, project-enabled Foundry/models, Storage
+and Vault resources in `rg-foundryiq-customer-demos`, `westus2`. The application
+has exactly two secret-read grants and one private quota-container grant.
+Entra-authorized prebuilt publication succeeded with SCM/FTP basic publishing
+disabled; Python is not used at startup.
+
+Separate live acceptance, rather than the fixtures, established:
+
+- Real indexed grounding from both Blob and the hybrid maintenance index,
+  including P-104's pending reviewer acknowledgement and the controlled
+  MR-0169 owner-approval revision 2.
+- Actual OSHA Web citations; the real browser Web run returned all three
+  source kinds. Web evidence is labeled as cited summaries, not verbatim pages.
+- An unsupported-budget question returned insufficient evidence without an
+  invented amount or fabricated references.
+- Anonymous browser operation, retained effective requests, citation selection,
+  Tab/Enter/Escape and 1440/1000/700/390px layouts without horizontal overflow.
+- Five approved public operator attempts, all HTTP 200 and non-synthetic.
+  Measured round trips were approximately 4.9-58.5 seconds, not a latency SLA.
+  The shared ledger advanced from the measured baseline of 1 to 6, with no
+  residual slots, reset or secret rotation. Earlier real local tests separately
+  exercised Blob overlap/restart; no public multi-worker test is claimed.
+
+Sanitized actual request/response captures and deployment records are retained
+privately, not committed or included in either public ZIP. The checked-in
+published-response fixture remains hand-authored. Documentation updates for
+this source publication do not redeploy the hosted artifact.
+
+Live is enabled on that accepted host only. Medium and trusted-proxy mode
+remain disabled. Conservative IP grouping may rate-limit different visitors
+together. Private Blob originals remain private; an anonymous original-document
+check returned HTTP 409. Current runtime quotas remain shared across instances:
+5/browser/minute, 30/IP/minute, 10 concurrent and 1,000 attempts/UTC day.
+
+The illustrative fixed estimates remain $58.40/month additional S1 hosting plus
+the earlier approximately $74.98/month backend scenario, with variable AI/Web,
+Storage/Vault operations, egress and taxes extra. Final billed cost and the
+trusted-proxy contract remain unverified; the call ceiling is not a dollar cap.
+One worker, LRS dependencies and stdout-only observability are demo tradeoffs,
+not enterprise HA. Inherited policy-detail reads returned HTTP 403 and local
+Bicep emitted provider-metadata warnings; actual Provider validation and
+deployments passed without a policy bypass.
 
 ## Official evidence
 
