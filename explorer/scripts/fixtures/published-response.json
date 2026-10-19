@@ -1,0 +1,47 @@
+{
+  "_fixtureProvenance": "Hand-authored contract fixture based on Microsoft Learn 2026-08-01-preview reference shapes. NOT an Azure capture or live evidence.",
+  "response": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The synthetic record has pending approval. [ref_id:record-b]\n\nCompare the checklist [ref_id:manual-a] with this service-provided Web summary. [ref_id:web-z]"
+        }
+      ]
+    }
+  ],
+  "references": [
+    {
+      "id": "web-z",
+      "type": "web",
+      "activitySource": 77,
+      "title": "Public inspection documentation",
+      "url": "https://learn.microsoft.com/example-inspection-guidance",
+      "sourceData": { "summary": "A synthesized summary of public inspection documentation guidance." }
+    },
+    {
+      "id": "manual-a",
+      "type": "azureBlob",
+      "activitySource": 42,
+      "blobUrl": "https://public.example.test/manual.md",
+      "sourceData": { "title": "Synthetic checklist", "chunk": "The checklist requires recorded approval.", "pageNumber": 3 }
+    },
+    {
+      "id": "record-b",
+      "type": "searchIndex",
+      "activitySource": 17,
+      "docKey": "wo-104",
+      "citationUrl": "https://demo.search.windows.net/indexes/maintenance/docs/wo-104?api-version=2026-08-01-preview",
+      "sourceData": { "title": "Synthetic work order", "content": "Approval is pending.", "document_url": "https://public.example.test/wo-104" }
+    }
+  ],
+  "activity": [
+    { "id": 77, "type": "web", "knowledgeSourceName": "foundryiq-customer-demos-web-guidance", "elapsedMs": 455, "webArguments": { "search": "inspection documentation" } },
+    { "id": 1, "type": "modelQueryPlanning", "elapsedMs": 80, "inputTokens": 120, "outputTokens": 20 },
+    { "id": 17, "type": "searchIndex", "knowledgeSourceName": "foundryiq-customer-demos-maintenance", "elapsedMs": 300 },
+    { "id": 42, "type": "azureBlob", "knowledgeSourceName": "foundryiq-customer-demos-manuals", "startedAt": "2026-10-18T10:00:00Z", "completedAt": "2026-10-18T10:00:00.250Z", "elapsedMs": 250 },
+    { "id": 88, "type": "modelWebSummarization", "inputTokens": 200, "outputTokens": 80 },
+    { "id": 99, "type": "modelAnswerSynthesis", "elapsedMs": 190, "inputTokens": 800, "outputTokens": 100 }
+  ]
+}
