@@ -1,38 +1,22 @@
 {
-  "name": "demo-app",
-  "version": "0.1.0",
+  "name": "foundryiq-customer-demos",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "vercel-dev": "vercel dev",
-    "vercel-deploy": "vercel --prod"
+    "dev": "node --env-file-if-exists=.env.local scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "start": "node --env-file-if-exists=.env.local scripts/start.mjs",
+    "start:live": "node scripts/local-live.mjs --start",
+    "pretest": "node scripts/build.mjs",
+    "test": "node --test scripts/verify.mjs",
+    "validate": "node scripts/validate-artifact.mjs"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "dependencies": {
     "@azure/identity": "^4.12.0",
-    "@fluentui/react-icons": "^2.0.309",
-    "@hookform/resolvers": "^5.2.1",
-    "@radix-ui/react-hover-card": "^1.1.15",
-    "@radix-ui/react-switch": "^1.2.6",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "framer-motion": "^12.23.12",
-    "lucide-react": "^0.544.0",
-    "next": "^14.0.0",
-    "next-themes": "^0.4.6",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-hook-form": "^7.62.0",
-    "tailwind-merge": "^3.3.1",
-    "zod": "^4.1.8"
-  },
-  "devDependencies": {
-    "@types/node": "24.3.1",
-    "@types/react": "19.1.12",
-    "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.31",
-    "tailwindcss": "^3.3.5",
-    "typescript": "5.9.2"
+    "@azure/storage-blob": "^12.29.1"
   }
 }
