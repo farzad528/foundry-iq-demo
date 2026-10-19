@@ -98,7 +98,7 @@ their tests are explicitly skipped when absent from the app-only ZIP.
 
 | Surface | Responsibility |
 | --- | --- |
-| `page.html`, `assets/` | Local three-column UI, client code and neutral source icons |
+| `page.html`, `assets/` | Local three-column UI, client code and bundled product/source icons |
 | `server.template.mjs`, `lib/` | Built HTTP application, strict protocol, normalization and quota coordination |
 | `config/`, `samples/` | Explicit live catalog and clearly labeled fixed synthetic replays |
 | `scripts/` | Build, prebuilt startup, Node tests, fixture double and ZIP validation |
@@ -526,8 +526,8 @@ negative contracts, streaming bounds, partial/errors, cancellation/timeouts,
 direct clients, all quota thresholds, independent coordinators sharing lease/
 ETag state, restart/overlap/expiry and fail-closed behavior. Artifact validation
 checks the prebuilt handler, health route and source-ZIP allowlist. The source
-ZIP includes only explicitly allowlisted reproducible code, examples, neutral
-icons and approved synthetic files; never `.env.local`, runtime state, logs,
+ZIP includes only explicitly allowlisted reproducible code, examples, bundled
+source icons and approved synthetic files; never `.env.local`, runtime state, logs,
 generated deployment files, dependency trees, or symlinks. Icon provenance and
 redistribution terms are in `assets/PROVENANCE.md`.
 
@@ -594,4 +594,8 @@ deployments passed without a policy bypass.
 - [Blob lease code samples and finite lease semantics](https://learn.microsoft.com/azure/storage/blobs/storage-blob-lease-javascript)
 - [Managed identity / Blob client code sample](https://learn.microsoft.com/azure/app-service/tutorial-connect-app-access-storage-javascript)
 
-MIT licensed. No official product logos are redistributed.
+Application code and original fixtures are MIT licensed. User-supplied product
+artwork retains its own terms; see `assets/PROVENANCE.md`. The same local icons
+identify Blob, Search index, Web, Fabric and SharePoint across the catalog,
+controls, evidence, citations and activity inspector. Fabric and SharePoint
+remain synthetic-only; icon support does not enable those live integrations.

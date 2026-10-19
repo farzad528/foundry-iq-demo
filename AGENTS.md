@@ -16,7 +16,7 @@ required. Match surrounding two-space JavaScript style and explicit imports.
 ## Source map
 
 - `page.html`, `assets/client.mjs`, `assets/source-icons.mjs`: three-column UI,
-  keyboard/citation interactions and local neutral source icons.
+  keyboard/citation interactions and locally bundled source icons.
 - `server.template.mjs`: application handler template. Build embeds only the
   approved catalog, synthetic fixtures, source ZIP and local public assets.
 - `lib/protocol.mjs`: pinned contract, capability validation and streaming bounds.
@@ -124,8 +124,11 @@ acceptance does not authorize another rollout or establish its proxy contract
 or billed cost. Do not treat fixtures as real captures.
 Web approval, terms, domains and boundary/cost review are separate gates.
 Visitor auth, Fabric, Work IQ, remote SharePoint and OneLake live integration
-remain out of scope. The neutral original SVGs are MIT-licensed placeholders,
-not official Azure/Microsoft logos; see `assets/PROVENANCE.md`.
+remain out of scope. The user-supplied product SVGs identify existing source
+types; they do not enable additional live integrations. Preserve their shapes,
+colors, aspect ratios and separate artwork terms in `assets/PROVENANCE.md`.
+Only the original neutral `source.svg` fallback is covered by the app's MIT
+license; do not claim that license covers product artwork.
 
 Make precise changes, add focused regression tests and update directly related
 source documentation. Do not read/expose credentials, touch another worktree,

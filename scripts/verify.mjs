@@ -6,12 +6,14 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { request as httpRequest, createServer } from 'node:http';
 import { once } from 'node:events';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createApplication } from '../dist/server/index.mjs';
 import { BlobQuotaCoordinator, anonymousSession } from '../dist/server/lib/quota.mjs';
 import { MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES, readBounded } from '../dist/server/lib/protocol.mjs';
 import { normalizeResponse, safeUrl } from '../dist/server/lib/normalize.mjs';
 import { createNodeServer, clientIp } from '../lib/http.mjs';
 import { publicCatalog, knowledgeBases } from '../config/knowledge-bases.mjs';
+import { sourceIcon } from '../assets/source-icons.mjs';
 import { FakeBlob } from './test-support.mjs';
 import { archiveFiles, operationalFiles } from './source-files.mjs';
 
@@ -23,6 +25,14 @@ indexedFixture.references = indexedFixture.references.filter(reference => refere
 indexedFixture.activity = indexedFixture.activity.filter(activity => !['web', 'modelWebSummarization'].includes(activity.type));
 const indexed = knowledgeBases[0];
 const web = knowledgeBases[1];
+const sourceIconCases = [
+  ['azureBlob', { icon: '/assets/blob.svg', label: 'Blob', access: 'Indexed' }],
+  ['searchIndex', { icon: '/assets/search.svg', label: 'Search index', access: 'Indexed' }],
+  ['web', { icon: '/assets/web.svg', label: 'Web', access: 'Remote' }],
+  ['fabricDataAgent', { icon: '/assets/fabric.svg', label: 'Fabric data agent', access: 'Remote' }],
+  ['remoteSharePoint', { icon: '/assets/sharepoint.svg', label: 'SharePoint', access: 'Remote' }],
+];
+const sourceIconFiles = [...new Set([...sourceIconCases.map(([, entry]) => entry.icon.slice(1)), 'assets/source.svg'])];
 const env = {
   PUBLIC_ORIGIN: 'https://demo.example.test',
   AZURE_SEARCH_ENDPOINT: 'https://demo.search.windows.net',
@@ -83,6 +93,37 @@ test('only two public live KBs share exact approved source identities', () => {
   assert.deepEqual(indexed.sources.map(source => source.name), web.sources.slice(0, 2).map(source => source.name));
   assert.equal(web.sources[2].name, 'foundryiq-customer-demos-web-guidance');
   assert.ok(catalog.every(item => !Object.hasOwn(item, 'fixture') && !Object.hasOwn(item, 'answer')));
+});
+
+test('source icon registry covers every catalog kind without changing source labels or access modes', () => {
+  const kinds = [...new Set(catalog.flatMap(scenario => scenario.sources.map(source => source.kind)))];
+  assert.deepEqual(kinds.sort(), sourceIconCases.map(([kind]) => kind).sort());
+  for (const [kind, expected] of sourceIconCases) assert.deepEqual(sourceIcon(kind), expected, kind);
+  assert.equal(new Set(sourceIconCases.map(([kind]) => sourceIcon(kind).icon)).size, sourceIconCases.length);
+});
+
+test('unknown source kinds, including Object prototype names, use the neutral fallback', () => {
+  for (const kind of [undefined, null, '', 'futureSource', '__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+    assert.deepEqual(sourceIcon(kind), {
+      icon: '/assets/source.svg', label: kind || 'Source', access: 'Unclassified',
+    }, String(kind));
+  }
+});
+
+test('built public registry and every source icon serve exact local bytes with correct content types', async () => {
+  const { app, blob } = setup(() => assert.fail('Serving source icons must not call Azure'));
+  const publicEnv = { ...env, FOUNDRY_IQ_LIVE_ENABLED: 'false' };
+  for (const path of ['assets/source-icons.mjs', ...sourceIconFiles]) {
+    assert.ok(archiveFiles.includes(path), path + ' must be in the standalone source allowlist');
+    const response = await app.fetch(new Request(env.PUBLIC_ORIGIN + '/' + path), publicEnv);
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers.get('content-type'),
+      path.endsWith('.svg') ? 'image/svg+xml' : 'text/javascript; charset=utf-8', path);
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff', path);
+    assert.equal(response.headers.get('set-cookie'), null, path);
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), readFileSync(new URL('../' + path, import.meta.url)), path);
+  }
+  assert.equal(blob.state.count, 0);
 });
 
 test('public routes expose no runtime config, quota state or private files', async () => {
@@ -616,6 +657,69 @@ test('prebuilt artifact and sanitized ZIP are deterministic, allowlisted and sta
   const source = readFileSync(new URL('../dist/server/index.mjs', import.meta.url), 'utf8');
   assert.ok(!source.includes('__DATA__') && !source.includes('__ARCHIVE__'));
   assert.ok(statSync(new URL('../dist/server/index.mjs', import.meta.url)).size > 10000);
+});
+
+test('downloaded source ZIP retains passive self-contained icons, provenance and reproducible packaging', async () => {
+  const { app } = setup(() => assert.fail('Downloading source must not call Azure'));
+  const archive = await app.fetch(new Request(env.PUBLIC_ORIGIN + '/download'),
+    { ...env, FOUNDRY_IQ_LIVE_ENABLED: 'false' });
+  assert.equal(archive.status, 200);
+  assert.equal(archive.headers.get('content-type'), 'application/zip');
+  assert.match(archive.headers.get('content-disposition'), /^attachment; filename="[^"]+\.zip"$/);
+  const bytes = Buffer.from(await archive.arrayBuffer());
+  assert.deepEqual(bytes, readFileSync(new URL('../dist/source.zip', import.meta.url)));
+  for (const path of ['assets/source-icons.mjs', 'assets/PROVENANCE.md', ...sourceIconFiles]) {
+    assert.ok(archiveFiles.includes(path), path);
+  }
+  const python = (process.env.PYTHON ? [process.env.PYTHON] : process.platform === 'win32' ? ['python', 'python3'] : ['python3', 'python'])
+    .find(command => {
+      const result = spawnSync(command, ['--version'], { encoding: 'utf8' });
+      return result.status === 0 && result.stdout.startsWith('Python 3.');
+    });
+  assert.ok(python, 'Python 3 used by the build is required to inspect the downloaded source ZIP');
+  const entries = JSON.parse(execFileSync(python, ['-c', `
+import io,json,math,pathlib,re,stat,sys,zipfile
+import xml.etree.ElementTree as ET
+expected=json.loads(sys.argv[1])
+icons=json.loads(sys.argv[2])
+with zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())) as z:
+ names=z.namelist()
+ assert names==expected, 'Downloaded ZIP must exactly match the source allowlist'
+ assert len(names)==len(set(names)), 'Downloaded ZIP must not contain duplicate entries'
+ for name in names:
+  info=z.getinfo(name)
+  assert info.date_time==(1980,1,1,0,0,0), f'Non-reproducible ZIP timestamp: {name}'
+  assert stat.S_ISREG(info.external_attr >> 16), f'ZIP entry must be a regular file: {name}'
+  assert z.read(name)==pathlib.Path(name).read_bytes(), f'Archived source bytes differ: {name}'
+ for name in icons:
+  data=z.read(name)
+  assert not re.search(br'<!DOCTYPE|<!ENTITY|<\\?xml-stylesheet',data,re.I), f'External XML declarations: {name}'
+  root=ET.fromstring(data)
+  namespace='{http://www.w3.org/2000/svg}'
+  assert root.tag==namespace+'svg', f'Invalid SVG root: {name}'
+  view_box=[float(value) for value in re.split(r'[\\s,]+',root.attrib.get('viewBox','').strip()) if value]
+  assert len(view_box)==4 and all(math.isfinite(value) for value in view_box) and all(value>0 for value in view_box[2:]), f'Invalid SVG viewBox: {name}'
+  ids={node.attrib['id'] for node in root.iter() if 'id' in node.attrib}
+  active={'script','foreignobject','image','iframe','object','embed','audio','video','a','animate','animatemotion','animatetransform','set','discard'}
+  for node in root.iter():
+   assert node.tag.startswith(namespace) and node.tag[len(namespace):].lower() not in active, f'Active or foreign SVG element: {name}'
+   values=list(node.attrib.values())+([node.text] if node.tag==namespace+'style' and node.text else [])
+   for attribute,value in node.attrib.items():
+    local=attribute.rsplit('}',1)[-1].lower()
+    assert not local.startswith('on'), f'SVG event handler: {name}'
+    if local=='href':
+     assert value.startswith('#') and value[1:] in ids, f'External or unresolved SVG reference: {name}'
+   for value in values:
+    assert not re.search(r'@import|(?:javascript|vbscript|data)\\s*:',value,re.I), f'Active SVG attribute or style: {name}'
+    for reference in re.findall(r'url\\s*\\(([^)]*)\\)',value,re.I):
+     reference=reference.strip().strip(chr(34)+chr(39))
+     assert reference.startswith('#') and reference[1:] in ids, f'External or unresolved SVG paint reference: {name}'
+ print(json.dumps(names))
+`, JSON.stringify(archiveFiles), JSON.stringify(sourceIconFiles)], {
+    cwd: new URL('..', import.meta.url), input: bytes, maxBuffer: 10 * 1024 * 1024,
+  }).toString());
+  assert.deepEqual(entries, archiveFiles);
+  assert.ok(operationalFiles.every(path => !entries.includes(path)));
 });
 
 test('public corpus is original, versioned and included without operator configuration', async () => {
