@@ -9,11 +9,12 @@ import { once } from 'node:events';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createApplication } from '../dist/server/index.mjs';
 import { BlobQuotaCoordinator, anonymousSession } from '../dist/server/lib/quota.mjs';
-import { MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES, readBounded } from '../dist/server/lib/protocol.mjs';
+import { API_VERSION, MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES, readBounded } from '../dist/server/lib/protocol.mjs';
 import { normalizeResponse, safeUrl } from '../dist/server/lib/normalize.mjs';
 import { createNodeServer, clientIp } from '../lib/http.mjs';
 import { publicCatalog, knowledgeBases } from '../config/knowledge-bases.mjs';
 import { sourceIcon } from '../assets/source-icons.mjs';
+import { API_VERSION as CLIENT_API_VERSION, buildRequest, conversationMessages, requestSnapshot, requestCode } from '../assets/request.mjs';
 import { FakeBlob } from './test-support.mjs';
 import { archiveFiles, operationalFiles } from './source-files.mjs';
 
@@ -209,7 +210,8 @@ test('invalid types, duplicates, unknown fields and source membership are reject
 
 test('actual-service output token bounds match UI, canaries and explicit request snapshots', async () => {
   const page = readFileSync(new URL('../page.html', import.meta.url), 'utf8');
-  assert.match(page, /id="tokens"[^>]*min="5001"[^>]*max="10000"[^>]*value="5001"/);
+  assert.match(page, /id="tokens"[^>]*min="5001"[^>]*max="10000"[^>]*placeholder="Service default"/);
+  assert.doesNotMatch(page.match(/<input id="tokens"[^>]*>/)[0], /\bvalue=/);
   const { app } = setup();
   for (const maxOutputSize of [5001, 10000]) {
     const body = bodyFor();
@@ -218,6 +220,185 @@ test('actual-service output token bounds match UI, canaries and explicit request
     assert.equal(response.status, 200);
     assert.equal((await response.json()).effectiveRequest.body.maxOutputSize, maxOutputSize);
   }
+});
+
+test('browser defaults omit every runtime and source override, while explicit false is preserved', () => {
+  const defaults = buildRequest({ question: '  First question  ', sources: indexed.sources });
+  assert.deepEqual(defaults, { messages: [{ role: 'user', content: [{ type: 'text', text: 'First question' }] }] });
+  const explicit = buildRequest({
+    question: 'First question', effort: 'auto', output: 'extractiveData', runtime: '120', tokens: '10000', activity: 'false',
+    sources: indexed.sources.map(source => ({ ...source, includeReferences: 'false', includeReferenceSourceData: 'true', alwaysQuerySource: '' })),
+  });
+  assert.deepEqual(explicit.retrievalReasoningEffort, { kind: 'auto' });
+  assert.equal(explicit.includeActivity, false);
+  assert.equal(explicit.maxRuntimeInSeconds, 120);
+  assert.equal(explicit.maxOutputSize, 10000);
+  assert.equal(explicit.knowledgeSourceParams[0].includeReferences, false);
+  assert.equal(explicit.knowledgeSourceParams[0].includeReferenceSourceData, true);
+  assert.ok(!Object.hasOwn(explicit.knowledgeSourceParams[0], 'alwaysQuerySource'));
+  assert.deepEqual(buildRequest({ question: 'First question', sources: indexed.sources }), defaults, 'Reset returns to omitted overrides');
+  for (const options of [{ runtime: '9' }, { runtime: '121' }, { tokens: '5000' }, { tokens: '10001' }, { activity: 'invalid' }]) {
+    assert.throws(() => buildRequest({ question: 'Question', ...options }));
+  }
+});
+
+test('conversation payloads include completed text in order without mutating retained turns or draft snapshots', () => {
+  const turns = [
+    { question: 'First question', result: { normalized: { text: 'First answer [ref_id:0]' } } },
+    { question: 'Failed question', error: 'Network error' },
+    { question: 'Second question', result: { normalized: { text: 'Second answer' } } },
+  ];
+  const history = conversationMessages(turns);
+  const request = buildRequest({ question: 'Follow-up', history });
+  assert.deepEqual(request.messages.map(message => message.role), ['user', 'assistant', 'user', 'assistant', 'user']);
+  assert.deepEqual(request.messages.map(message => message.content[0].text),
+    ['First question', 'First answer [ref_id:0]', 'Second question', 'Second answer', 'Follow-up']);
+  const snapshot = requestSnapshot(indexed.id, request);
+  request.messages[0].content[0].text = 'Changed draft';
+  assert.equal(history[0].content[0].text, 'First question');
+  assert.equal(snapshot.body.messages[0].content[0].text, 'First question');
+  assert.equal(snapshot.sent, false);
+  assert.throws(() => conversationMessages([{ result: { normalized: { text: '' } } }]), /no assistant text/);
+});
+
+test('minimal browser code honestly uses intents, and cannot silently drop conversation history or source overrides', () => {
+  const options = { question: 'Question', effort: 'minimal', output: 'extractiveData' };
+  assert.deepEqual(buildRequest(options).intents, [{ type: 'semantic', search: 'Question' }]);
+  assert.ok(!Object.hasOwn(buildRequest(options), 'messages'));
+  assert.throws(() => buildRequest({ ...options, history: requestFor(indexed).messages }), /conversation history/);
+  assert.throws(() => buildRequest({ ...options, output: '' }), /extractive/);
+  assert.throws(() => buildRequest({ ...options, sources: [{ ...indexed.sources[0], alwaysQuerySource: 'false' }] }), /Service default/);
+});
+
+test('Show code keeps the pinned OData route, full messages and shell-safe text without server credentials', () => {
+  assert.equal(CLIENT_API_VERSION, API_VERSION);
+  const request = buildRequest({
+    question: "What's $(echo unsafe) `command` and \"quoted\"?",
+    history: [{ role: 'user', content: [{ type: 'text', text: 'Earlier' }] },
+      { role: 'assistant', content: [{ type: 'text', text: 'Earlier answer' }] }],
+  });
+  const snapshot = { ...requestSnapshot(indexed.id, request), clientRequestId: 'test-request-id', sent: true };
+  const curl = requestCode(snapshot);
+  assert.ok(curl.includes(`\${AZURE_SEARCH_ENDPOINT}/knowledgebases('${indexed.id}')/retrieve?api-version=${API_VERSION}`));
+  assert.ok(curl.includes('api-key: ${AZURE_SEARCH_API_KEY}'));
+  assert.ok(curl.includes('x-ms-client-request-id: test-request-id'));
+  assert.ok(curl.includes("What'\\''s $(echo unsafe)"));
+  assert.deepEqual(JSON.parse(requestCode(snapshot, 'json')), request);
+  assert.ok(!curl.includes(env.AZURE_SEARCH_API_KEY));
+  assert.throws(() => requestCode(snapshot, 'unknown'), /Unsupported code format/);
+});
+
+test('service-default requests reach Search unchanged and follow-ups retain every validated message', async () => {
+  const dispatched = [];
+  const { app, blob } = setup(async (_url, options) => { dispatched.push(JSON.parse(options.body)); return Response.json(indexedFixture); });
+  const request = buildRequest({ question: 'A first question' });
+  const first = await post(app, { scenarioId: indexed.id, mode: 'live', request });
+  assert.equal(first.status, 200);
+  const result = await first.json();
+  assert.deepEqual(dispatched[0], request);
+  assert.deepEqual(result.effectiveRequest.body, request);
+  assert.equal(result.effectiveRequest.sent, true);
+  const history = conversationMessages([{ question: 'A first question', result }]);
+  const followup = buildRequest({ question: 'What about the remaining evidence?', history });
+  const next = await post(app, { scenarioId: indexed.id, mode: 'live', request: followup });
+  assert.equal(next.status, 200);
+  assert.deepEqual(dispatched[1], followup);
+  assert.equal((await next.json()).effectiveRequest.body.messages.length, 3);
+  assert.equal(blob.state.count, 2);
+  assert.equal(blob.state.slots.length, 0);
+});
+
+test('conversation validation rejects role injection, malformed history and invalid overrides before reserving quota', async () => {
+  const { app, blob } = setup(() => assert.fail('Invalid history must not reach Search'));
+  const messages = [
+    { role: 'user', content: [{ type: 'text', text: 'First question' }] },
+    { role: 'assistant', content: [{ type: 'text', text: 'First answer' }] },
+    { role: 'user', content: [{ type: 'text', text: 'Follow-up' }] },
+  ];
+  for (const mutate of [
+    request => { request.messages[0].role = 'assistant'; },
+    request => { request.messages[1].role = 'system'; },
+    request => { request.messages[1].role = 'tool'; },
+    request => { request.messages[1].role = 'user'; },
+    request => { request.messages.pop(); },
+    request => { request.messages[0].content[0].text = 'x'.repeat(8001); },
+    request => { request.messages[1].content[0].text = ''; },
+    request => { request.messages[1].content[0].text = null; },
+    request => { request.messages[1].content.push({ type: 'text', text: 'Extra' }); },
+    request => { request.messages[1].content[0].type = 'image'; },
+    request => { request.messages[1].tool_calls = []; },
+    request => { request.retrievalReasoningEffort = {}; },
+    request => { request.outputMode = null; },
+  ]) {
+    const request = { messages: structuredClone(messages) };
+    mutate(request);
+    assert.equal((await post(app, { scenarioId: indexed.id, mode: 'live', request })).status, 400, mutate.toString());
+  }
+  assert.equal(blob.state.count, 0);
+});
+
+test('full conversation envelopes honor the exact 64-KiB streaming bound without truncation', async () => {
+  const dispatched = [];
+  const { app, blob } = setup(async (_url, options) => { dispatched.push(JSON.parse(options.body)); return Response.json(indexedFixture); });
+  const body = { scenarioId: indexed.id, mode: 'live', request: { messages: [
+    { role: 'user', content: [{ type: 'text', text: 'First' }] },
+    { role: 'assistant', content: [{ type: 'text', text: '' }] },
+    { role: 'user', content: [{ type: 'text', text: 'Follow-up' }] },
+  ] } };
+  body.request.messages[1].content[0].text = 'a'.repeat(MAX_REQUEST_BYTES - Buffer.byteLength(JSON.stringify(body)));
+  assert.equal(Buffer.byteLength(JSON.stringify(body)), MAX_REQUEST_BYTES);
+  assert.equal((await post(app, body)).status, 200);
+  assert.deepEqual(dispatched[0], body.request);
+  body.request.messages[1].content[0].text += 'é';
+  assert.equal((await post(app, body)).status, 413);
+  assert.equal(dispatched.length, 1);
+  assert.equal(blob.state.count, 1);
+});
+
+test('fixed synthetic replays do not pretend to answer multi-turn questions', async () => {
+  const { app, blob } = setup(() => assert.fail('Replay must never call Search'));
+  const request = buildRequest({ question: samples[0].question, history: [
+    { role: 'user', content: [{ type: 'text', text: samples[0].question }] },
+    { role: 'assistant', content: [{ type: 'text', text: 'A prior answer' }] },
+  ] });
+  const response = await post(app, { scenarioId: samples[0].id, mode: 'sample', request });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).errorCode, 'curated_replay_only');
+  assert.equal(blob.state.count, 0);
+});
+
+test('chat UI starts with closed dialogs and blank service-default controls rather than permanent inspectors', async () => {
+  const { app } = setup();
+  const page = await (await app.fetch(new Request(env.PUBLIC_ORIGIN), env)).text();
+  for (const id of ['knowledge-base', 'messages', 'chat-form', 'settings-button', 'show-code', 'code', 'code-request', 'evidence', 'reset-settings', 'help-button']) {
+    assert.ok(page.includes(`id="${id}"`), id);
+  }
+  assert.doesNotMatch(page, /<dialog[^>]*\sopen(?:\s|>)/);
+  for (const id of ['effort', 'output', 'include-activity']) assert.match(page, new RegExp(`id="${id}"><option value="">Service default</option>`));
+  for (const path of ['assets/request.mjs', 'assets/client.mjs']) {
+    assert.ok(archiveFiles.includes(path));
+    const response = await app.fetch(new Request(env.PUBLIC_ORIGIN + '/' + path), env);
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), readFileSync(new URL('../' + path, import.meta.url), 'utf8'));
+  }
+});
+
+test('service defaults still enforce the application total runtime budget and release quota slots', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let begin;
+  const began = new Promise(resolve => { begin = resolve; });
+  const { app, blob } = setup(async (_url, options) => {
+    begin();
+    return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true }));
+  });
+  const pending = post(app, { scenarioId: indexed.id, mode: 'live', request: buildRequest({ question: 'Question' }) });
+  await began;
+  t.mock.timers.tick(125001);
+  const response = await pending;
+  assert.equal(response.status, 504);
+  assert.equal((await response.json()).errorCode, 'retrieval_timeout');
+  assert.equal(blob.state.count, 1);
+  assert.equal(blob.state.slots.length, 0);
 });
 
 test('minimal is indexed/extractive only; medium is gated by deployment capability', async () => {

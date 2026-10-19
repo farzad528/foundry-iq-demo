@@ -15,7 +15,8 @@ required. Match surrounding two-space JavaScript style and explicit imports.
 
 ## Source map
 
-- `page.html`, `assets/client.mjs`, `assets/source-icons.mjs`: three-column UI,
+- `page.html`, `assets/client.mjs`, `assets/request.mjs`, `assets/source-icons.mjs`:
+  chat playground, on-demand settings/evidence dialogs, request/code helpers,
   keyboard/citation interactions and locally bundled source icons.
 - `server.template.mjs`: application handler template. Build embeds only the
   approved catalog, synthetic fixtures, source ZIP and local public assets.
@@ -83,8 +84,17 @@ Local tests and Storage doubles do not establish live dependency readiness.
   claim controls changed recorded evidence/timings.
 - Retain the pinned published preview request contract and typed capability
   checks, exact KB/source allowlists, indexed-only minimal/extractive rules,
-  operator-gated medium effort, and explicit request-level `maxOutputSize` in
+  operator-gated medium effort, and optional request-level `maxOutputSize` in
   tokens. `maxOutputSizeInTokens` is a stored KB default, not a Retrieve field.
+- All runtime and per-source overrides start unset (Service default), including
+  reasoning effort, output, limits, diagnostics and source flags. Omit unset
+  fields; never equate an explicit `auto` effort with Service default.
+- Live follow-ups retain alternating user/assistant text messages within the
+  existing request bounds. No system/tool roles or silent history truncation.
+  Changing KB clears the chat and overrides; new chat clears only history.
+  Minimal uses one intent without history; synthetic replays remain single-turn.
+  Code views use immutable per-turn effective snapshots and server-credential
+  placeholders, never reveal secrets or claim unconfirmed dispatch was not sent.
 - Preserve 64-KiB request, 8,000-character question and 1-MiB upstream limits,
   streaming byte enforcement, cancellation and total runtime budgets.
 - Never add automatic Search retries. Every upstream attempt consumes quota.

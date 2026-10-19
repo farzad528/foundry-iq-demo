@@ -2,7 +2,7 @@ export const archiveFiles = Object.freeze([
   'page.html', 'server.template.mjs', 'package.json', 'package-lock.json', 'README.md', 'AGENTS.md', '.env.example', '.gitignore', 'LICENSE',
   'config/scenarios.json', 'config/knowledge-bases.mjs',
   'lib/protocol.mjs', 'lib/normalize.mjs', 'lib/quota.mjs', 'lib/http.mjs',
-  'assets/client.mjs', 'assets/source-icons.mjs', 'assets/blob.svg', 'assets/search.svg', 'assets/web.svg', 'assets/fabric.svg', 'assets/sharepoint.svg', 'assets/source.svg', 'assets/PROVENANCE.md',
+  'assets/client.mjs', 'assets/request.mjs', 'assets/source-icons.mjs', 'assets/blob.svg', 'assets/search.svg', 'assets/web.svg', 'assets/fabric.svg', 'assets/sharepoint.svg', 'assets/source.svg', 'assets/PROVENANCE.md', 'assets/explorer-preview.png',
   'scripts/build.mjs', 'scripts/build.sh', 'scripts/dev.mjs', 'scripts/start.mjs', 'scripts/verify.mjs', 'scripts/validate-artifact.mjs',
   'scripts/source-files.mjs', 'scripts/test-support.mjs', 'scripts/fixtures/published-response.json',
   'samples/comparison-guidelines.md', 'samples/contoso-disclosure.md', 'samples/p104-restart.md',

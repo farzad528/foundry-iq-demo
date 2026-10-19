@@ -135,6 +135,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
           redacted: JSON.stringify(outbound) !== JSON.stringify(sanitize(outbound, [env.AZURE_SEARCH_API_KEY, env.SESSION_SECRET])),
         };
         if (mode === 'sample') {
+          if (outbound.messages?.length > 1) throw new HttpError(400, 'curated_replay_only', 'Synthetic replays are single-turn, fixed examples. Start a new chat to replay, or select a live knowledge base for follow-ups.');
           if (question !== scenario.question) throw new HttpError(400, 'curated_replay_only', 'Sample replay supports only the curated example question. Select a live knowledge base to ask arbitrary questions.');
           const data = structuredClone(fixtures[scenario.id]);
           if (outbound.outputMode === 'extractiveData') {

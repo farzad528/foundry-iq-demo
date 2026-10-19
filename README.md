@@ -1,6 +1,105 @@
-# Foundry IQ Explorer
+# Microsoft Foundry IQ Demo
 
-The three-column Explorer is this repository's primary **root application**.
+<img width="1440" alt="Foundry IQ chat playground with a knowledge-base picker, Show code, and on-demand runtime settings" src="./assets/explorer-preview.png" />
+
+Agentic RAG demo with Foundry IQ Knowledge Bases and Azure AI Search.
+Chat with a knowledge base, inspect citations, and see the exact Retrieve call
+with **Show code**. Open runtime settings with the gear button; every override
+starts at **Service default**.
+
+🚀 **[Live Demo](https://app-foundryiq-customer-demos.azurewebsites.net/)**
+
+[![Build and test](https://github.com/farzad528/foundry-iq-demo/actions/workflows/azure-static-web-apps.yml/badge.svg?branch=main)](https://github.com/farzad528/foundry-iq-demo/actions/workflows/azure-static-web-apps.yml)
+
+*Preview: the chat-first UI in this source revision. The hosted demo is updated separately.*
+
+## Deploy
+
+The hosted demo runs on **Azure App Service** with Azure AI Search, Microsoft
+Foundry, Storage, and Key Vault. Deploy your own instance using the
+[App Service hosting guide](#additive-public-app-service-hosting) and the
+[repository's Bicep templates](./infra/).
+
+New deployments keep live retrieval **off by default**. Provisioning,
+permissions, Web terms, costs, and live enablement require separate approval.
+GitHub Actions builds and tests the app; it does **not** deploy it.
+
+## Quick Start
+
+Use **Node.js 22+**, npm, and **Python 3**. Python is build-time only.
+
+```powershell
+git clone https://github.com/farzad528/foundry-iq-demo.git
+Set-Location foundry-iq-demo
+npm ci
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) and choose a
+**Synthetic replay** to explore without Azure credentials. Live knowledge bases
+use your separately configured backend; failed live calls never fall back to
+sample answers. Restart the dev server after changing source files.
+
+To build and run the production artifact:
+
+```powershell
+npm test
+npm run build
+npm run validate
+npm start
+```
+
+## Environment Variables
+
+See [`.env.example`](./.env.example) for all options. Offline replays need no
+environment file. Live operation uses these **server-only** settings:
+
+| Variable | Purpose |
+| --- | --- |
+| `PUBLIC_ORIGIN` | Exact canonical HTTPS origin for your hosted app |
+| `AZURE_SEARCH_ENDPOINT` | Dedicated Azure AI Search endpoint |
+| `AZURE_SEARCH_API_KEY` | Search credential, resolved through Key Vault on App Service |
+| `SESSION_SECRET` | Stable shared random secret of at least 32 characters |
+| `FOUNDRY_IQ_QUOTA_CONTAINER_URL` | Existing private Blob container holding the shared quota ledger |
+| `FOUNDRY_IQ_LIVE_ENABLED` | Enables live retrieval only when the shared ledger also permits it |
+
+Keep credentials out of source control and browser configuration. Do not
+overwrite an existing private `.env.local`. Medium effort and trusted-proxy
+mode remain off unless separately verified and approved. See the
+[live deployment prerequisites](#explicit-live-deployment-dependencies).
+
+## Routes
+
+| Route | Description |
+| --- | --- |
+| `/` | Chat playground: knowledge bases, conversations, citations, code, and runtime settings |
+| `/api/retrieve` | Retrieve from an approved live KB or run an explicit synthetic replay |
+| `/api/config` | Public catalog capabilities and feature flags, never credentials |
+| `/healthz` | HTTP-host liveness; not a Search, Storage, or model readiness check |
+| `/download` | Reproducible, sanitized application source ZIP |
+
+## Resources
+
+- [Foundry IQ Blog](https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/foundry-iq-unlocking-ubiquitous-knowledge-for-agents/4470812)
+- [Azure AI Search Docs](https://learn.microsoft.com/azure/search/)
+- [Microsoft Foundry Docs](https://learn.microsoft.com/azure/ai-foundry/)
+- [AGENTS.md](./AGENTS.md) - Contributor guidance and runtime invariants
+- [Operator reference](#advanced-setup-and-operations) - Deployment, quotas, service contracts, and acceptance evidence
+
+## License
+
+Application code and original synthetic fixtures are [MIT licensed](./LICENSE).
+Product icons retain their separate terms; see
+[`assets/PROVENANCE.md`](./assets/PROVENANCE.md).
+
+## Advanced Setup and Operations
+
+<details>
+<summary>Expand the full Explorer setup and operator reference</summary>
+
+### Explorer overview
+
+The chat playground is this repository's primary **root application**.
 It replaces the legacy Next.js application; no companion directory or frontend
 framework build is required. One Node host serves the UI and `/api/retrieve`; Azure
 AI Search owns planning, retrieval, Web summarization, and answer synthesis.
@@ -98,7 +197,7 @@ their tests are explicitly skipped when absent from the app-only ZIP.
 
 | Surface | Responsibility |
 | --- | --- |
-| `page.html`, `assets/` | Local three-column UI, client code and bundled product/source icons |
+| `page.html`, `assets/` | Chat UI, request/code helpers, runtime/evidence dialogs and bundled product/source icons |
 | `server.template.mjs`, `lib/` | Built HTTP application, strict protocol, normalization and quota coordination |
 | `config/`, `samples/` | Explicit live catalog and clearly labeled fixed synthetic replays |
 | `scripts/` | Build, prebuilt startup, Node tests, fixture double and ZIP validation |
@@ -424,13 +523,25 @@ parameter. The app rejects that stored-property name in requests, including
 when both names are supplied; it never retries using another field.
 The service also rejected an output budget of 1,000 with "must be greater than
 5000". Limits in the application are runtime 10-120 seconds and output
-5,001-10,000 tokens; the UI and canaries default to 5,001. These are token
+5,001-10,000 tokens when explicitly overridden; operator canaries use 5,001. These are token
 budgets, not promises of consumption or dollar caps.
 Omitting optional fields preserves service defaults; a separate total
-app budget always applies. Low effort / synthesized answer is the UI default.
+app budget always applies. All UI runtime and source parameters start at
+**Service default**: effort, output mode, runtime/output limits, activity,
+references, source data and always-query flags are omitted until overridden.
+This uses the service/KB configuration, without claiming to know its effective
+values. Explicit **Auto** is a separate effort. Resetting settings removes
+overrides again; it does not mutate previously retained requests or replay data.
 Minimal effort uses one semantic intent, extractive output, and indexed sources
 only; `alwaysQuerySource` is omitted because minimal searches all sources.
-Other efforts use one user text message. Medium is operator-gated; automatic
+Other efforts use an alternating user/assistant `messages` array, starting and
+ending with the user. Each live follow-up includes the completed conversation's
+text; unsuccessful calls are not assistant answers. Empty-text responses require
+a new chat, rather than silently losing context. History is never silently
+truncated: exceeding the 64-KiB envelope limit requires a new chat. A new chat
+keeps settings; switching knowledge bases clears both history and overrides.
+Fixed synthetic replays are single-turn and cannot answer follow-ups.
+Medium is operator-gated; automatic
 effort requires the preview API and a configured KB model.
 
 Only typed, supported fields and exact source membership are accepted. Duplicate
@@ -444,6 +555,15 @@ each new upstream attempt must reserve and consume another call.
 
 Every run retains the effective normalized request, pinned version, client
 request ID, sent flag and response correlation, even after controls change.
+**Show code** opens the latest retained request (or a labeled draft before the
+first call). Its request selector also previews the next draft, including
+unsent follow-ups and new overrides, without making a paid call.
+It includes cURL/Bash and JSON views, the actual OData path and `messages`
+or minimal `intents`. Per-answer code buttons retain that answer's own snapshot.
+Endpoint and credential placeholders never reveal server secrets. Interrupted
+calls without server confirmation show dispatch as unconfirmed, not unsent.
+Source evidence, activity and the sanitized response open on demand, rather
+than occupying permanent columns.
 `redacted=true` explicitly marks a snapshot whose sensitive strings were removed;
 otherwise its body exactly matches the normalized payload sent to Search.
 References are joined by exact string reference ID and `activitySource` ID,
@@ -599,3 +719,5 @@ artwork retains its own terms; see `assets/PROVENANCE.md`. The same local icons
 identify Blob, Search index, Web, Fabric and SharePoint across the catalog,
 controls, evidence, citations and activity inspector. Fabric and SharePoint
 remain synthetic-only; icon support does not enable those live integrations.
+
+</details>

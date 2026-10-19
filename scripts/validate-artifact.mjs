@@ -10,7 +10,10 @@ const { default: application } = await import('../dist/server/index.mjs');
 assert.equal(typeof application.fetch, 'function');
 const origin = 'https://demo.example.test';
 const page = await (await application.fetch(new Request(origin), { PUBLIC_ORIGIN: origin })).text();
-assert.ok(page.includes('grid-template-columns:272px minmax(0,1fr) 350px'));
+for (const id of ['knowledge-base', 'messages', 'chat-form', 'settings', 'show-code', 'code', 'evidence']) {
+  assert.ok(page.includes(`id="${id}"`), 'Chat playground surface: ' + id);
+}
+assert.ok(!/<dialog[^>]*\sopen(?:\s|>)/.test(page), 'Runtime and evidence dialogs must start closed');
 const python = (process.env.PYTHON ? [process.env.PYTHON] : ['python', 'python3'])
   .find(command => {
     const result = spawnSync(command, ['--version'], { encoding: 'utf8' });
