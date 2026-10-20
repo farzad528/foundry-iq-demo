@@ -3,178 +3,264 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Foundry IQ Explorer · Customer demos</title>
+  <title>Foundry IQ · Chat playground</title>
   <style>
-    :root{--ink:#252332;--muted:#716d7c;--line:#e8e6ed;--purple:#6650bd;--pale:#f0ecfa;--green:#33836d}
+    :root{--ink:#252332;--muted:#6e6a78;--line:#e9e7ee;--purple:#6650bd;--pale:#f1edfa;--green:#278065}
     *{box-sizing:border-box}
-    body{margin:0;background:#f8f7fa;color:var(--ink);font:14px/1.6 Inter,ui-sans-serif,system-ui,sans-serif}
-    button,input,select,textarea{font:inherit}
+    body{margin:0;background:#fff;color:var(--ink);font:14px/1.6 Inter,ui-sans-serif,system-ui,sans-serif}
+    button,input,select,textarea{font:inherit;color:inherit}
     button,a,summary{cursor:pointer}
-    button{color:inherit}
+    button:disabled{cursor:not-allowed;opacity:.5}
     a{color:var(--purple);text-decoration:none}
-    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #a99bd9;outline-offset:3px}
-    header{height:76px;border-bottom:1px solid var(--line);background:white;display:flex;align-items:center;justify-content:space-between;padding:0 34px}
-    .brand{display:flex;align-items:center;gap:12px;font-size:19px;font-weight:650;letter-spacing:-.5px}
-    .logo{background:var(--purple);color:white;border-radius:11px;width:35px;height:35px;display:grid;place-items:center;font-size:23px}
-    .subbrand{font-size:12px;font-weight:400;border-left:1px solid var(--line);padding-left:15px;margin-left:5px;color:var(--muted)}
-    header nav{display:flex;align-items:center;gap:24px;font-size:12px}
-    .pill{font-size:10px;letter-spacing:.5px;border-radius:5px;padding:4px 8px;display:inline-block;background:var(--pale);color:var(--purple)}
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,[tabindex="-1"]:focus-visible{outline:3px solid #a99bd9;outline-offset:3px}
+    button{border:0;background:none}
+    .app-header{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;border-bottom:1px solid var(--line)}
+    .brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:650;letter-spacing:-.4px}
+    .logo{width:27px;height:27px;border-radius:7px;background:var(--purple);color:white;display:grid;place-items:center;font-size:20px}
+    .header-label{font-size:12px;color:var(--muted)}
+    .header-tools{display:flex;align-items:center;gap:20px}
+    .layout{display:grid;grid-template-columns:168px minmax(0,1fr)}
+    .rail{height:calc(100dvh - 56px);border-right:1px solid var(--line);padding:24px 12px;display:flex;flex-direction:column;background:#faf9fc;gap:8px}
+    .rail-label{font-size:10px;letter-spacing:1px;color:var(--muted);padding:0 12px 10px;text-transform:uppercase}
+    .nav-current{padding:10px 12px;background:var(--pale);color:var(--purple);border-radius:6px;font-size:12px;font-weight:600}
+    .rail-footer{margin-top:auto;display:grid;gap:12px;padding:12px;font-size:11px}
+    .rail-footer button{text-align:left;padding:0;font-size:11px;color:var(--muted)}
+    .workspace{height:calc(100dvh - 56px);min-width:0;display:flex;flex-direction:column}
+    .toolbar{padding:18px 30px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+    h1{font-size:17px;font-weight:600;margin:0;letter-spacing:-.3px}
+    .kb-picker{display:flex;align-items:center;gap:10px;min-width:0}
+    .kb-picker label{font-size:11px;color:var(--muted);flex:none}
+    select,input{background:white;border:1px solid #d8d4e1;border-radius:5px;padding:8px 10px;font-size:12px;min-width:0}
+    #knowledge-base{width:300px;max-width:100%}
+    .tools{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .plain{border:1px solid var(--line);border-radius:6px;padding:6px 11px;background:white;font-size:12px}
+    .icon-button{width:34px;height:34px;display:inline-grid;place-items:center;border-radius:6px;flex:none}
+    .icon-button:hover,.text-button:hover{background:var(--pale)}
+    .icon-button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    .conversation{flex:1;min-height:0;overflow-y:auto;scrollbar-gutter:stable;padding:30px 32px 12px}
+    .chat-width{width:100%;max-width:850px;margin:0 auto}
+    .welcome{padding:clamp(16px,8vh,90px) 0 30px}
+    .welcome-symbol{color:var(--purple);font-size:34px}
+    h2{font-size:28px;line-height:1.3;font-weight:550;letter-spacing:-.7px;margin:12px 0}
+    p{margin:8px 0}
     .muted{color:var(--muted)}
-    .layout{display:grid;grid-template-columns:272px minmax(0,1fr) 350px;min-height:calc(100vh - 76px)}
-    aside{background:white;border-right:1px solid var(--line);padding:26px 18px;display:flex;flex-direction:column;gap:22px;min-width:0}
-    .eyebrow{font-size:10px;letter-spacing:1.5px;font-weight:650;color:var(--muted);text-transform:uppercase}
-    .catalog-group{margin:15px 0 4px;letter-spacing:.8px}
-    .scenario{border:1px solid transparent;border-radius:9px;background:transparent;padding:14px 11px;text-align:left;width:100%;display:flex;gap:12px;margin-top:5px}
-    .scenario:hover{background:#f8f7fb}
-    .scenario.active{background:var(--pale);border-color:#dcd3f2}
-    .scenario strong{font-size:12px;display:block;font-weight:600}
-    .scenario small{font-size:10px;color:var(--muted)}
-    .scenario .symbol{width:24px;flex:none}
-    .symbol .source-badge{font-size:0}
-    .symbol .source-badge img{width:24px;height:24px}
-    .controls{border-top:1px solid var(--line);padding-top:23px}
-    .field{margin:17px 0}
-    .field label{display:block;font-size:11px;margin-bottom:7px}
-    .field select,.field input{width:100%;border:1px solid var(--line);border-radius:6px;padding:8px;background:white;color:var(--ink);font-size:11px}
-    .row{display:flex;gap:7px}
-    .row>*{flex:1;min-width:0}
-    .hint{font-size:10px;color:var(--muted);line-height:1.65}
-    .source-mini{font-size:11px;margin-top:12px}
-    .source-badge{font-size:10px;display:inline-flex;align-items:center;gap:5px;vertical-align:middle;margin-right:5px}
-    .source-badge img{flex:none}
-    .dot{width:6px;height:6px;border-radius:50%;display:inline-block;background:var(--green);margin-right:7px}
-    .footer-note{margin-top:auto;border:1px solid var(--line);border-radius:8px;padding:13px;font-size:11px}
-    .center{padding:35px 36px;min-width:0;max-width:1100px;width:100%;margin:0 auto;align-self:start}
-    h1{font-size:34px;line-height:1.2;font-weight:550;letter-spacing:-1.3px;margin:13px 0}
-    p{margin:10px 0}
-    .intro{max-width:610px;font-size:13px;color:var(--muted)}
-    .topline{display:flex;justify-content:space-between;align-items:center;gap:8px}
-    .composer{background:white;border:1px solid #d9d2e7;border-radius:13px;padding:15px 17px;margin-top:25px;box-shadow:0 5px 16px #35265006}
-    textarea{resize:vertical;border:0;width:100%;height:78px;min-height:68px;background:transparent;font-size:13px;line-height:1.65;color:var(--ink)}
-    .composer-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #f0eef5;padding-top:12px;font-size:10px}
-    .primary{background:var(--purple);border:0;color:white;border-radius:7px;padding:9px 16px;font-size:11px}
-    .primary:disabled{opacity:.5;cursor:wait}
-    .plain{background:white;border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:11px}
-    .suggest{border:0;background:transparent;text-align:left;padding:12px 0;color:var(--purple);font-size:11px}
-    .answer{background:white;border:1px solid var(--line);border-radius:11px;margin-top:24px}
-    .answer-head{padding:15px 21px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:11px;gap:8px}
-    .answer-body{padding:19px 23px 25px;line-height:1.95;font-size:13px;min-height:220px;overflow-wrap:anywhere}
-    .answer-body p{margin:0 0 17px}
-    .run-context{padding:10px 21px;overflow-wrap:anywhere}
-    .cite{background:var(--pale);border:0;color:var(--purple);font-size:10px;border-radius:4px;padding:3px 7px;vertical-align:super;margin-left:3px;max-width:150px;overflow-wrap:anywhere}
+    .welcome p{font-size:13px}
+    .suggestions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:28px}
+    .suggestion{border:1px solid var(--line);border-radius:9px;padding:17px 19px;text-align:left;font-size:12px;line-height:1.7;background:white}
+    .suggestion:hover{border-color:#b6a8d9;background:#fcfbfe}
+    .suggestion span{display:block;color:var(--purple);font-weight:550;margin-bottom:6px}
+    .manifest{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+    .source-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;vertical-align:middle}
+    .source-badge img{flex:none;width:18px;height:18px;object-fit:contain}
+    .turn{margin:0 0 32px}
+    .user-message{display:flex;justify-content:flex-end;margin-bottom:22px}
+    .user-message p{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f2f8;padding:12px 18px;border-radius:13px;max-width:85%;font-size:13px}
+    .assistant{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;line-height:1.9}
+    .assistant-mark{color:var(--purple);font-size:23px;line-height:1.5}
+    .answer{font-size:13px;overflow-wrap:anywhere;min-width:0}
+    .answer p{margin:0 0 14px;white-space:pre-wrap}
+    .answer-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;margin-top:16px;font-size:11px;color:var(--muted)}
+    .text-button{padding:3px 0;font-size:11px;color:var(--purple);border-radius:3px}
+    .pill{display:inline-block;border-radius:4px;padding:2px 7px;font-size:10px;background:var(--pale);color:var(--purple)}
+    .warning{color:#8c4f12;background:#fff7eb;border:1px solid #ead7bb;border-radius:6px;padding:10px 12px;font-size:12px}
+    .error{color:#9b3030;font-size:12px;overflow-wrap:anywhere}
+    .notes{font-size:11px;color:var(--muted);margin-top:12px}
+    .notes p{margin:8px 0}
+    .composer-area{padding:10px 32px 14px;background:white}
+    .composer{border:1px solid #cfc8de;border-radius:11px;padding:13px 15px;box-shadow:0 2px 10px #25233206}
+    textarea{display:block;width:100%;height:54px;max-height:140px;min-height:48px;resize:vertical;border:0;background:transparent;font-size:13px;line-height:1.7}
+    .composer-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px}
+    .hint{font-size:11px;line-height:1.65;color:var(--muted)}
+    .primary{background:var(--purple);color:white;border-radius:6px;padding:7px 17px;font-size:12px;border:0}
+    .privacy{font-size:10px;color:var(--muted);margin:9px 0 0;text-align:center;line-height:1.7}
+    #error:not(:empty){margin-bottom:10px}
+    .cite{background:var(--pale);color:var(--purple);font-size:10px;border-radius:4px;padding:2px 6px;vertical-align:super;margin-left:3px;max-width:150px;overflow-wrap:anywhere}
     .citation-wrap{position:relative;display:inline}
-    .citation-preview{display:none;position:absolute;z-index:3;bottom:100%;left:0;width:260px;max-width:65vw;background:white;border:1px solid #dcd3f2;box-shadow:0 4px 20px #25233222;border-radius:8px;padding:12px;font-size:11px;line-height:1.6;color:var(--ink)}
-    .citation-preview strong{display:block}
+    .citation-preview{display:none;position:absolute;z-index:3;bottom:100%;left:0;width:260px;max-width:75vw;background:white;border:1px solid #dcd3f2;box-shadow:0 4px 20px #25233222;border-radius:8px;padding:12px;font-size:11px;line-height:1.6}
+    .citation-preview strong{display:block;margin:6px 0}
     .citation-wrap:hover .citation-preview,.citation-wrap:focus-within .citation-preview{display:block}
     .preview-dismissed .citation-preview{display:none!important}
     .unresolved{color:#9b3030}
-    .answer-foot{border-top:1px solid var(--line);padding:11px 21px;font-size:10px;display:flex;gap:18px;color:var(--muted);flex-wrap:wrap}
-    .evidence-list{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}
-    .evidence-chip{border:1px solid var(--line);border-radius:7px;background:white;padding:10px;text-align:left;font-size:10px;flex:1;min-width:150px;overflow-wrap:anywhere}
-    .evidence-chip>.source-badge{display:flex;margin-bottom:5px}
-    .evidence-chip>span{color:var(--purple);margin-right:8px}
-    .inspector{background:#fdfcfe;border-left:1px solid var(--line);padding:26px 21px;min-width:0}
-    .tabs{display:flex;gap:3px;margin:19px 0 22px;border-bottom:1px solid var(--line)}
-    .tabs button{border:0;background:transparent;font-size:11px;padding:10px 8px;color:var(--muted);border-bottom:2px solid transparent}
-    .tabs button.active{color:var(--purple);border-color:var(--purple)}
-    .source-card{padding:15px;background:white;border:1px solid var(--line);border-radius:9px;margin:12px 0;overflow-wrap:anywhere}
-    .source-card h3{font-size:12px;margin:7px 0}
-    .source-card p{font-size:11px;color:var(--muted)}
-    .source-card a{font-size:11px}
-    .source-card details{font-size:11px;margin-top:13px;border-top:1px solid var(--line);padding-top:10px}
-    .source-card blockquote{font-size:11px;margin:12px 0;border-left:2px solid #c1b5e1;padding-left:10px;line-height:1.8;white-space:pre-wrap}
-    .notice{background:#f4f0fb;border:1px solid #e4dcf3;border-radius:7px;padding:11px;font-size:10px;color:#6d5a91;overflow-wrap:anywhere}
-    .trace{margin-top:18px;border-left:1px solid #d8cfea;padding-left:18px}
-    .step{position:relative;margin-bottom:24px}
-    .step:before{content:'';position:absolute;left:-22px;top:7px;width:7px;height:7px;border-radius:50%;background:#9b87cc;border:2px solid #faf8fd}
-    .step b{font-size:11px}
-    .step small{display:block;color:var(--muted);font-size:10px}
-    .step p{font-size:10px;color:var(--muted);overflow-wrap:anywhere}
-    pre{white-space:pre-wrap;overflow-wrap:anywhere;font:10px/1.8 ui-monospace,SFMono-Regular,monospace;background:#f2f0f6;border:1px solid var(--line);padding:13px;border-radius:7px;max-height:560px;overflow:auto}
-    .bottom{margin-top:25px;display:flex;justify-content:space-between;gap:15px;font-size:10px;color:var(--muted)}
-    .error{color:#9b3030;font-size:12px;padding:15px 0}
-    dialog{border:1px solid var(--line);border-radius:15px;padding:28px;max-width:560px;width:90%;box-shadow:0 20px 80px #25233222}
-    dialog::backdrop{background:#25233266}
-    dialog h2{margin-top:0;font-size:23px}
-    dialog p{font-size:12px}
+    dialog{border:1px solid var(--line);border-radius:12px;padding:0;box-shadow:0 20px 80px #25233222;color:var(--ink);max-width:calc(100% - 24px);max-height:calc(100dvh - 24px)}
+    dialog::backdrop{background:#25233226}
+    .dialog-header{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line)}
+    .dialog-header h2{font-size:18px;letter-spacing:-.4px;margin:0}
+    .dialog-header .icon-button{margin-left:auto;font-size:22px}
+    .dialog-body{padding:20px 22px;overflow-y:auto;min-height:0}
+    .drawer{margin:0 0 0 auto;width:410px;max-width:100%;height:100dvh;max-height:100dvh;border-radius:0;border-right:0}
+    .drawer[open],.code-dialog[open]{display:flex;flex-direction:column}
+    .field{margin:0 0 19px}
+    .field label{display:block;font-size:12px;margin-bottom:7px}
+    .field select,.field input{width:100%}
+    .row{display:flex;gap:14px}
+    .row>*{flex:1;min-width:0}
     .section-title{font-size:12px;font-weight:650}
-    .empty{color:var(--muted);font-size:12px;padding:22px 0}
-    .selected-ref{border-color:#a692d3;box-shadow:0 0 0 2px #eee8fa}
-    .overline{display:flex;justify-content:space-between;align-items:center;margin-top:23px}
+    .source-controls{border-top:1px solid var(--line);margin-top:22px;padding-top:18px}
+    .source-settings{margin-top:15px;border-bottom:1px solid var(--line);padding-bottom:12px}
+    .source-settings summary{font-size:12px;margin-bottom:12px}
+    .source-settings .hint{overflow-wrap:anywhere}
+    .source-settings .field{margin-bottom:12px}
+    .drawer-footer{padding:14px 22px;border-top:1px solid var(--line);margin-top:auto}
+    .code-dialog{width:940px}
+    .code-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:15px 0}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.8 ui-monospace,SFMono-Regular,monospace;background:#f7f6f9;border:1px solid var(--line);padding:15px;border-radius:6px;overflow:auto;max-height:55dvh;margin:10px 0}
+    .tabs{display:flex;gap:15px;border-bottom:1px solid var(--line);padding:0 22px}
+    .tabs button{font-size:12px;padding:13px 0;border-bottom:2px solid transparent;color:var(--muted)}
+    .tabs button[aria-selected="true"]{color:var(--purple);border-color:var(--purple)}
+    .source-card{border:1px solid var(--line);border-radius:8px;margin-bottom:16px;padding:15px;overflow-wrap:anywhere}
+    .source-card h3{font-size:13px;margin:10px 0 6px}
+    .source-card p,.source-card a,.source-card details{font-size:11px}
+    blockquote{font-size:12px;margin:15px 0;border-left:2px solid #c1b5e1;padding-left:12px;white-space:pre-wrap}
+    .selected-ref{border-color:#a692d3}
+    .trace{border-left:1px solid var(--line);margin:20px 0 0 5px;padding-left:18px}
+    .step{margin:0 0 23px}
+    .step b{font-size:12px}
+    .step small{display:block;font-size:11px;color:var(--muted)}
+    .connection-dialog{width:540px}
+    .welcome-links{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px}
+    .source-gallery{width:700px}
+    .source-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+    .source-family{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:8px;padding:14px;min-width:0}
+    .source-family img{object-fit:contain;flex:none}
+    .source-family b,.source-family span{display:block;font-size:12px}
+    .source-family span{font-size:11px;color:var(--muted)}
+    .report-dialog{width:1200px}
+    .report-dialog[open]{display:flex;flex-direction:column}
+    .page-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+    .page-controls input{width:75px}
+    .report-image{display:block;max-width:100%;height:auto;margin:18px auto 0;border:1px solid var(--line)}
     [hidden]{display:none!important}
-    @media(min-width:1600px){.layout{grid-template-columns:290px minmax(0,1fr) 400px}.center{padding:48px 60px}}
-    @media(max-width:1150px){.layout{grid-template-columns:240px minmax(0,1fr)}.inspector{grid-column:2;border-top:1px solid var(--line)}aside{grid-row:1/3}.center{padding:28px}.subbrand{display:none}}
-    @media(max-width:700px){header{padding:0 18px}header nav{gap:12px}header nav a:first-child{display:none}.layout{display:block}aside{padding:18px;display:block;border-bottom:1px solid var(--line)}#scenario-list{display:grid;grid-template-columns:1fr 1fr}.catalog-group{grid-column:1/-1}.controls{margin-top:15px}aside .footer-note{display:none}.center{padding:25px 18px}.inspector{padding:24px 18px}h1{font-size:29px}.row{flex-wrap:wrap}.brand{font-size:16px}.intro{font-size:12px}.composer-foot{flex-wrap:wrap}.topline{flex-wrap:wrap}.citation-preview{left:-35px}}
+    @media(max-width:1000px){.layout{grid-template-columns:1fr}.rail{display:none}.toolbar{padding:14px 22px;gap:14px}h1{font-size:16px}.header-label{font-size:11px}}
+    @media(max-width:600px){.app-header{padding:0 16px}.header-label{display:none}.toolbar{padding:12px 16px;gap:10px}h1{width:100%}.kb-picker{flex:1}.kb-picker label{display:none}#knowledge-base{width:100%}.tools{gap:3px}.tools .plain{padding:6px 8px;font-size:11px}.conversation{padding:20px 16px 8px}.composer-area{padding:8px 16px 12px}.welcome{padding:20px 0}.welcome h2{font-size:25px}.suggestions{grid-template-columns:1fr;margin-top:20px}.user-message p{max-width:95%}.assistant{gap:8px;grid-template-columns:24px minmax(0,1fr)}.composer-foot .hint{max-width:65%;font-size:10px}.manifest{gap:10px}.dialog-header,.dialog-body{padding:16px}.source-badge{font-size:10px}}
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand"><div class="logo" aria-hidden="true">✳</div>Foundry IQ <span class="subbrand">Explorer</span></div>
-    <nav>
-      <a href="https://learn.microsoft.com/azure/search/agentic-retrieval-overview" target="_blank" rel="noopener noreferrer">Documentation ↗</a>
-      <a id="repo" href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
-      <button class="plain" id="connect">Server status</button>
-    </nav>
+  <header class="app-header">
+    <div class="brand"><span class="logo" aria-hidden="true">✳</span>Foundry IQ</div>
+    <span class="header-label">Knowledge base playground</span>
+    <nav class="header-tools" aria-label="Help"><a class="header-label" href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer">GitHub ↗</a><button class="icon-button" id="help-button" aria-label="Help and server status" aria-haspopup="dialog">?</button></nav>
   </header>
   <div class="layout">
-    <aside>
-      <div><div class="eyebrow">01 / Choose your knowledge</div><div id="scenario-list"></div></div>
-      <div class="controls">
-        <div class="eyebrow">Retrieval controls</div>
-        <div class="field"><label for="mode">Execution mode</label><select id="mode"><option value="live">Live public knowledge base</option><option value="sample">Sample replay · synthetic data</option></select></div>
-        <div class="field"><label for="effort">Reasoning effort</label><select id="effort"><option value="low">Low · single planning pass</option><option value="medium" disabled>Medium · region approval required</option><option value="minimal">Minimal · indexed / extractive only</option><option value="auto">Auto · adaptive retrieval</option></select></div>
-        <div class="field"><label for="output">Output mode</label><select id="output"><option value="answerSynthesis">Synthesized answer</option><option value="extractiveData">Extractive data</option></select></div>
-        <div class="row">
-          <div class="field"><label for="runtime">Runtime limit (s)</label><input id="runtime" type="number" min="10" max="120" value="60" placeholder="Service default"></div>
-          <div class="field"><label for="tokens">Output limit (tokens)</label><input id="tokens" type="number" min="5001" max="10000" value="5001" placeholder="Service default"></div>
+    <nav class="rail" aria-label="Application">
+      <div class="rail-label">Build &amp; explore</div>
+      <span class="nav-current" aria-current="page">◉ &nbsp; Playground</span>
+      <div class="rail-footer">
+        <a href="https://learn.microsoft.com/azure/search/agentic-retrieval-overview" target="_blank" rel="noopener noreferrer">Documentation ↗</a>
+        <a href="/download">Download source ↓</a>
+        <button id="connect">Server status</button>
+      </div>
+    </nav>
+    <main class="workspace">
+      <div class="toolbar">
+        <h1>Chat playground</h1>
+        <div class="kb-picker"><label for="knowledge-base">Knowledge base</label><select id="knowledge-base" aria-label="Knowledge base"></select></div>
+        <div class="tools">
+          <button class="plain" id="show-code">&lt;/&gt; &nbsp; Show code</button>
+          <button class="icon-button" id="new-chat" aria-label="Start a new chat" title="Start a new chat">↻</button>
+          <button class="icon-button" id="settings-button" aria-label="Runtime settings" title="Runtime settings" aria-haspopup="dialog">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 3-1 3-3 1-3 3 2 2-1 3 3 3 3-1 2 2 3-1 1-3 3-1 1-3-2-2 1-3-3-2-3 1Z"/><circle cx="12" cy="11" r="3"/></svg>
+          </button>
         </div>
-        <label class="hint"><input id="include-activity" type="checkbox" checked> Request activity diagnostics</label>
-        <p class="hint">Request field: maxOutputSize (tokens). Clear a limit to omit its service override. The app always enforces its own total runtime ceiling.</p>
-        <p class="hint" id="control-hint">The last run's effective request stays fixed when controls change. Replays are fixed examples.</p>
-        <details><summary class="hint">Source parameters</summary><div id="source-controls"></div></details>
       </div>
-      <div class="footer-note"><span class="dot"></span>Knowledge base → Retrieve API<p class="muted">Query planning, retrieval, and synthesis in one service call. No separately hosted agent.</p><a href="/download">Download sanitized source ↓</a></div>
-    </aside>
-    <main class="center">
-      <div class="topline"><div class="eyebrow">THE AGENTIC RETRIEVAL PLAYGROUND</div><span class="pill" id="mode-badge">LIVE KNOWLEDGE BASE</span></div>
-      <h1>Your knowledge.<br>Every answer, explained.</h1>
-      <p class="intro">Explore a public knowledge base. Follow the question from query planning to a grounded answer, right down to the source.</p>
-      <p class="hint" id="contract-status">Pinned preview contract; verify each deployment with indexed/Web canary evidence.</p>
-      <p class="notice" id="privacy">Public demo: do not enter sensitive information.</p>
-      <div class="overline"><span class="section-title" id="current-title"></span><span class="muted hint" id="source-count"></span></div>
-      <div class="composer">
-        <textarea id="question" aria-label="Your question" maxlength="8000"></textarea>
-        <div class="composer-foot"><span class="muted" id="composer-label"></span><div><button class="plain" id="cancel" hidden>Cancel</button> <button class="primary" id="run">Run retrieval ↗</button></div></div>
+      <section class="conversation" id="conversation" aria-label="Conversation">
+        <div class="chat-width">
+          <div class="welcome" id="welcome">
+            <div class="welcome-symbol" aria-hidden="true">✳</div>
+            <h2>Chat with your knowledge</h2>
+            <p class="muted" id="welcome-description"></p>
+            <div id="manifest" class="manifest"></div>
+            <div class="welcome-links"><button class="text-button" data-source-gallery aria-haspopup="dialog">Explore source types</button><button class="text-button" id="browse-report" aria-haspopup="dialog" hidden>Browse original PDF pages</button></div>
+            <div id="suggestions" class="suggestions"></div>
+          </div>
+          <div id="messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
+        </div>
+      </section>
+      <div class="composer-area">
+        <div class="chat-width">
+          <div id="error" class="error" role="alert"></div>
+          <form class="composer" id="chat-form">
+            <textarea id="question" aria-label="Your question" maxlength="8000" placeholder="Ask a question about your knowledge base…"></textarea>
+            <div class="composer-foot">
+              <span class="hint" id="composer-label"></span>
+              <div><button type="button" class="plain" id="cancel" hidden>Cancel</button> <button type="submit" class="primary" id="run">Send ↑</button></div>
+            </div>
+          </form>
+          <p class="privacy" id="privacy">Public demo · Do not enter sensitive information. Fictional content is not operational guidance.</p>
+          <div id="run-status" class="hint" role="status" aria-live="polite"></div>
+        </div>
       </div>
-      <button class="suggest" id="suggest">↳ Use the curated example question</button>
-      <div id="error" role="alert"></div>
-      <div id="result" aria-live="polite"></div>
-      <div class="bottom"><span>Built for the field. Designed to be forked.</span><span>Foundry IQ / Customer demos</span></div>
     </main>
-    <section class="inspector" aria-label="Retrieval inspector">
-      <div class="topline"><span class="section-title">Under the hood</span><span class="pill" id="kb-label"></span></div>
-      <div class="tabs" role="tablist" aria-label="Retrieval details">
-        <button class="active" id="tab-sources" data-tab="sources" role="tab" aria-controls="inspect" aria-selected="true">Sources</button>
-        <button id="tab-activity" data-tab="activity" role="tab" aria-controls="inspect" aria-selected="false" tabindex="-1">Activity</button>
-        <button id="tab-request" data-tab="request" role="tab" aria-controls="inspect" aria-selected="false" tabindex="-1">Request</button>
-      </div>
-      <div id="inspect" role="tabpanel" aria-labelledby="tab-sources"></div>
-    </section>
   </div>
-  <dialog id="connection" aria-labelledby="connection-title">
-    <form method="dialog"><button class="plain" style="float:right">Close ✕</button></form>
-    <h2 id="connection-title">Server-side connection</h2>
-    <p>No visitor sign-in. Credentials and quota storage remain server-side. Only the two configured public knowledge bases are allowed; no arbitrary endpoint or private source access.</p>
-    <pre>PUBLIC_ORIGIN
-AZURE_SEARCH_ENDPOINT
-AZURE_SEARCH_API_KEY (Key Vault reference)
-SESSION_SECRET (shared Key Vault reference)
-FOUNDRY_IQ_QUOTA_CONTAINER_URL
-FOUNDRY_IQ_LIVE_ENABLED</pre>
-    <p id="connection-status" role="status">Checking…</p>
-    <div class="notice">Each live deployment requires compatibility evidence and approved Web domains. A replay or mocked test is not a live verification. Fabric, Work IQ, remote SharePoint, and OneLake are out of scope for anonymous live retrieval.</div>
-    <p>Download reproducible code, bundled source icons, and approved public synthetic sources. Product artwork retains its own terms; see assets/PROVENANCE.md in the ZIP. No runtime credentials, logs, or quota state are included.</p>
-    <a class="primary" href="/download">Download sanitized source ↓</a>
+  <dialog id="settings" class="drawer" aria-labelledby="settings-title">
+    <div class="dialog-header"><h2 id="settings-title">Runtime settings</h2><button class="icon-button" data-close="settings" aria-label="Close runtime settings">×</button></div>
+    <div class="dialog-body">
+      <p class="hint">Service default omits the override. Changes apply to the next request; app safety limits still apply.</p>
+      <div class="field"><label for="effort">Retrieval reasoning effort</label><select id="effort"><option value="">Service default</option><option value="low">Low</option><option value="medium" disabled>Medium · operator-enabled only</option><option value="minimal">Minimal · new indexed chats only</option><option value="auto">Auto</option></select></div>
+      <div class="field"><label for="output">Output mode</label><select id="output"><option value="">Service default</option><option value="answerSynthesis">Answer synthesis</option><option value="extractiveData">Extractive data</option></select></div>
+      <div class="row">
+        <div class="field"><label for="runtime">Runtime limit (seconds)</label><input id="runtime" type="number" min="10" max="120" placeholder="Service default"></div>
+        <div class="field"><label for="tokens">Output limit (tokens)</label><input id="tokens" type="number" min="5001" max="10000" placeholder="Service default"></div>
+      </div>
+      <div class="field"><label for="include-activity">Activity diagnostics</label><select id="include-activity"><option value="">Service default</option><option value="true">Enabled</option><option value="false">Disabled</option></select></div>
+      <p id="control-hint" class="hint"></p>
+      <div class="source-controls"><span class="section-title">Knowledge source parameters</span><div id="source-controls"></div></div>
+    </div>
+    <div class="drawer-footer"><button class="plain" id="reset-settings">Reset to service defaults</button></div>
+  </dialog>
+  <dialog id="code" class="code-dialog" aria-labelledby="code-title">
+    <div class="dialog-header"><h2 id="code-title">View code</h2><button class="icon-button" data-close="code" aria-label="Close code">×</button></div>
+    <div class="dialog-body">
+      <div class="field"><label for="code-request">Request</label><select id="code-request"></select></div>
+      <p id="code-context" class="hint"></p>
+      <div class="code-toolbar"><select id="code-format" aria-label="Code format"><option value="curl">cURL (Bash)</option><option value="json">JSON request body</option></select><button class="plain" id="copy-code">Copy code</button></div>
+      <pre id="code-content" tabindex="0" aria-label="Retrieve request code"></pre>
+      <p id="copy-status" role="status" class="hint"></p>
+      <p class="hint">Search endpoint and key use server-only environment-variable placeholders.</p>
+    </div>
+  </dialog>
+  <dialog id="evidence" class="drawer" aria-labelledby="evidence-title">
+    <div class="dialog-header"><h2 id="evidence-title">Retrieval details</h2><button class="icon-button" data-close="evidence" aria-label="Close retrieval details">×</button></div>
+    <div class="tabs" role="tablist" aria-label="Retrieval details">
+      <button id="tab-sources" data-tab="sources" role="tab" aria-controls="inspect" aria-selected="true">Sources</button>
+      <button id="tab-activity" data-tab="activity" role="tab" aria-controls="inspect" aria-selected="false" tabindex="-1">Activity</button>
+      <button id="tab-response" data-tab="response" role="tab" aria-controls="inspect" aria-selected="false" tabindex="-1">Response</button>
+    </div>
+    <div class="dialog-body" id="inspect" role="tabpanel" aria-labelledby="tab-sources"></div>
+  </dialog>
+  <dialog id="source-gallery" class="source-gallery" aria-labelledby="source-gallery-title">
+    <div class="dialog-header"><h2 id="source-gallery-title">Knowledge source types</h2><button class="icon-button" data-close="source-gallery" aria-label="Close source types">×</button></div>
+    <div class="dialog-body">
+      <p class="hint">Supported source families. The four Zava knowledge bases use Blob-backed sources; this gallery does not provision other connectors or imply they ran in a query.</p>
+      <div class="source-grid" id="source-gallery-items"></div>
+      <p class="hint"><a href="https://learn.microsoft.com/azure/search/agentic-knowledge-source-overview" target="_blank" rel="noopener noreferrer">Source availability and requirements ↗</a></p>
+    </div>
+  </dialog>
+  <dialog id="report" class="report-dialog" aria-labelledby="report-title">
+    <div class="dialog-header"><h2 id="report-title">State of AI Report 2026</h2><button class="icon-button" data-close="report" aria-label="Close original PDF pages">×</button></div>
+    <div class="dialog-body">
+      <p class="hint" id="report-context"></p>
+      <form id="report-form" class="page-controls">
+        <button type="button" class="plain" id="report-previous" aria-label="Previous original PDF page">Previous</button>
+        <label for="report-page">PDF page</label><input id="report-page" type="number" min="1" max="244" step="1" value="1" required><button class="plain" type="submit">Go</button>
+        <button type="button" class="plain" id="report-next" aria-label="Next original PDF page">Next</button>
+        <a id="report-full-size" target="_blank" rel="noopener noreferrer">Open full-size page ↗</a>
+      </form>
+      <p class="hint">Faithful renders of the supplied PDF, not PowerPoint slides or AI-generated images. Answers use extracted text, without image interpretation. Browsing a page does not mean it grounded an answer.</p>
+      <p class="hint">State of AI Report 2026 · stateof.ai / Air Street Capital · Original publisher rights apply.</p>
+      <p id="report-status" class="error" role="status" aria-live="polite"></p>
+      <img id="report-image" class="report-image" alt="" hidden>
+    </div>
+  </dialog>
+  <dialog id="connection" class="connection-dialog" aria-labelledby="connection-title">
+    <div class="dialog-header"><h2 id="connection-title">Server status</h2><button class="icon-button" data-close="connection" aria-label="Close server status">×</button></div>
+    <div class="dialog-body">
+      <p id="connection-status" role="status">Checking…</p>
+      <p class="hint">Credentials and quotas stay server-side. Four use-case knowledge bases call Azure live; no recorded answers or visitor sign-in. Zava business documents are fictional.</p>
+      <details><summary class="hint">Compatibility and source scope</summary><p class="hint" id="contract-status"></p><p class="hint">All four use Blob-backed sources. Other connector logos describe supported source families, not live integrations in this demo. Report previews are original PDF renders; image interpretation is not enabled. Product artwork retains separate terms in assets/PROVENANCE.md.</p></details>
+      <p><button class="text-button" data-source-gallery aria-haspopup="dialog">Explore all source types</button></p>
+      <p><a href="https://learn.microsoft.com/azure/search/agentic-retrieval-overview" target="_blank" rel="noopener noreferrer">Documentation ↗</a> · <a href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer">GitHub ↗</a></p>
+      <p><a href="/download">Download sanitized source ↓</a></p>
+    </div>
   </dialog>
   <script type="application/json" id="catalog">__SCENARIOS__</script>
   <script type="module" src="/assets/client.mjs"></script>

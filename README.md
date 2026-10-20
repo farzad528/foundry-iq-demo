@@ -1,6 +1,142 @@
-# Foundry IQ Explorer
+# Microsoft Foundry IQ Demo
 
-The three-column Explorer is this repository's primary **root application**.
+<img width="1440" alt="Foundry IQ chat playground with a knowledge-base picker, Show code, and on-demand runtime settings" src="./assets/explorer-preview.png" />
+
+Agentic RAG demo with Foundry IQ Knowledge Bases and Azure AI Search.
+Chat with a knowledge base, inspect citations, and see the exact Retrieve call
+with **Show code**. Open runtime settings with the gear button; every override
+starts at **Service default**.
+
+🚀 **[Live Demo](https://app-foundryiq-customer-demos.azurewebsites.net/)**
+
+[![Build and test](https://github.com/farzad528/foundry-iq-demo/actions/workflows/azure-static-web-apps.yml/badge.svg?branch=main)](https://github.com/farzad528/foundry-iq-demo/actions/workflows/azure-static-web-apps.yml)
+
+*Preview: the chat-first UI in this source revision. The hosted demo is updated separately.*
+
+## Explore Zava
+
+Four use-case knowledge bases call Azure AI Search live. There are no public
+replays or generated stand-in answers.
+
+| Knowledge base | Try it |
+| --- | --- |
+| **Zava-HR Policy** | Resolve parental-leave, international remote-work and approval edge cases |
+| **Zava-Finance Documents** | Reconcile a purchase's full commitment, available budget and draft approvals |
+| **Zava-Technical-Manuals** | Distinguish an incident signal from evidence for rollback or database recovery |
+| **Zava-State-of-AI-Report** | Compare findings and forecasts, inspect citations and browse original PDF pages |
+
+HR, Finance and Technical content is **original fictional Zava material**, not
+real employee or operational data. All four sources use hybrid keyword/vector
+search with the existing embedding deployment. Curated questions start a real
+query; they do not load prerecorded answers.
+
+**Sources and activity** are on demand. The source-type gallery includes Search
+index, Blob/ADLS, SQL, File, OneLake, indexed and remote SharePoint, Fabric data
+agent, Fabric ontology, MCP server, Work IQ and Web. These logos describe
+supported families, not twelve live integrations: the four Zava KBs use Blob.
+Activity shows only stages, warnings, errors, timings and token counts actually
+returned by Azure. If diagnostics are absent, enable them explicitly for the
+next request; defaults are never silently changed.
+
+The report contains **244 original PDF pages**, not a PowerPoint deck. Previews
+are faithful local PNG renders of the supplied PDF; answers use extracted text,
+**without image interpretation or verbalization**. A citation opens a matching
+page only when its exact versioned source Blob URL proves that mapping. The
+separate page browser does not imply that a selected page grounded an answer.
+The original PDF and derived report text/images are not in either public ZIP.
+Publisher rights remain with the original report owners.
+
+## Deploy
+
+The hosted demo runs on **Azure App Service** with Azure AI Search, Microsoft
+Foundry, Storage, and Key Vault. Deploy your own instance using the
+[App Service hosting guide](#additive-public-app-service-hosting) and the
+[repository's Bicep templates](./infra/).
+
+New deployments keep live retrieval **off by default**. Provisioning,
+permissions, Web terms, costs, and live enablement require separate approval.
+GitHub Actions builds and tests the app; it does **not** deploy it.
+
+## Quick Start
+
+Use **Node.js 22+**, npm, and **Python 3**. Python is build-time only.
+
+```powershell
+git clone https://github.com/farzad528/foundry-iq-demo.git
+Set-Location foundry-iq-demo
+npm ci
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to inspect the UI and request
+code. Retrieval remains paused without separately configured live dependencies;
+there is no offline answer mode. Automated tests use explicitly labeled
+fixtures and protocol doubles, never as public demo responses. Restart the dev
+server after changing source files.
+
+To build and run the production artifact:
+
+```powershell
+npm test
+npm run build
+npm run validate
+npm start
+```
+
+## Environment Variables
+
+See [`.env.example`](./.env.example) for all options. UI inspection needs no
+environment file. Live operation uses these **server-only** settings:
+
+| Variable | Purpose |
+| --- | --- |
+| `PUBLIC_ORIGIN` | Exact canonical HTTPS origin for your hosted app |
+| `AZURE_SEARCH_ENDPOINT` | Dedicated Azure AI Search endpoint |
+| `AZURE_SEARCH_API_KEY` | Search credential, resolved through Key Vault on App Service |
+| `SESSION_SECRET` | Stable shared random secret of at least 32 characters |
+| `FOUNDRY_IQ_QUOTA_CONTAINER_URL` | Existing private Blob container holding the shared quota ledger |
+| `FOUNDRY_IQ_LIVE_ENABLED` | Enables live retrieval only when the shared ledger also permits it |
+
+Keep credentials out of source control and browser configuration. Do not
+overwrite an existing private `.env.local`. Medium effort and trusted-proxy
+mode remain off unless separately verified and approved. See the
+[live deployment prerequisites](#explicit-live-deployment-dependencies).
+
+## Routes
+
+| Route | Description |
+| --- | --- |
+| `/` | Chat playground: knowledge bases, conversations, citations, code, and runtime settings |
+| `/api/retrieve` | Retrieve from one of the four allowlisted live KBs; replay modes are rejected |
+| `/api/report-pages/<version>/<page>.png` | Only the approved original report's pages 1-244; no arbitrary Blob/URL proxy |
+| `/api/config` | Public catalog capabilities and feature flags, never credentials |
+| `/healthz` | HTTP-host liveness; not a Search, Storage, or model readiness check |
+| `/download` | Reproducible, sanitized application source ZIP |
+
+## Resources
+
+- [Foundry IQ Blog](https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/foundry-iq-unlocking-ubiquitous-knowledge-for-agents/4470812)
+- [Azure AI Search Docs](https://learn.microsoft.com/azure/search/)
+- [Microsoft Foundry Docs](https://learn.microsoft.com/azure/ai-foundry/)
+- [AGENTS.md](./AGENTS.md) - Contributor guidance and runtime invariants
+- [Operator reference](#advanced-setup-and-operations) - Deployment, quotas, service contracts, and acceptance evidence
+
+## License
+
+Application code and original synthetic fixtures are [MIT licensed](./LICENSE).
+Product icons retain their separate terms; see
+[`assets/PROVENANCE.md`](./assets/PROVENANCE.md).
+The externally authored State of AI Report and its page renders are not
+relicensed under MIT.
+
+## Advanced Setup and Operations
+
+<details>
+<summary>Expand the full Explorer setup and operator reference</summary>
+
+### Explorer overview
+
+The chat playground is this repository's primary **root application**.
 It replaces the legacy Next.js application; no companion directory or frontend
 framework build is required. One Node host serves the UI and `/api/retrieve`; Azure
 AI Search owns planning, retrieval, Web summarization, and answer synthesis.
@@ -15,7 +151,7 @@ a fresh checkout is configured. Live queries remain **disabled by default** in
 source and example parameters. Publishing or merging source does not authorize
 provisioning, paid canaries, uploads, or deployment; CI is build/test only.
 
-## Local replay and production artifact
+## Local UI and production artifact
 
 Use Node.js **22+** (22/24 LTS compatible), npm, and Python 3. Python is used only
 by the build to create the sanitized source ZIP. Build discovers `python` /
@@ -28,11 +164,10 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`. Live entries are intentionally the first catalog
-group; choose an explicitly labeled **Synthetic replay** to run offline. Each
-replay accepts only its curated question. Controls do not alter replay evidence,
-activity, or timings. A failed live query never falls back to a replay.
-No environment file is required for offline replay. `.env.example` documents
+Open `http://localhost:3000`. The four catalog entries are live-only, so an
+unconfigured local app can preview the UI and code but cannot answer questions.
+A failed query never falls back to a recorded answer. No environment file is
+required for UI inspection. `.env.example` documents
 optional local settings and fixed, non-secret resource names; it does not
 discover resources. If needed, copy it to `.env.local` **only if that file does not already
 exist**. Existing private environments are not migrated, overwritten, or uploaded.
@@ -90,7 +225,9 @@ tests; it excludes Git history, CI metadata, dependencies, build outputs,
 private environments, operational state, logs and deployment files. Validation
 compares its complete entry list and bytes with the allowlisted root files,
 checks deterministic metadata and verifies that `/download` serves that artifact.
-The public fictional corpus is included. Repository-only infrastructure,
+The original public fictional corpus and 12 new Zava Markdown documents are
+included. The supplied report PDF, its derived text/PNGs, upload manifests,
+cloud receipts and operator state are excluded. Repository-only infrastructure,
 knowledge definitions and provisioning/capture/runtime-packaging tools are not;
 their tests are explicitly skipped when absent from the app-only ZIP.
 
@@ -98,9 +235,9 @@ their tests are explicitly skipped when absent from the app-only ZIP.
 
 | Surface | Responsibility |
 | --- | --- |
-| `page.html`, `assets/` | Local three-column UI, client code and bundled product/source icons |
+| `page.html`, `assets/` | Chat UI, request/code helpers, runtime/evidence dialogs and bundled product/source icons |
 | `server.template.mjs`, `lib/` | Built HTTP application, strict protocol, normalization and quota coordination |
-| `config/`, `samples/` | Explicit live catalog and clearly labeled fixed synthetic replays |
+| `config/`, `samples/` | Four-entry live catalog, original fictional source documents and test-only fixtures |
 | `scripts/` | Build, prebuilt startup, Node tests, fixture double and ZIP validation |
 | `infra/` | Separately approved backend and additive hosting Bicep; excluded from the app source ZIP and never executed by CI |
 | `dist/` | Ignored generated handler and sanitized source ZIP; never hand-edit |
@@ -123,15 +260,19 @@ resource discovery or proof of another deployment's current health:
 | Search | `srch-foundryiq-customer-demos` |
 | Storage / Key Vault | `stfoundryiqcustomerdemos` / `kv-fiq-customer-demos` |
 | NEW Foundry parent / NEW project | `ai-foundryiq-customer-demos` / `proj-foundryiq-customer-demos` |
-| Indexed KB | `foundryiq-customer-demos-indexed` |
-| Indexed + Web KB | `foundryiq-customer-demos-web` |
-| Shared Blob / search-index sources | `foundryiq-customer-demos-manuals` / `foundryiq-customer-demos-maintenance` |
-| Additional Web source | `foundryiq-customer-demos-web-guidance` |
+| HR KB / source | `zava-hr-policy` / `zava-hr-policy-source` |
+| Finance KB / source | `zava-finance-documents` / `zava-finance-documents-source` |
+| Technical KB / source | `zava-technical-manuals` / `zava-technical-manuals-source` |
+| Report KB / source | `zava-state-of-ai-report` / `zava-state-of-ai-report-source` |
+| Original report image container | `zava-report-pages` (private) |
 
-Both KBs share the same manuals and maintenance sources. Configure the public
-maintenance index with the approved **hybrid keyword + vector** ingestion,
-embedding deployment, and correct title/content/document-URL mappings. The app
-does not create an index, infer vector readiness, or silently downgrade it.
+Each Zava KB binds its matching Blob source. Their separately approved setup
+uses minimal text extraction and the existing `text-embedding-3-small` deployment
+for hybrid search, plus low-effort answer synthesis with existing GPT-5.1.
+No Content Understanding, new account/model or image verbalization is enabled.
+The old indexed/Web KBs and their source/index/corpus identities remain intact
+for their **legacy repository-only operators**, not in the public catalog.
+The app does not create an index, infer vector readiness, or silently downgrade it.
 Public KBs must not require document-level caller permission tokens.
 
 Provision the Search/model/storage/monitoring dependencies and permissions only
@@ -146,6 +287,12 @@ The app managed identity needs secret-read access to its required Key Vault
 secrets and **Storage Blob Data Contributor scoped to the isolated quota
 container**, not account-wide access. Search-to-model and Search-to-corpus
 identities/permissions are distinct. A Search key is not a downstream identity.
+The approved fourth app grant is **Storage Blob Data Reader on
+`zava-report-pages` only**. Its image route uses system-assigned managed identity,
+an exact version/page allowlist, a 2-MiB streamed byte limit, a 10-second deadline,
+four concurrent reads, PNG/provenance/content-digest checks and zero SDK retries.
+The temporary operator upload grant was removed after all 500 new blobs were
+verified byte-for-byte. Containers remain private; there is no SAS fallback.
 
 `FOUNDRY_IQ_QUOTA_CONTAINER_URL` points to an existing private `demo-quotas`
 container in the demo Storage account. Its separately authorized operator must
@@ -167,9 +314,13 @@ must be approved and verified. `FOUNDRY_IQ_MEDIUM_ENABLED` defaults to false.
 Web input can leave Azure compliance/geographic boundaries; users must not enter
 sensitive data. Web references are **service-provided cited summaries**, not
 guaranteed verbatim passages. Fabric, Work IQ, remote SharePoint, OneLake, and
-visitor authentication remain out of scope; older fixtures are sample-only.
+visitor authentication remain out of scope; older fixtures are tests-only.
 
-## Repository-only Azure scaffolds and operator gates
+## Legacy repository-only Azure scaffolds and operator gates
+
+The operators in this section retain the original pump/manuals/maintenance/Web
+scope. They do not provision or repurpose Zava resources. Do not run their
+ingestion or capture commands as a Zava rollout.
 
 These files exist only in a full checkout, not the UI's app-only source download.
 The dedicated operator target is subscription
@@ -258,7 +409,7 @@ files, use the developer default credential chain, or change the production
 managed-identity-only `npm start` path. Local ingestion permits only that exact
 explicit HTTP loopback origin; normal public ingestion still requires HTTPS.
 The app-only source download intentionally excludes this operator and its
-dedicated definitions. It remains a standalone replay/production application.
+dedicated definitions. It remains a standalone live-only application.
 
 `node scripts\local-live.mjs --disable-live` pauses the shared switch using a
 lease/ETag write, preserving counters. It requires only the owned Storage
@@ -321,7 +472,7 @@ both-source grounding; HTTP success alone is not acceptance.
 a separate deterministic **prebuilt runtime ZIP**, using build-time Python
 and already installed, lockfile-matching production dependencies. It performs
 no installation/upload/deployment. Its explicit runtime boundary contains only
-startup/manifests, compiled handler, the four runtime libraries, source download
+startup/manifests, compiled handler, the five runtime libraries, source download
 and locked production packages; no private environments, infrastructure,
 operator tools, captures or state. Rebuild first; deploy later only with
 approval. Start with `npm start`; no Python, build or package install runs on
@@ -364,6 +515,11 @@ readiness. Verify resolved references, shared coordination, anonymous HTTPS,
 actual indexed/Web grounding and browser/citation behavior before publication.
 Keep conservative IP grouping unless deployed-host forwarding/bypass proof
 justifies trusted proxy mode.
+
+The existing hosted app now also has the separately approved, container-only
+report-image Reader grant described above. The original hosting template
+declares its original three grants; do not broaden permissions or rerun backend
+provisioning to publish a code-only Zava release.
 
 After hosting and exact grants are ready, the repository-only public operator
 verifies ownership, runtime/security, resolved Vault references, narrow grants,
@@ -409,7 +565,7 @@ publication and aka.ms edits are separate actions, not rollout side effects.
 The adapter uses the published `2026-08-01-preview` REST contract:
 
 ```http
-POST /knowledgebases('foundryiq-customer-demos-indexed')/retrieve?api-version=2026-08-01-preview
+POST /knowledgebases('zava-hr-policy')/retrieve?api-version=2026-08-01-preview
 Content-Type: application/json
 api-key: <server only>
 x-ms-client-request-id: <opaque request ID>
@@ -424,13 +580,25 @@ parameter. The app rejects that stored-property name in requests, including
 when both names are supplied; it never retries using another field.
 The service also rejected an output budget of 1,000 with "must be greater than
 5000". Limits in the application are runtime 10-120 seconds and output
-5,001-10,000 tokens; the UI and canaries default to 5,001. These are token
+5,001-10,000 tokens when explicitly overridden; operator canaries use 5,001. These are token
 budgets, not promises of consumption or dollar caps.
 Omitting optional fields preserves service defaults; a separate total
-app budget always applies. Low effort / synthesized answer is the UI default.
+app budget always applies. All UI runtime and source parameters start at
+**Service default**: effort, output mode, runtime/output limits, activity,
+references, source data and always-query flags are omitted until overridden.
+This uses the service/KB configuration, without claiming to know its effective
+values. Explicit **Auto** is a separate effort. Resetting settings removes
+overrides again; it does not mutate previously retained requests.
 Minimal effort uses one semantic intent, extractive output, and indexed sources
 only; `alwaysQuerySource` is omitted because minimal searches all sources.
-Other efforts use one user text message. Medium is operator-gated; automatic
+Other efforts use an alternating user/assistant `messages` array, starting and
+ending with the user. Each live follow-up includes the completed conversation's
+text; unsuccessful calls are not assistant answers. Empty-text responses require
+a new chat, rather than silently losing context. History is never silently
+truncated: exceeding the 64-KiB envelope limit requires a new chat. A new chat
+keeps settings; switching knowledge bases clears both history and overrides.
+All public conversations use live calls; recorded replay modes are rejected.
+Medium is operator-gated; automatic
 effort requires the preview API and a configured KB model.
 
 Only typed, supported fields and exact source membership are accepted. Duplicate
@@ -444,6 +612,15 @@ each new upstream attempt must reserve and consume another call.
 
 Every run retains the effective normalized request, pinned version, client
 request ID, sent flag and response correlation, even after controls change.
+**Show code** opens the latest retained request (or a labeled draft before the
+first call). Its request selector also previews the next draft, including
+unsent follow-ups and new overrides, without making a paid call.
+It includes cURL/Bash and JSON views, the actual OData path and `messages`
+or minimal `intents`. Per-answer code buttons retain that answer's own snapshot.
+Endpoint and credential placeholders never reveal server secrets. Interrupted
+calls without server confirmation show dispatch as unconfirmed, not unsent.
+Source evidence, activity and the sanitized response open on demand, rather
+than occupying permanent columns.
 `redacted=true` explicitly marks a snapshot whose sensitive strings were removed;
 otherwise its body exactly matches the normalized payload sent to Search.
 References are joined by exact string reference ID and `activitySource` ID,
@@ -520,34 +697,42 @@ approved ownership-limited plan.
 
 ## Validation and handoff
 
-The built-in Node test runner covers curated replays, realistic **simulated**
-indexed/Web shapes, arbitrary live input forwarding, safe annotations/citations,
+The built-in Node test runner covers live-only mode rejection, realistic **simulated**
+indexed/Web shapes, all four KB targets, exact report-page provenance, PNG byte/
+type/digest/concurrency/timeout boundaries, arbitrary live input forwarding, safe annotations/citations,
 negative contracts, streaming bounds, partial/errors, cancellation/timeouts,
 direct clients, all quota thresholds, independent coordinators sharing lease/
 ETag state, restart/overlap/expiry and fail-closed behavior. Artifact validation
 checks the prebuilt handler, health route and source-ZIP allowlist. The source
 ZIP includes only explicitly allowlisted reproducible code, examples, bundled
-source icons and approved synthetic files; never `.env.local`, runtime state, logs,
+source icons and original fictional documents; never the supplied report PDF or
+its derived images/text, `.env.local`, runtime state, logs,
 generated deployment files, dependency trees, or symlinks. Icon provenance and
 redistribution terms are in `assets/PROVENANCE.md`.
 
 Local tests use a Storage protocol double, **not real Blob or Azure retrieval
-acceptance**. New deployments still need real indexed/Web captures, Storage
-coordination/restart, arbitrary and both-source questions, controlled-change
-retrieval, cost/latency and anonymous HTTPS/mobile/keyboard evidence. No local
-mock result substitutes for those milestones.
+acceptance**. New deployments still need real retrieval/citation evidence for
+every enabled KB and source family, Storage coordination/restart, unrelated
+questions, cost/latency and anonymous HTTPS/mobile/keyboard evidence.
+Multi-source, controlled-change and Web claims need their own explicitly
+approved checks; gallery icons do not expand that scope. No local mock result
+substitutes for those milestones.
 
 ## Hosted demo evidence and limits
 
-The dedicated deployment was accepted on **2026-10-19** at
+The earlier indexed/Web release was accepted on **2026-10-19** at
 **https://app-foundryiq-customer-demos.azurewebsites.net**. Its S1 App Service
 uses the existing dedicated Search, project-enabled Foundry/models, Storage
 and Vault resources in `rg-foundryiq-customer-demos`, `westus2`. The application
-has exactly two secret-read grants and one private quota-container grant.
+originally had two secret-read grants and one private quota-container grant.
+On 2026-10-20, the separately approved report-image Reader grant was added on
+`zava-report-pages` only; temporary operator upload access was then removed.
 Entra-authorized prebuilt publication succeeded with SCM/FTP basic publishing
 disabled; Python is not used at startup.
 
-Separate live acceptance, rather than the fixtures, established:
+These historical checks do not establish hosted acceptance of the four new
+Zava KBs or the report-image route. Separate live acceptance, rather than the
+fixtures, established:
 
 - Real indexed grounding from both Blob and the hybrid maintenance index,
   including P-104's pending reviewer acknowledgement and the controlled
@@ -596,6 +781,9 @@ deployments passed without a policy bypass.
 
 Application code and original fixtures are MIT licensed. User-supplied product
 artwork retains its own terms; see `assets/PROVENANCE.md`. The same local icons
-identify Blob, Search index, Web, Fabric and SharePoint across the catalog,
-controls, evidence, citations and activity inspector. Fabric and SharePoint
-remain synthetic-only; icon support does not enable those live integrations.
+identify Blob, Search index, Web, Fabric and SharePoint in evidence and controls.
+The source-family gallery additionally includes the supplied SQL, File, MCP and
+Work IQ artwork. Non-Blob integrations remain outside the Zava live scope;
+icon support does not enable connectors or fabricate query activity.
+
+</details>

@@ -21,7 +21,7 @@ export async function runtimeFiles(workspace = root) {
   };
   for (const path of ['package.json', 'package-lock.json', 'scripts/start.mjs', 'dist/source.zip']) await add(path);
   for (const path of ['dist/server/index.mjs', 'dist/server/package.json']) await add(path);
-  for (const name of ['http.mjs', 'protocol.mjs', 'normalize.mjs', 'quota.mjs']) {
+  for (const name of ['http.mjs', 'protocol.mjs', 'normalize.mjs', 'quota.mjs', 'report-pages.mjs']) {
     await add(join('lib', name));
     await add(join('dist/server/lib', name));
   }
@@ -44,7 +44,7 @@ export async function runtimeFiles(workspace = root) {
       || /^(?:infra|\.git|\.github|config|samples)\//.test(path))) {
     throw new OperatorError('Runtime allowlist is incomplete or includes a forbidden source/state path.');
   }
-  for (const name of ['http.mjs', 'protocol.mjs', 'normalize.mjs', 'quota.mjs']) {
+  for (const name of ['http.mjs', 'protocol.mjs', 'normalize.mjs', 'quota.mjs', 'report-pages.mjs']) {
     const [source, built] = await Promise.all([readFile(join(workspace, 'lib', name)), readFile(join(workspace, 'dist/server/lib', name))]);
     if (!source.equals(built)) throw new OperatorError('Prebuilt libraries differ from source; rebuild before packaging.');
   }
