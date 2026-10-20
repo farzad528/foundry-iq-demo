@@ -26,13 +26,12 @@ with zipfile.ZipFile(b,'w',zipfile.ZIP_DEFLATED) as z:
 print(base64.b64encode(b.getvalue()).decode())
 `], { input: JSON.stringify(archiveFiles), maxBuffer: 10 * 1024 * 1024 }).toString().trim();
 
-const fixtures = JSON.parse(readFileSync('config/scenarios.json', 'utf8'));
 const corpus = JSON.parse(readFileSync('samples/public-corpus.json', 'utf8'));
 if (corpus.license !== 'MIT' || corpus.documents?.length !== 12 || corpus.recordRecipe?.count !== 200
   || new Set(corpus.documents.map(doc => doc.id)).size !== 12) {
   throw new Error('Public fictional corpus must contain 12 distinct documents and the 200-record recipe.');
 }
-const catalog = publicCatalog(fixtures);
+const catalog = publicCatalog();
 const html = readFileSync('page.html', 'utf8').replace('__SCENARIOS__', () => JSON.stringify(catalog).replace(/</g, '\\u003c'));
 const samples = Object.fromEntries(archiveFiles.filter(path => path.startsWith('samples/')).map(path => ['/' + path, readFileSync(path, 'utf8')]));
 const assets = Object.fromEntries(archiveFiles.filter(path => /^assets\/.*\.(?:svg|mjs)$/.test(path)).map(path => [
@@ -41,15 +40,14 @@ const assets = Object.fromEntries(archiveFiles.filter(path => /^assets\/.*\.(?:s
 ]));
 const values = {
   '__DATA__': JSON.stringify(catalog),
-  '__FIXTURES__': JSON.stringify(Object.fromEntries(fixtures.map(sample => [sample.id, sample.fixture]))),
   '__PAGE__': JSON.stringify(html),
   '__ARCHIVE__': archive,
   '__SAMPLES__': JSON.stringify(samples),
   '__ASSETS__': JSON.stringify(assets),
 };
-const source = readFileSync('server.template.mjs', 'utf8').replace(/__DATA__|__FIXTURES__|__PAGE__|__ARCHIVE__|__SAMPLES__|__ASSETS__/g, match => values[match]);
+const source = readFileSync('server.template.mjs', 'utf8').replace(/__DATA__|__PAGE__|__ARCHIVE__|__SAMPLES__|__ASSETS__/g, match => values[match]);
 mkdirSync('dist/server/lib', { recursive: true });
-for (const file of ['protocol.mjs', 'normalize.mjs', 'quota.mjs', 'http.mjs']) copyFileSync('lib/' + file, 'dist/server/lib/' + file);
+for (const file of ['protocol.mjs', 'normalize.mjs', 'quota.mjs', 'http.mjs', 'report-pages.mjs']) copyFileSync('lib/' + file, 'dist/server/lib/' + file);
 writeFileSync('dist/server/index.mjs', source);
 writeFileSync('dist/server/package.json', JSON.stringify({ type: 'module' }));
 writeFileSync('dist/source.zip', Buffer.from(archive, 'base64'));

@@ -62,6 +62,8 @@ async function verifyHosting(definitions, prefix, send) {
     [`Microsoft.KeyVault/vaults/${definitions.keyVault}/secrets/session-secret`, '4633458b-17de-408a-b874-0445c86b69e6'],
     [`Microsoft.Storage/storageAccounts/${definitions.storageAccount}/blobServices/default/containers/${definitions.quotaContainer}`,
       'ba92f5b4-2d11-453d-a403-e96b0029c9fe'],
+    [`Microsoft.Storage/storageAccounts/${definitions.storageAccount}/blobServices/default/containers/zava-report-pages`,
+      '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'],
   ];
   for (const [suffix, role] of grants) {
     const scope = new URL(prefix + suffix).pathname;

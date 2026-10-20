@@ -1,4 +1,4 @@
-import { sourceIcon } from './source-icons.mjs';
+import { sourceIcon, sourceFamilies } from './source-icons.mjs';
 import { buildRequest, conversationMessages, requestSnapshot, requestCode } from './request.mjs';
 
 const DATA = JSON.parse(document.getElementById('catalog').textContent);
@@ -20,6 +20,11 @@ let selectedRef = null;
 let tab = 'sources';
 let sequence = 0;
 let previewId = 0;
+let pageController;
+let pageObjectUrl;
+let currentPage = 1;
+let citedPage = null;
+const report = DATA.find(item => item.report)?.report;
 
 function safeLink(value) {
   if (typeof value !== 'string') return null;
@@ -58,30 +63,26 @@ function resetSettings() {
 }
 
 function updateCapabilities() {
-  const allowed = scenario.execution === 'sample'
-    ? ['low', 'medium', 'minimal', 'auto']
-    : config.capabilities?.[scenario.id]?.efforts || ['low', ...(scenario.sources.some(source => source.kind === 'web') ? [] : ['minimal']), 'auto'];
+  const allowed = config.capabilities?.[scenario.id]?.efforts || ['low', 'minimal', 'auto'];
   for (const option of $('effort').options) option.disabled = option.value !== '' && !allowed.includes(option.value);
   const minimal = $('effort').value === 'minimal';
   if (minimal) $('output').value = 'extractiveData';
   $('output').disabled = minimal || busy;
-  const replayComplete = scenario.execution === 'sample' && turns.some(turn => turn.result);
-  $('run').disabled = busy || replayComplete;
-  $('question').disabled = busy || replayComplete;
+  $('run').disabled = busy || config.liveEnabled === false;
+  $('question').disabled = busy;
   $('knowledge-base').disabled = busy;
   $('new-chat').disabled = busy;
   fields.filter(id => id !== 'output').forEach(id => { $(id).disabled = busy; });
   $('reset-settings').disabled = busy;
   $('source-controls').querySelectorAll('select').forEach(input => { input.disabled = busy; });
-  $('composer-label').textContent = replayComplete ? 'Fixed replay complete · Start a new chat to replay'
-    : scenario.execution === 'sample' ? 'Synthetic replay · Fixed example'
-      : config.liveEnabled === false ? 'Live paused · Select a synthetic replay to explore'
-      : 'Conversation history included · Ctrl / ⌘ + Enter to send';
+  $('composer-label').textContent = config.liveEnabled === false ? 'Live retrieval paused'
+    : 'Conversation history included · Ctrl / ⌘ + Enter to send';
   $('control-hint').textContent = minimal
     ? 'Minimal requires extractive data and one intent, without conversation history. Start a new chat for a minimal query.'
-    : 'Auto is an explicit effort, not Service default. Leave source overrides unset unless needed.';
-  $('privacy').textContent = scenario.sources.some(source => source.kind === 'web')
-    ? 'Public demo · No sensitive information. Web queries can leave Azure compliance and geographic boundaries.'
+    : '';
+  $('control-hint').hidden = !minimal;
+  $('privacy').textContent = scenario.report
+    ? 'Public demo · Do not enter sensitive information. Answers use extracted text, not image interpretation.'
     : 'Public demo · Do not enter sensitive information. Fictional content is not operational guidance.';
 }
 
@@ -104,12 +105,10 @@ function selectScenario(id) {
   if (busy) return;
   scenario = DATA.find(item => item.id === id);
   $('knowledge-base').value = id;
-  $('welcome-description').textContent = scenario.execution === 'sample'
-    ? 'A fixed synthetic example. No Azure call is made.'
-    : scenario.description;
+  $('welcome-description').textContent = scenario.description;
   $('manifest').innerHTML = scenario.sources.map(source => badge(source.kind)).join('');
-  const suggestions = [{ label: scenario.execution === 'sample' ? 'Replay example' : 'Start with an example', question: scenario.question }];
-  if (scenario.execution === 'live') suggestions.push({ label: 'Find the gaps', question: 'What information is missing or cannot be confirmed from these sources?' });
+  $('browse-report').hidden = !scenario.report;
+  const suggestions = scenario.suggestions;
   $('suggestions').innerHTML = suggestions.map((item, index) => `<button class="suggestion" data-suggestion="${index}"><span>${esc(item.label)} ↗</span>${esc(item.question)}</button>`).join('');
   $('suggestions').querySelectorAll('button').forEach(button => {
     button.onclick = () => { $('question').value = suggestions[Number(button.dataset.suggestion)].question; $('question').focus(); };
@@ -159,19 +158,18 @@ function renderConversation() {
     if (turn.pending) answer = '<p class="muted">Retrieving…</p>';
     else if (turn.error) answer = `<p class="error" role="alert">${esc(turn.error)}</p>`;
     else {
-      const { normalized, sample } = turn.result;
+      const { normalized } = turn.result;
       const text = turn.request.body.outputMode === 'extractiveData' ? `<pre>${esc(normalized.text)}</pre>` : normalized.text.split('\n\n')
         .map(paragraph => `<p>${paragraph.split(/(\[ref_id:[^\]]+\])/).map(part => {
           const match = /^\[ref_id:([^\]]+)\]$/.exec(part);
           return match ? citation(turn, match[1]) : esc(part);
         }).join('')}</p>`).join('');
-      answer = `${sample ? '<p><span class="pill">Synthetic replay · Illustrative timings</span></p>' : ''}
-        ${normalized.partial ? '<p class="warning">Partial response. Some retrieval work did not complete.</p>' : ''}
+      answer = `${normalized.partial ? '<p class="warning">Partial response. Some retrieval work did not complete.</p>' : ''}
         ${text || '<p class="warning">No text response returned. Inspect the service response.</p>'}
         ${!normalized.references.length ? '<p class="warning">No references returned; grounding is unverified.</p>' : ''}
         <div class="answer-actions"><button class="text-button" data-turn="${turn.id}" data-action="sources">${normalized.references.length} sources</button>
         <button class="text-button" data-turn="${turn.id}" data-action="activity">Activity</button><button class="text-button" data-turn="${turn.id}" data-action="code">Show code</button>
-        <span>${sample ? 'Not sent to Azure' : esc(turn.elapsed) + ' ms round trip'}</span></div>
+        <span>${esc(turn.elapsed)} ms round trip</span></div>
         ${normalized.limitations.length ? `<details class="notes"><summary>Evidence notes (${normalized.limitations.length})</summary>${normalized.limitations.map(note => `<p>${esc(note)}</p>`).join('')}</details>` : ''}`;
     }
     if (turn.error) answer += `<button class="text-button" data-turn="${turn.id}" data-action="code">Show request</button>`;
@@ -207,7 +205,7 @@ function openCode(snapshot, label, draft = false) {
 
 function showCodeSnapshot(snapshot, label) {
   codeSnapshot = structuredClone(snapshot);
-  const dispatch = snapshot.sent === true ? 'Sent to Azure' : snapshot.sent === false ? 'Not sent to Azure' : 'Azure dispatch unconfirmed';
+  const dispatch = snapshot.sent === true ? 'Sent to Azure' : snapshot.sent === false ? 'Request not dispatched' : 'Azure dispatch unconfirmed';
   $('code-context').textContent = `${label} · ${dispatch}${snapshot.redacted ? ' · Sensitive values redacted' : ''}. ${snapshot.clientRequestId ? 'Request ' + snapshot.clientRequestId + '. ' : ''}Editing settings does not change this snapshot.`;
   $('copy-status').textContent = '';
   renderCode();
@@ -248,17 +246,26 @@ function renderInspector() {
     return;
   }
   if (tab === 'activity') {
-    $('inspect').innerHTML = `<p class="hint">${result.sample ? 'Fixed example; settings do not alter recorded evidence or illustrative timings.' : 'Service-reported activities only. Parallel durations are not added.'}</p>
-      ${!result.normalized.activities.length ? '<p class="hint">No activities returned. Enable activity diagnostics for the next request if needed.</p>' : ''}
+    $('inspect').innerHTML = `<p class="hint">Service-reported activities only. Parallel durations are not added.</p>
+      ${!result.normalized.activities.length ? '<p class="hint">No activities returned.</p><button class="plain" id="enable-diagnostics">Enable diagnostics for the next request</button>' : ''}
       <div class="trace">${result.normalized.activities.map(activity => `<div class="step"><b>${esc(activity.type || 'Unreported type')} · ID ${esc(activity.id ?? 'not reported')}</b>
         <small>${Number.isFinite(activity.elapsedMs) ? esc(activity.elapsedMs) + ' ms' : 'Timing not reported'}</small>
         <p class="hint">${esc(activity.knowledgeSourceName || 'Knowledge base')}</p>
-        ${activity.error ? `<p class="error">Service activity failed: ${esc(activity.error.code || 'unknown error')}</p>` : ''}
+        ${['inputTokens', 'outputTokens'].filter(field => Number.isFinite(activity[field])).map(field => `<small>${esc(field)}: ${esc(activity[field])}</small>`).join('')}
+        ${activity.error ? `<p class="error">Service activity failed: ${esc(activity.error.code || 'unknown error')} ${esc(activity.error.message || '')}</p>` : ''}
+        ${activity.warning ? `<p class="warning">${esc(typeof activity.warning === 'string' ? activity.warning : pretty(activity.warning))}</p>` : ''}
         <details><summary class="hint">Inspect activity</summary><pre>${esc(pretty(activity))}</pre></details></div>`).join('')}</div>
-      ${result.sample && scenario.sql ? `<p class="hint">Illustrative SQL, not service diagnostics. Live Fabric is out of scope.</p><pre>${esc(scenario.sql)}</pre>` : ''}`;
+      `;
+    if ($('enable-diagnostics')) $('enable-diagnostics').onclick = () => {
+      $('include-activity').value = 'true';
+      $('evidence').close();
+      updateCapabilities();
+      openDialog('settings');
+      $('include-activity').focus();
+    };
     return;
   }
-  $('inspect').innerHTML = '<p class="hint">Returned evidence only. Source links may require separate authorization; the demo does not proxy them.</p>' +
+  $('inspect').innerHTML = '<p class="hint">Returned evidence only. External source links may require authorization. Report previews use only verified original-page mappings.</p>' +
     (result.normalized.references.map((reference, index) => {
       const link = safeLink(reference.url);
       return `<article tabindex="-1" id="reference-${index}" class="source-card ${reference.id === selectedRef ? 'selected-ref' : ''}">
@@ -267,14 +274,64 @@ function renderInspector() {
         ${reference.location ? `<p>Location: ${esc(reference.location)}</p>` : ''}
         ${reference.kind === 'web' ? '<p class="warning">Cited Web summary, not a guaranteed verbatim passage.</p>' : ''}
         <blockquote>${esc(reference.passage || 'No passage text returned. Inspect the annotation below.')}</blockquote>
+        ${report && Number.isInteger(reference.reportPage) && reference.reportPage >= 1 && reference.reportPage <= report.pageCount
+          ? `<p><button class="plain" data-report-page="${reference.reportPage}">View original PDF page ${reference.reportPage}</button></p>` : ''}
         ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open source ↗</a>` : '<p class="hint">No safe public source link returned.</p>'}
         <details ${reference.id === selectedRef ? 'open' : ''}><summary>Full sanitized annotation</summary><pre>${esc(pretty(reference.annotation))}</pre></details></article>`;
     }).join('') || '<p class="warning">No references returned; grounding is unverified.</p>');
+  $('inspect').querySelectorAll('[data-report-page]').forEach(button => {
+    button.onclick = () => openReport(Number(button.dataset.reportPage), true);
+  });
+}
+
+function openReport(page = 1, fromCitation = false) {
+  citedPage = fromCitation ? page : null;
+  if (!$('report').open) openDialog('report');
+  void loadReportPage(page);
+}
+
+async function loadReportPage(page) {
+  if (!report || !Number.isInteger(page) || page < 1 || page > report.pageCount) {
+    $('report-status').textContent = 'Choose an original PDF page between 1 and 244.';
+    return;
+  }
+  pageController?.abort();
+  const controller = new AbortController();
+  pageController = controller;
+  if (pageObjectUrl) URL.revokeObjectURL(pageObjectUrl);
+  pageObjectUrl = null;
+  $('report-image').removeAttribute('src');
+  $('report-image').hidden = true;
+  currentPage = page;
+  $('report-page').value = String(page);
+  $('report-previous').disabled = page === 1;
+  $('report-next').disabled = page === report.pageCount;
+  $('report-context').textContent = `${citedPage === page ? 'Cited source file' : 'Browsing original pages'} · Original PDF page ${page} of ${report.pageCount}`;
+  $('report-status').textContent = 'Loading original page…';
+  const path = `/api/report-pages/${report.version}/${page}.png`;
+  $('report-full-size').href = path;
+  try {
+    const response = await fetch(path, { signal: controller.signal });
+    if (!response.ok) {
+      const body = await response.json();
+      throw new Error(`${body.error || 'Page preview failed.'} (request ${body.requestId || 'unavailable'})`);
+    }
+    const image = await response.blob();
+    controller.signal.throwIfAborted();
+    if (image.type !== 'image/png' || !image.size || image.size > 2 * 1024 * 1024) throw new Error('The original page returned an invalid image.');
+    pageObjectUrl = URL.createObjectURL(image);
+    $('report-image').alt = `State of AI Report 2026, original PDF page ${page}`;
+    $('report-image').src = pageObjectUrl;
+    $('report-image').hidden = false;
+    $('report-status').textContent = '';
+  } catch (error) {
+    if (!controller.signal.aborted) $('report-status').textContent = error.message;
+  }
 }
 
 async function run() {
   if (busy) return;
-  if (scenario.execution === 'sample' && turns.some(turn => turn.result)) return;
+  if (config.liveEnabled === false) { $('error').textContent = 'Live retrieval is paused.'; return; }
   if (!$('question').value.trim()) { $('error').textContent = 'Enter a question.'; $('question').focus(); return; }
   if (!$('runtime').checkValidity() || !$('tokens').checkValidity()) { $('error').textContent = 'Check the runtime and token limits in Runtime settings.'; return; }
   let request;
@@ -309,7 +366,7 @@ async function run() {
     turn.result = body;
     turn.elapsed = Math.round(performance.now() - start);
     $('question').value = '';
-    $('run-status').textContent = body.sample ? 'Synthetic replay complete. No Azure call was made.' : 'Response received.';
+    $('run-status').textContent = 'Response received.';
   } catch (error) {
     turn.error = cancellation.signal.aborted ? 'Retrieval cancelled. A reserved live call still counts against quotas.' : error.message;
     $('run-status').textContent = 'Retrieval did not complete. No fallback was used.';
@@ -325,8 +382,28 @@ async function run() {
   }
 }
 
-$('knowledge-base').innerHTML = ['live', 'sample'].map(execution => `<optgroup label="${execution === 'live' ? 'Live knowledge bases' : 'Synthetic replays'}">` +
-  DATA.filter(item => item.execution === execution).map(item => `<option value="${esc(item.id)}">${esc(item.name)}${execution === 'sample' ? ' · Sample' : ''}</option>`).join('') + '</optgroup>').join('');
+$('knowledge-base').innerHTML = DATA.map(item => `<option value="${esc(item.id)}">${esc(item.name)}</option>`).join('');
+$('source-gallery-items').innerHTML = sourceFamilies.map(source => `<article class="source-family"><img src="${source.icon}" alt="" width="30" height="30"><div><b>${esc(source.label)}</b><span>${esc(source.access)}${source.preview ? ' · Preview' : ''}</span></div></article>`).join('');
+document.querySelectorAll('[data-source-gallery]').forEach(button => { button.onclick = () => openDialog('source-gallery'); });
+$('browse-report').onclick = () => openReport();
+$('report-previous').onclick = () => { void loadReportPage(currentPage - 1); };
+$('report-next').onclick = () => { void loadReportPage(currentPage + 1); };
+$('report-form').onsubmit = event => {
+  event.preventDefault();
+  if ($('report-page').checkValidity()) void loadReportPage(Number($('report-page').value));
+  else $('report-page').reportValidity();
+};
+$('report-image').onerror = () => {
+  $('report-image').hidden = true;
+  $('report-status').textContent = 'The original page could not be displayed. No replacement image was generated.';
+};
+$('report').onclose = () => {
+  pageController?.abort();
+  if (pageObjectUrl) URL.revokeObjectURL(pageObjectUrl);
+  pageObjectUrl = null;
+  $('report-image').removeAttribute('src');
+  $('report-image').hidden = true;
+};
 $('knowledge-base').onchange = () => selectScenario($('knowledge-base').value);
 $('new-chat').onclick = () => { newChat(); $('question').focus(); };
 $('reset-settings').onclick = resetSettings;

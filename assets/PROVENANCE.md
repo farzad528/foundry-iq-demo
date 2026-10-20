@@ -11,8 +11,12 @@ SVGs are imported unchanged apart from their local filenames:
 | `blob.svg` | `azure-blob-storage.svg` | `azureBlob` |
 | `search.svg` | `azure-ai-search-index.svg` | `searchIndex` |
 | `web.svg` | `web.svg` | `web` |
-| `fabric.svg` | `fabric-iq-onelake-catalog.svg` | `fabricDataAgent` (synthetic replay only) |
-| `sharepoint.svg` | `sharepoint-remote.svg` | `remoteSharePoint` (synthetic replay only) |
+| `fabric.svg` | `fabric-iq-onelake-catalog.svg` | Fabric / OneLake source-family gallery |
+| `sharepoint.svg` | `sharepoint-remote.svg` | Indexed / remote SharePoint source-family gallery |
+| `sql.svg` | `azure-sql.svg` | Azure SQL source-family gallery |
+| `file.svg` | `file.svg` | File source-family gallery |
+| `mcp.svg` | `mcp-server.svg` | MCP server source-family gallery |
+| `workiq.svg` | `work-iq.svg` | Work IQ source-family gallery |
 
 Supplied ZIP SHA-256:
 `da1dd5f28ddf0ce5ec881aa0ff0421bd6f97a556a4da5f723878c787440e402f`.
@@ -45,4 +49,7 @@ The local registry supplies source-name and Indexed/Remote text labels. Images
 are decorative (`alt=""`); labels remain available to assistive technology.
 No font, CDN or remote image is loaded. All bundled SVGs are self-contained,
 with no scripts, external resources or embedded HTML. Product-icon mappings do
-not enable new live connectors: Fabric and SharePoint remain synthetic-only.
+not enable new live connectors. All four Zava KBs use real Blob-backed sources;
+the on-demand gallery describes twelve supported source families, not twelve
+provisioned integrations or fabricated query activities. Related Fabric and
+SharePoint families reuse their supplied family artwork without alteration.

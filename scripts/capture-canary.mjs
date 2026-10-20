@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { knowledgeBases } from '../config/knowledge-bases.mjs';
+import { legacyKnowledgeBases as knowledgeBases } from '../config/knowledge-bases.mjs';
 import { BlobQuotaCoordinator } from '../lib/quota.mjs';
 import { API_VERSION, validateRequest, MAX_RESPONSE_BYTES, readBounded } from '../lib/protocol.mjs';
 import { sanitize, normalizeResponse } from '../lib/normalize.mjs';

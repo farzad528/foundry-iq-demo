@@ -19,12 +19,16 @@ required. Match surrounding two-space JavaScript style and explicit imports.
   chat playground, on-demand settings/evidence dialogs, request/code helpers,
   keyboard/citation interactions and locally bundled source icons.
 - `server.template.mjs`: application handler template. Build embeds only the
-  approved catalog, synthetic fixtures, source ZIP and local public assets.
+  approved live-only catalog, source ZIP and local public assets. Test fixtures
+  are never embedded as executable replay responses.
 - `lib/protocol.mjs`: pinned contract, capability validation and streaming bounds.
 - `lib/normalize.mjs`: evidence/citation joins, safe URLs and redaction.
 - `lib/quota.mjs`: managed-identity Blob leases/ETags and durable shared limits.
 - `lib/http.mjs`: Node bridge, bounded direct clients and cancellation.
-- `config/`: explicit live KB/source identities and synthetic replay catalog.
+- `lib/report-pages.mjs`: exact original-page provenance and bounded, keyless
+  private-Blob PNG reads; no arbitrary URL proxy or image interpretation.
+- `config/`: four explicit Zava KB/source identities and tests-only fixtures;
+  protected legacy identities are exported only for repository operators.
 - `samples/`: fictional, public example documents, never real customer content.
 - `scripts/`: build/dev/start, Node tests, Storage double, ZIP allowlist and
   artifact validation. `scripts/fixtures/published-response.json` is hand-authored
@@ -53,9 +57,10 @@ The handler template intentionally contains build placeholders.
 
 `npm run dev` builds once and starts the app; restart after source changes.
 `npm start` starts only prebuilt `dist/server/index.mjs`, without build/Python.
-It binds `0.0.0.0:$PORT` (default 3000). For local replay, set
+It binds `0.0.0.0:$PORT` (default 3000). For local UI inspection, set
 `PUBLIC_ORIGIN=http://localhost:3000` or the exact local port.
-No environment file or Azure credentials are required for synthetic replay.
+No credentials are needed to inspect UI/code. Retrieval is live-only and stays
+paused without configured backends; there is no offline answer mode.
 Never overwrite an existing `.env.local`; use `.env.example` only as an optional
 template. Existing private environments and ignored artifacts must stay private.
 
@@ -71,17 +76,17 @@ Inject the Blob coordinator from the same prebuilt module tree as the handler;
 mixing source and built error classes turns expected quota 429/503 responses
 into generic 500 errors.
 
-Smoke `/healthz`, `/api/config`, `/`, local assets, `/download`, and an explicitly
-selected synthetic replay with **live disabled**. Verify keyboard tabs,
+Smoke `/healthz`, `/api/config`, `/`, local assets and `/download` with **live
+disabled**; verify replay rejection without an Azure call. Verify keyboard tabs,
 citation focus, retained requests and responsive layout when a browser is
 available. Stop temporary processes by their exact tracked PID/tool handle.
 Local tests and Storage doubles do not establish live dependency readiness.
 
 ## Non-negotiable runtime invariants
 
-- Keep live and synthetic modes visibly distinct; never fall back from a live
-  failure to replay. Replays accept only their curated question and must not
-  claim controls changed recorded evidence/timings.
+- The public catalog/API are live-only. Reject every replay mode and retired
+  replay identity before quota reservation. Keep fixtures/doubles for tests,
+  never as demo responses or fallbacks.
 - Retain the pinned published preview request contract and typed capability
   checks, exact KB/source allowlists, indexed-only minimal/extractive rules,
   operator-gated medium effort, and optional request-level `maxOutputSize` in
@@ -92,7 +97,7 @@ Local tests and Storage doubles do not establish live dependency readiness.
 - Live follow-ups retain alternating user/assistant text messages within the
   existing request bounds. No system/tool roles or silent history truncation.
   Changing KB clears the chat and overrides; new chat clears only history.
-  Minimal uses one intent without history; synthetic replays remain single-turn.
+  Minimal uses one intent without history.
   Code views use immutable per-turn effective snapshots and server-credential
   placeholders, never reveal secrets or claim unconfirmed dispatch was not sent.
 - Preserve 64-KiB request, 8,000-character question and 1-MiB upstream limits,
@@ -114,6 +119,10 @@ Local tests and Storage doubles do not establish live dependency readiness.
   and regression coverage with allowlist changes. Exclude secrets, state, logs,
   symlinks, generated output, Git/CI metadata and deployment/IaC artifacts.
   Extraction must reproduce a standalone root application, not a nested app.
+- Never package the supplied report PDF, extracted report text, PNG pages,
+  manifests or cloud receipts. Original fictional Zava Markdown is public.
+  Report page previews may use only exact trusted Blob identities, never guessed
+  citation IDs/titles/page numbers. Page browsing is not grounding evidence.
 
 ## Approval gates and limitations
 
@@ -126,16 +135,19 @@ Use the repository's normal reviewed pull-request flow for authorized
 publication; never bypass branch protection or change repository settings.
 
 Live is OFF by default. Resource names are not automatic inventory or proof of
-another deployment's health. Each target needs real indexed/Web captures,
-Blob coordination/restart, document-change/both-source grounding, cost/latency
-and anonymous HTTPS/mobile/keyboard evidence. The dedicated hosted demo's
+another deployment's health. Each rollout needs real retrieval/citation
+evidence for every enabled KB and source family, Blob coordination/restart,
+unrelated questions, cost/latency and anonymous HTTPS/mobile/keyboard evidence.
+Multi-source and controlled-change claims need their own evidence. Web canaries
+apply only to explicitly approved Web integration. The dedicated hosted demo's
 accepted scope and remaining limits are documented in `README.md`; that
 acceptance does not authorize another rollout or establish its proxy contract
 or billed cost. Do not treat fixtures as real captures.
 Web approval, terms, domains and boundary/cost review are separate gates.
 Visitor auth, Fabric, Work IQ, remote SharePoint and OneLake live integration
-remain out of scope. The user-supplied product SVGs identify existing source
-types; they do not enable additional live integrations. Preserve their shapes,
+remain out of scope. MCP, SQL, File and Fabric ontology logos likewise describe
+source families, not provisioned connectors or fabricated activity. All four
+Zava KBs use actual Blob sources. Preserve the supplied SVGs' shapes,
 colors, aspect ratios and separate artwork terms in `assets/PROVENANCE.md`.
 Only the original neutral `source.svg` fallback is covered by the app's MIT
 license; do not claim that license covers product artwork.

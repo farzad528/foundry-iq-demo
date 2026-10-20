@@ -6,26 +6,30 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { request as httpRequest, createServer } from 'node:http';
 import { once } from 'node:events';
+import { Readable } from 'node:stream';
+import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createApplication } from '../dist/server/index.mjs';
 import { BlobQuotaCoordinator, anonymousSession } from '../dist/server/lib/quota.mjs';
-import { API_VERSION, MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES, readBounded } from '../dist/server/lib/protocol.mjs';
+import { API_VERSION, MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES, readBounded, validateRequest } from '../dist/server/lib/protocol.mjs';
 import { normalizeResponse, safeUrl } from '../dist/server/lib/normalize.mjs';
 import { createNodeServer, clientIp } from '../lib/http.mjs';
-import { publicCatalog, knowledgeBases } from '../config/knowledge-bases.mjs';
-import { sourceIcon } from '../assets/source-icons.mjs';
+import { publicCatalog, knowledgeBases, legacyKnowledgeBases } from '../config/knowledge-bases.mjs';
+import { sourceIcon, sourceFamilies } from '../assets/source-icons.mjs';
+import { REPORT, MAX_PAGE_BYTES, createReportPageReader, reportPageNumber, reportPageForReference } from '../dist/server/lib/report-pages.mjs';
 import { API_VERSION as CLIENT_API_VERSION, buildRequest, conversationMessages, requestSnapshot, requestCode } from '../assets/request.mjs';
 import { FakeBlob } from './test-support.mjs';
 import { archiveFiles, operationalFiles } from './source-files.mjs';
 
 const samples = JSON.parse(readFileSync(new URL('../config/scenarios.json', import.meta.url)));
-const catalog = publicCatalog(samples);
+const catalog = publicCatalog();
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/published-response.json', import.meta.url)));
-const indexedFixture = structuredClone(fixture);
-indexedFixture.references = indexedFixture.references.filter(reference => reference.type !== 'web');
-indexedFixture.activity = indexedFixture.activity.filter(activity => !['web', 'modelWebSummarization'].includes(activity.type));
 const indexed = knowledgeBases[0];
-const web = knowledgeBases[1];
+const web = legacyKnowledgeBases[1];
+const indexedFixture = structuredClone(fixture);
+indexedFixture.references = indexedFixture.references.filter(reference => reference.type === 'azureBlob');
+indexedFixture.activity = indexedFixture.activity.filter(activity => !['web', 'searchIndex', 'modelWebSummarization'].includes(activity.type));
+indexedFixture.activity.find(activity => activity.type === 'azureBlob').knowledgeSourceName = indexed.sources[0].name;
 const sourceIconCases = [
   ['azureBlob', { icon: '/assets/blob.svg', label: 'Blob', access: 'Indexed' }],
   ['searchIndex', { icon: '/assets/search.svg', label: 'Search index', access: 'Indexed' }],
@@ -33,7 +37,7 @@ const sourceIconCases = [
   ['fabricDataAgent', { icon: '/assets/fabric.svg', label: 'Fabric data agent', access: 'Remote' }],
   ['remoteSharePoint', { icon: '/assets/sharepoint.svg', label: 'SharePoint', access: 'Remote' }],
 ];
-const sourceIconFiles = [...new Set([...sourceIconCases.map(([, entry]) => entry.icon.slice(1)), 'assets/source.svg'])];
+const sourceIconFiles = [...new Set([...sourceIconCases.map(([, entry]) => entry.icon.slice(1)), ...sourceFamilies.map(entry => entry.icon.slice(1)), 'assets/source.svg'])];
 const env = {
   PUBLIC_ORIGIN: 'https://demo.example.test',
   AZURE_SEARCH_ENDPOINT: 'https://demo.search.windows.net',
@@ -89,18 +93,207 @@ test('root app scripts and source ZIP manifest are standalone without legacy fra
   }
 });
 
-test('only two public live KBs share exact approved source identities', () => {
-  assert.deepEqual(knowledgeBases.map(kb => kb.id), ['foundryiq-customer-demos-indexed', 'foundryiq-customer-demos-web']);
-  assert.deepEqual(indexed.sources.map(source => source.name), web.sources.slice(0, 2).map(source => source.name));
-  assert.equal(web.sources[2].name, 'foundryiq-customer-demos-web-guidance');
-  assert.ok(catalog.every(item => !Object.hasOwn(item, 'fixture') && !Object.hasOwn(item, 'answer')));
+test('the public catalog contains exactly four use-case live KBs with isolated Blob sources', () => {
+  assert.deepEqual(knowledgeBases.map(kb => kb.id), ['zava-hr-policy', 'zava-finance-documents', 'zava-technical-manuals', 'zava-state-of-ai-report']);
+  for (const kb of knowledgeBases) {
+    assert.equal(kb.sources.length, 1);
+    assert.equal(kb.sources[0].name, kb.id + '-source');
+    assert.equal(kb.sources[0].kind, 'azureBlob');
+    assert.equal(kb.suggestions.length, 2);
+    assert.equal(kb.question, kb.suggestions[0].question);
+  }
+  assert.ok(catalog.every(item => item.execution === 'live' && !Object.hasOwn(item, 'fixture') && !Object.hasOwn(item, 'answer')));
+  assert.deepEqual(knowledgeBases[3].report, { version: REPORT.version, pageCount: REPORT.pageCount });
 });
 
 test('source icon registry covers every catalog kind without changing source labels or access modes', () => {
   const kinds = [...new Set(catalog.flatMap(scenario => scenario.sources.map(source => source.kind)))];
-  assert.deepEqual(kinds.sort(), sourceIconCases.map(([kind]) => kind).sort());
+  assert.deepEqual(kinds, ['azureBlob']);
   for (const [kind, expected] of sourceIconCases) assert.deepEqual(sourceIcon(kind), expected, kind);
   assert.equal(new Set(sourceIconCases.map(([kind]) => sourceIcon(kind).icon)).size, sourceIconCases.length);
+});
+
+test('on-demand source gallery names all twelve source families without inventing REST enum mappings', () => {
+  assert.deepEqual(sourceFamilies.map(item => item.id), ['search-index', 'blob', 'sql', 'file', 'onelake',
+    'sharepoint-indexed', 'sharepoint-remote', 'fabric-agent', 'fabric-ontology', 'mcp', 'workiq', 'web']);
+  assert.ok(sourceFamilies.every(item => ['Indexed', 'Remote'].includes(item.access) && !Object.hasOwn(item, 'kind')));
+});
+
+test('all four actual public catalog entries dispatch defaults unchanged to their own OData target', async () => {
+  for (const kb of knowledgeBases) {
+    const data = structuredClone(indexedFixture);
+    data.activity.find(activity => activity.type === 'azureBlob').knowledgeSourceName = kb.sources[0].name;
+    const { app, blob } = setup(async (url, options) => {
+      assert.equal(url.pathname, `/knowledgebases('${kb.id}')/retrieve`);
+      assert.deepEqual(JSON.parse(options.body), buildRequest({ question: kb.question }));
+      return Response.json(data);
+    });
+    const response = await post(app, { scenarioId: kb.id, mode: 'live', request: buildRequest({ question: kb.question }) });
+    assert.equal(response.status, 200, kb.id);
+    assert.equal((await response.json()).sample, false);
+    assert.equal(blob.state.count, 1);
+  }
+});
+
+test('report page mapping requires exact versioned original Blob provenance, never titles or citation IDs', () => {
+  const path = page => `https://stfoundryiqcustomerdemos.blob.core.windows.net/demo-content/zava/report-text/${REPORT.version}/page-${String(page).padStart(3, '0')}.txt`;
+  const reference = { kind: 'azureBlob', sourceName: REPORT.sourceName,
+    id: 'page-99', title: 'Page 77', annotation: { blobUrl: path(8) } };
+  assert.equal(reportPageForReference(reference), 8);
+  assert.equal(reportPageForReference({ ...reference, annotation: { sourceData: { blob_url: path(244) } } }), 244);
+  for (const url of [path(0), path(245), path(8).replace(REPORT.version, 'other-version'),
+    path(8).replace('stfoundryiqcustomerdemos.', 'other.'), path(8).replace('https:', 'http:'),
+    path(8) + '?url=elsewhere', path(8) + '#page=8', path(8).replace('page-008', '%70age-008')]) {
+    assert.equal(reportPageForReference({ ...reference, annotation: { blobUrl: url } }), null, url);
+  }
+  assert.equal(reportPageForReference({ ...reference, sourceName: 'other-source' }), null);
+  assert.equal(reportPageForReference({ ...reference, annotation: { docKey: 'page-008', sourceData: { page: '8' } } }), null);
+  assert.equal(reportPageForReference({ ...reference, annotation: { blobUrl: path(8), sourceData: { blob_url: path(9) } } }), null);
+});
+
+test('report references expose a page preview only after exact source membership and Blob mapping', async () => {
+  const kb = knowledgeBases[3];
+  const data = structuredClone(indexedFixture);
+  data.activity.find(activity => activity.type === 'azureBlob').knowledgeSourceName = REPORT.sourceName;
+  data.references[0].blobUrl = `https://stfoundryiqcustomerdemos.blob.core.windows.net/demo-content/zava/report-text/${REPORT.version}/page-008.txt`;
+  const { app } = setup(async () => Response.json(data));
+  const response = await post(app, bodyFor(kb));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).normalized.references[0].reportPage, 8);
+  data.activity.find(activity => activity.type === 'azureBlob').knowledgeSourceName = indexed.sources[0].name;
+  assert.equal((await post(app, bodyFor(kb))).status, 502);
+});
+
+// Header-level stream double, not report content or live image evidence.
+const pageBytes = Buffer.alloc(33);
+Buffer.from('89504e470d0a1a0a', 'hex').copy(pageBytes);
+pageBytes.writeUInt32BE(13, 8);
+pageBytes.write('IHDR', 12);
+pageBytes.writeUInt32BE(1, 16);
+pageBytes.writeUInt32BE(1, 20);
+function pageResponse(bytes = pageBytes, page = 8) {
+  return {
+    readableStreamBody: Readable.from([bytes]), contentType: 'image/png', contentLength: bytes.length,
+    metadata: { owner: 'foundryiq-zava-20261020', reportsha256: REPORT.sha256, originalpage: String(page),
+      contentsha256: createHash('sha256').update(bytes).digest('hex') },
+  };
+}
+
+test('the image reader selects only the fixed private container path, verifies bytes and disables stream retries', async () => {
+  let calls = 0;
+  const reader = createReportPageReader({ containerClient: {
+    getBlobClient(path) {
+      assert.equal(path, `${REPORT.version}/page-008.png`);
+      return { async download(offset, count, options) {
+        calls++;
+        assert.equal(offset, 0);
+        assert.equal(count, MAX_PAGE_BYTES + 1);
+        assert.equal(options.maxRetryRequests, 0);
+        assert.ok(options.abortSignal instanceof AbortSignal);
+        return pageResponse();
+      } };
+    },
+  } });
+  assert.deepEqual(await reader(8), pageBytes);
+  assert.equal(calls, 1);
+  await assert.rejects(reader(245), error => error.status === 404);
+  assert.equal(calls, 1);
+});
+
+test('page MIME, ownership, version, page, size, content digest and image dimensions all fail closed', async () => {
+  for (const mutate of [
+    response => { response.contentType = 'image/svg+xml'; },
+    response => { response.contentLength = MAX_PAGE_BYTES + 1; },
+    response => { response.metadata.owner = 'other-owner'; },
+    response => { response.metadata.reportsha256 = '0'.repeat(64); },
+    response => { response.metadata.originalpage = '9'; },
+    response => { response.metadata.contentsha256 = '0'.repeat(64); },
+    response => { response.contentLength--; },
+    response => { response.readableStreamBody = Readable.from([Buffer.from('not a PNG')]); },
+    response => {
+      const bytes = Buffer.from(pageBytes);
+      bytes.writeUInt32BE(1601, 16);
+      Object.assign(response, pageResponse(bytes));
+    },
+    response => { response.readableStreamBody = Readable.from([Buffer.alloc(MAX_PAGE_BYTES + 1)]); },
+  ]) {
+    let calls = 0;
+    const response = pageResponse();
+    mutate(response);
+    const reader = createReportPageReader({ containerClient: { getBlobClient() {
+      return { async download() { calls++; return response; } };
+    } } });
+    await assert.rejects(reader(8), error => error.code === 'invalid_report_page', mutate.toString());
+    assert.equal(calls, 1);
+    assert.equal(response.readableStreamBody.destroyed, true);
+  }
+});
+
+test('page access errors are explicit without leaking provider diagnostics or using a replacement image', async () => {
+  for (const statusCode of [403, 404, 500]) {
+    let calls = 0;
+    const reader = createReportPageReader({ containerClient: { getBlobClient() {
+      return { async download() { calls++; throw Object.assign(new Error('secret provider diagnostic'), { statusCode }); } };
+    } } });
+    await assert.rejects(reader(8), error => error.status === (statusCode === 404 ? 404 : 503)
+      && error.code === 'report_page_unavailable' && !error.message.includes('secret'));
+    assert.equal(calls, 1);
+  }
+});
+
+test('image concurrency is bounded independently from Retrieve and releases reservations after completion', async () => {
+  const waiting = [];
+  const reader = createReportPageReader({ containerClient: { getBlobClient() {
+    return { download() { return new Promise(resolve => waiting.push(resolve)); } };
+  } } });
+  const pending = [reader(8), reader(8), reader(8), reader(8)];
+  await assert.rejects(reader(8), error => error.status === 429);
+  assert.equal(waiting.length, 4);
+  waiting.splice(0).forEach(resolve => resolve(pageResponse()));
+  await Promise.all(pending);
+  const next = reader(8);
+  waiting.pop()(pageResponse());
+  await next;
+});
+
+test('image cancellation and its total deadline abort stalled response streams without retries', async () => {
+  for (const cancellation of [true, false]) {
+    const controller = new AbortController();
+    const reader = createReportPageReader({ timeoutMs: 15, containerClient: { getBlobClient() {
+      return { async download() { return { ...pageResponse(), readableStreamBody: new Readable({ read() {} }) }; } };
+    } } });
+    const pending = reader(8, controller.signal);
+    if (cancellation) setTimeout(() => controller.abort(), 1);
+    const keepAlive = setTimeout(() => {}, 100);
+    try { await assert.rejects(pending, error => error.status === (cancellation ? 499 : 504)); }
+    finally { clearTimeout(keepAlive); }
+  }
+});
+
+test('the report route accepts only exact in-range PNG GETs, never arbitrary Storage URLs or paths', async () => {
+  let calls = 0;
+  const { coordinator, blob } = setup();
+  const app = createApplication({ coordinator, readReportPage: async page => { calls++; assert.equal(page, 8); return pageBytes; } });
+  const base = `/api/report-pages/${REPORT.version}/`;
+  assert.equal(reportPageNumber(base + '1.png'), 1);
+  assert.equal(reportPageNumber(base + '244.png'), 244);
+  for (const path of [base + '0.png', base + '245.png', base + '008.png', base + '-1.png',
+    base + '8.svg', base + '%2f8.png', base + '8.png?url=https://other.test', '/api/report-pages/other/8.png']) {
+    assert.equal((await app.fetch(new Request(env.PUBLIC_ORIGIN + path), env)).status, 404, path);
+  }
+  const url = env.PUBLIC_ORIGIN + base + '8.png';
+  const postResponse = await app.fetch(new Request(url, { method: 'POST' }), env);
+  assert.equal(postResponse.status, 405);
+  assert.equal(postResponse.headers.get('allow'), 'GET');
+  assert.equal((await app.fetch(new Request(url), { ...env, FOUNDRY_IQ_LIVE_ENABLED: 'false' })).status, 503);
+  assert.equal(calls, 0);
+  const response = await app.fetch(new Request(url), env);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'image/png');
+  assert.equal(response.headers.get('set-cookie'), null);
+  assert.deepEqual(Buffer.from(await response.arrayBuffer()), pageBytes);
+  assert.equal(calls, 1);
+  assert.equal(blob.state.count, 0);
 });
 
 test('unknown source kinds, including Object prototype names, use the neutral fallback', () => {
@@ -142,22 +335,13 @@ test('public routes expose no runtime config, quota state or private files', asy
   }
 });
 
-for (const scenario of samples) test('honest fixed replay and public raw sources: ' + scenario.id, async () => {
-  const { app } = setup(() => { throw new Error('Replay must not call Azure'); });
-  const body = { scenarioId: scenario.id, mode: 'sample', request: requestFor(scenario) };
-  const response = await post(app, body);
-  assert.equal(response.status, 200);
-  const result = await response.json();
-  assert.equal(result.sample, true);
-  assert.equal(result.effectiveRequest.sent, false);
-  for (const reference of result.normalized.references) {
-    assert.equal(reference.activityLinked, true);
-    const raw = await app.fetch(new Request(env.PUBLIC_ORIGIN + reference.url), env);
-    assert.equal(raw.status, 200);
-    assert.ok((await raw.text()).length > 20);
+test('every retired replay identity and all non-live modes fail before any quota or Azure call', async () => {
+  const { app, blob } = setup(() => assert.fail('Recorded examples must not be executable'));
+  for (const scenario of [...samples, indexed]) {
+    assert.equal((await post(app, { scenarioId: scenario.id, mode: 'sample', request: requestFor(scenario) })).status, 400);
   }
-  body.request.messages[0].content[0].text = 'Arbitrary live question';
-  assert.equal((await post(app, body)).status, 400);
+  for (const mode of [undefined, null, 'replay', 'LIVE']) assert.equal((await post(app, { ...bodyFor(), mode })).status, 400);
+  assert.equal(blob.state.count, 0);
 });
 
 test('replay-only sources cannot be used live and live failures never become replays', async () => {
@@ -355,7 +539,7 @@ test('full conversation envelopes honor the exact 64-KiB streaming bound without
   assert.equal(blob.state.count, 1);
 });
 
-test('fixed synthetic replays do not pretend to answer multi-turn questions', async () => {
+test('recorded replay mode cannot bypass rejection by supplying valid conversation history', async () => {
   const { app, blob } = setup(() => assert.fail('Replay must never call Search'));
   const request = buildRequest({ question: samples[0].question, history: [
     { role: 'user', content: [{ type: 'text', text: samples[0].question }] },
@@ -363,7 +547,7 @@ test('fixed synthetic replays do not pretend to answer multi-turn questions', as
   ] });
   const response = await post(app, { scenarioId: samples[0].id, mode: 'sample', request });
   assert.equal(response.status, 400);
-  assert.equal((await response.json()).errorCode, 'curated_replay_only');
+  assert.equal((await response.json()).errorCode, 'invalid_request');
   assert.equal(blob.state.count, 0);
 });
 
@@ -374,6 +558,10 @@ test('chat UI starts with closed dialogs and blank service-default controls rath
     assert.ok(page.includes(`id="${id}"`), id);
   }
   assert.doesNotMatch(page, /<dialog[^>]*\sopen(?:\s|>)/);
+  assert.match(page, /id="source-gallery"/);
+  assert.match(page, /id="report"/);
+  const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(client, /Not sent to Azure|Auto is an explicit effort|Synthetic replay|mode === 'sample'/);
   for (const id of ['effort', 'output', 'include-activity']) assert.match(page, new RegExp(`id="${id}"><option value="">Service default</option>`));
   for (const path of ['assets/request.mjs', 'assets/client.mjs']) {
     assert.ok(archiveFiles.includes(path));
@@ -413,7 +601,7 @@ test('minimal is indexed/extractive only; medium is gated by deployment capabili
   assert.equal((await post(app, body)).status, 400);
   const withWeb = bodyFor(web);
   minimal(withWeb.request);
-  assert.equal((await post(app, withWeb)).status, 400);
+  assert.throws(() => validateRequest(withWeb, legacyKnowledgeBases.map(kb => ({ ...kb, execution: 'live' })), env), /Unsupported reasoning/);
   const medium = bodyFor();
   medium.request.retrievalReasoningEffort.kind = 'medium';
   assert.equal((await post(app, medium, { env: { FOUNDRY_IQ_MEDIUM_ENABLED: 'true' } })).status, 200);
@@ -428,7 +616,7 @@ test('published OData route, exact normalized snapshot, request-level maxOutputS
   let sent;
   const { app } = setup(async (url, options) => {
     assert.equal(url.hostname, 'demo.search.windows.net');
-    assert.equal(url.pathname, "/knowledgebases('foundryiq-customer-demos-indexed')/retrieve");
+    assert.equal(url.pathname, `/knowledgebases('${indexed.id}')/retrieve`);
     assert.equal(url.searchParams.get('api-version'), '2026-08-01-preview');
     assert.equal(options.headers['api-key'], env.AZURE_SEARCH_API_KEY);
     assert.equal(options.redirect, 'error');
@@ -446,7 +634,7 @@ test('published OData route, exact normalized snapshot, request-level maxOutputS
   for (const field of ['maxRuntimeInSeconds', 'includeActivity', 'knowledgeSourceParams']) assert.equal(Object.hasOwn(sent.body, field), false);
   const serialized = JSON.stringify(result);
   assert.ok(!serialized.includes(env.AZURE_SEARCH_API_KEY));
-  assert.match(result.contractStatus, /canary/);
+  assert.match(result.contractStatus, /real retrieval evidence/);
 });
 
 test('content type, origin, encoding and streamed UTF-8 byte bounds apply to direct clients', async () => {
@@ -515,12 +703,12 @@ test('unsafe markup, URL credentials/SAS and echoed secrets are never executable
   assert.equal(safeUrl('data:text/html,evil'), null);
   assert.equal(safeUrl('//evil.test'), null);
   assert.equal(safeUrl('https://user:password@evil.test'), null);
-  const data = structuredClone(fixture);
+  const data = structuredClone(indexedFixture);
   data.references[0].url = 'https://public.example.test/doc?sig=secret&se=expiry&topic=safe';
   data.references[0].sourceData.apiKey = env.AZURE_SEARCH_API_KEY;
   data.references[0].sourceData.content = '<img src=x onerror=alert(1)> ' + env.AZURE_SEARCH_API_KEY;
   const { app } = setup(async () => Response.json(data));
-  const result = await (await post(app, bodyFor(web))).json();
+  const result = await (await post(app, bodyFor())).json();
   const serialized = JSON.stringify(result);
   assert.ok(!serialized.includes(env.AZURE_SEARCH_API_KEY));
   assert.ok(!serialized.includes('sig=secret'));
@@ -529,17 +717,17 @@ test('unsafe markup, URL credentials/SAS and echoed secrets are never executable
 });
 
 test('partial results and activity errors retain evidence and safe original annotations', async () => {
-  const partial = structuredClone(fixture);
-  partial.activity[0].error = { code: 'DependencyUnavailable', message: 'Web result incomplete' };
+  const partial = structuredClone(indexedFixture);
+  partial.activity.find(activity => activity.id === 42).error = { code: 'DependencyUnavailable', message: 'Blob result incomplete' };
   const { app } = setup(async () => Response.json(partial, { status: 206, headers: { 'request-id': 'service-request-7' } }));
-  const response = await post(app, bodyFor(web));
+  const response = await post(app, bodyFor());
   assert.equal(response.status, 206);
   const result = await response.json();
   assert.equal(result.normalized.partial, true);
   assert.equal(result.upstreamStatus, 206);
   assert.equal(result.upstreamRequestId, 'service-request-7');
-  assert.equal(result.normalized.references.length, 3);
-  assert.ok(result.normalized.limitations.some(item => item.includes('77') && item.includes('failed')));
+  assert.equal(result.normalized.references.length, 1);
+  assert.ok(result.normalized.limitations.some(item => item.includes('42') && item.includes('failed')));
 });
 
 test('upstream error distinctions, retry guidance and malformed/oversized responses', async () => {
@@ -696,7 +884,7 @@ test('operational telemetry is allowlisted, redacted and correlated; no question
   const response = await post(app, body);
   const data = await response.json();
   assert.equal(events[0].requestId, data.requestId);
-  assert.equal(events[0].referenceCount, 2);
+  assert.equal(events[0].referenceCount, 1);
   assert.deepEqual(Object.keys(events[0]).sort(), ['elapsedMs', 'event', 'mode', 'referenceCount', 'requestId', 'scenarioId', 'status', 'upstreamRequestId', 'upstreamStatus'].sort());
   const text = JSON.stringify(events);
   for (const forbidden of [env.AZURE_SEARCH_API_KEY, env.SESSION_SECRET, '192.0.2.1', 'Do not log this exact question', 'Approval is pending']) assert.ok(!text.includes(forbidden));
@@ -952,14 +1140,14 @@ test('repository-only operators are deliberately omitted from the standalone app
     assert.throws(() => expandCorpus(invalid), OperatorError);
   });
 
-  await t.test('hybrid/model/source definitions match the exact runtime catalog', () => {
+  await t.test('protected original hybrid/model/source definitions retain their explicit legacy identities', () => {
     const plan = buildPlan(definitions, corpus, operatorEnv);
     assert.equal(definitions.foundry.kind, 'AIServices');
     assert.equal(plan.index.fields.find(field => field.name === 'contentVector').dimensions, 1536);
     assert.equal(plan.index.vectorSearch.profiles[0].vectorizer, 'foundry-vectorizer');
-    assert.deepEqual(plan.knowledgeBases.map(kb => kb.name), knowledgeBases.map(kb => kb.id));
+    assert.deepEqual(plan.knowledgeBases.map(kb => kb.name), legacyKnowledgeBases.map(kb => kb.id));
     for (let i = 0; i < 2; i++) assert.deepEqual(plan.knowledgeBases[i].knowledgeSources.map(source => source.name),
-      knowledgeBases[i].sources.map(source => source.name));
+      legacyKnowledgeBases[i].sources.map(source => source.name));
     assert.deepEqual(plan.sources[2].webParameters.domains.allowedDomains, [{ address: 'osha.gov', includeSubpages: true }]);
     assert.throws(() => buildPlan(definitions, corpus, { ...operatorEnv,
       FOUNDRY_MODEL_ENDPOINT: 'https://unapproved.openai.azure.com' }, true), OperatorError);
@@ -1250,7 +1438,8 @@ test('repository-only operators are deliberately omitted from the standalone app
       fake.calls.push({ url, ...options, scope });
       if (url.pathname.endsWith('/roleAssignments')) {
         const resourceScope = url.pathname.split('/providers/Microsoft.Authorization')[0];
-        const role = resourceScope.includes('/secrets/') ? '4633458b-17de-408a-b874-0445c86b69e6' : 'ba92f5b4-2d11-453d-a403-e96b0029c9fe';
+        const role = resourceScope.includes('/secrets/') ? '4633458b-17de-408a-b874-0445c86b69e6'
+          : resourceScope.endsWith('/zava-report-pages') ? '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1' : 'ba92f5b4-2d11-453d-a403-e96b0029c9fe';
         return result({ value: [{ properties: { scope: resourceScope, principalId: principal,
           roleDefinitionId: `/subscriptions/${definitions.subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${role}` } }] });
       }

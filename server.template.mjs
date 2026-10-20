@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { API_VERSION, HttpError, MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES, MAX_RUNTIME_SECONDS, canonicalOrigin, capabilities, readBounded, retryAfter, validateRequest } from './lib/protocol.mjs';
 import { normalizeResponse, sanitize } from './lib/normalize.mjs';
 import { anonymousSession, createQuotaCoordinator } from './lib/quota.mjs';
+import { createReportPageReader, reportPageNumber, reportPageForReference } from './lib/report-pages.mjs';
 
 const catalog = __DATA__;
-const fixtures = __FIXTURES__;
 const page = __PAGE__;
 const sourceArchive = '__ARCHIVE__';
 const samples = __SAMPLES__;
@@ -22,7 +22,7 @@ function searchEndpoint(value) {
   }
 }
 
-export function createApplication({ fetchUpstream = (...args) => fetch(...args), coordinator, log = event => process.stdout.write(`${JSON.stringify(event)}\n`) } = {}) {
+export function createApplication({ fetchUpstream = (...args) => fetch(...args), coordinator, readReportPage = createReportPageReader(), log = event => process.stdout.write(`${JSON.stringify(event)}\n`) } = {}) {
   return {
     async fetch(request, env = {}, context = {}) {
       const requestId = randomUUID();
@@ -46,7 +46,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
         'Referrer-Policy': 'no-referrer',
         'X-Frame-Options': 'DENY',
         'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-        'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+        'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
         'X-Request-Id': requestId,
       };
       const respond = (body, responseStatus = 200, extra = {}) => {
@@ -86,11 +86,21 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
           status = 204;
           return new Response(null, { status, headers });
         }
+        if (url.pathname.startsWith('/api/report-pages/')) {
+          const pageNumber = reportPageNumber(url.pathname);
+          if (pageNumber === null || url.search) throw new HttpError(404, 'report_page_not_found', 'Unknown original PDF page.');
+          if (request.method !== 'GET') {
+            headers.Allow = 'GET';
+            throw new HttpError(405, 'method_not_allowed', 'Use GET for original PDF pages.');
+          }
+          if (env.FOUNDRY_IQ_LIVE_ENABLED !== 'true') throw new HttpError(503, 'live_disabled', 'Original page previews are paused.');
+          return resource(await readReportPage(pageNumber, request.signal), 'image/png', { 'Cache-Control': 'public, max-age=3600' });
+        }
         if (request.method === 'GET' && url.pathname === '/api/config') {
           return respond({
             configured: !!(env.AZURE_SEARCH_ENDPOINT && env.AZURE_SEARCH_API_KEY && env.SESSION_SECRET && env.FOUNDRY_IQ_QUOTA_CONTAINER_URL),
             liveEnabled: env.FOUNDRY_IQ_LIVE_ENABLED === 'true',
-            contractStatus: 'Pinned preview contract; verify each deployment with indexed/Web canary evidence.',
+            contractStatus: 'Pinned preview contract; verify each configured knowledge base with real retrieval evidence.',
             apiVersion: API_VERSION,
             available: catalog.filter(item => item.execution === 'live').map(item => item.id),
             capabilities: Object.fromEntries(catalog.filter(item => item.execution === 'live').map(item => [item.id, capabilities(item, env)])),
@@ -122,7 +132,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
           if (readSignal.aborted && !request.signal.aborted) throw new HttpError(408, 'body_timeout', 'The request body took too long to arrive.');
           throw error;
         }
-        const { scenario, outbound, question } = validateRequest(body, catalog, env);
+        const { scenario, outbound } = validateRequest(body, catalog, env);
         mode = body.mode;
         scenarioId = scenario.id;
         effectiveRequest = {
@@ -134,16 +144,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
           sent: false,
           redacted: JSON.stringify(outbound) !== JSON.stringify(sanitize(outbound, [env.AZURE_SEARCH_API_KEY, env.SESSION_SECRET])),
         };
-        if (mode === 'sample') {
-          if (outbound.messages?.length > 1) throw new HttpError(400, 'curated_replay_only', 'Synthetic replays are single-turn, fixed examples. Start a new chat to replay, or select a live knowledge base for follow-ups.');
-          if (question !== scenario.question) throw new HttpError(400, 'curated_replay_only', 'Sample replay supports only the curated example question. Select a live knowledge base to ask arbitrary questions.');
-          const data = structuredClone(fixtures[scenario.id]);
-          if (outbound.outputMode === 'extractiveData') {
-            data.response = [{ role: 'assistant', content: [{ type: 'text', text: JSON.stringify(data.references.map(item => item.sourceData), null, 2) }] }];
-          }
-          return respond({ sample: true, ...normalizeResponse(data), effectiveRequest, requestId });
-        }
-        if (env.FOUNDRY_IQ_LIVE_ENABLED !== 'true') throw new HttpError(503, 'live_disabled', 'Live queries are paused. Synthetic replay is available only when explicitly selected.');
+        if (env.FOUNDRY_IQ_LIVE_ENABLED !== 'true') throw new HttpError(503, 'live_disabled', 'Live queries are paused. No recorded answer is substituted.');
         if (!env.AZURE_SEARCH_API_KEY || env.AZURE_SEARCH_API_KEY.startsWith('@Microsoft.KeyVault(')) {
           throw new HttpError(503, 'configuration_unavailable', 'The server Search credential is not configured or its Key Vault reference is unresolved.');
         }
@@ -223,6 +224,12 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
         if (exposesUnsupportedSource) {
           throw new HttpError(502, 'source_membership_drift', 'Azure returned evidence outside this public knowledge base source allowlist. Live configuration must be corrected before publishing.');
         }
+        if (scenario.report) {
+          for (const reference of normalized.normalized.references) {
+            const reportPage = reportPageForReference(reference);
+            if (reportPage !== null) reference.reportPage = reportPage;
+          }
+        }
         referenceCount = normalized.normalized.references.length;
         await quotas.release(slotId);
         slotId = null;
@@ -233,7 +240,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
           requestId,
           upstreamRequestId,
           upstreamStatus,
-          contractStatus: 'Pinned preview contract; verify each deployment with indexed/Web canary evidence.',
+          contractStatus: 'Pinned preview contract; verify each configured knowledge base with real retrieval evidence.',
         }, normalized.normalized.partial ? 206 : 200);
       } catch (error) {
         let failure = error;
@@ -245,7 +252,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
             failure = new HttpError(503, 'quota_unavailable', 'Quota slot release could not be verified. The reservation will expire; live retrieval is unavailable until coordination recovers.');
           }
         }
-        if (request.signal.aborted) failure = new HttpError(499, 'request_cancelled', 'The client cancelled this retrieval.');
+        if (request.signal.aborted) failure = new HttpError(499, 'request_cancelled', 'The client cancelled this request.');
         else if (timer?.signal.aborted) failure = new HttpError(504, 'retrieval_timeout', 'The total retrieval budget expired. No sample content was substituted.');
         if (!(failure instanceof HttpError)) failure = new HttpError(500, 'internal_error', 'Retrieval could not complete. Use the request ID when contacting the operator.');
         errorCode = failure.code;
