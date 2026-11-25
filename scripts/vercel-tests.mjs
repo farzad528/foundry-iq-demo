@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { createVercelApp } from '../lib/vercel-app.mjs';
 import { liveStatus, searchOnlyFetch, attemptBudget, attestedMetadata, disabledScenarios, disabledIndustries, graphServiceStatus, LIVE_SCENARIOS } from '../lib/search-adapter.mjs';
-import { transformBindings, reduceAttestations, industryBindingsFrom, checkIndustryCatalog, aboutWithDataSources, industryRecordingProblems, pageWithIndustries } from './build-vercel.mjs';
+import { transformBindings, reduceAttestations, industryBindingsFrom, checkIndustryCatalog, aboutWithDataSources, industryRecordingProblems, pageWithIndustries, industryGraphFrom, industryGraphPresetProblems } from './build-vercel.mjs';
 import { industryCatalog, industryById, filterFields, isFacet, BASE_FILTER } from '../lib/industry.mjs';
 import { SEARCH_API_VERSION, AGENTIC_SEARCH_API_VERSION } from '../config/studio-live.mjs';
 import { illustrationPng } from './generate-studio.mjs';
@@ -1137,4 +1137,168 @@ test('a not-configured scenario keeps Search and the query box disabled, even af
   assert.doesNotMatch(body('invalidate'), /element\('search'\)\.disabled = false/);
   assert.match(body('run'), /if \(notConfigured\(scenario\)\) \{\s*setStatus\(scenario\.live\.reason\);\s*return;/);
   assert.doesNotMatch(body('run'), /element\('search'\)\.disabled = false/);
+});
+
+// Industry entity and topic graphs (S08/S09) on the dedicated graph service: curated questions only, Search reads only.
+const { industryGraphConfig } = await import('../lib/industry-graph.mjs');
+const { createHash: sha } = await import('node:crypto');
+const gHash = value => sha('sha256').update(String(value)).digest('hex').slice(0, 16);
+const G_ENDPOINT = 'https://fiq-industry-test.search.windows.net';
+const G_KEY = 'GraphQueryKeyForTestsOnly0123456789abcdef';
+const TEST_BLOB = 'https://teststorageacct.blob.core.windows.net/industry-documents/energy/source-item-test.md';
+const gEnv = (patch = {}) => env({ AZURE_SEARCH_GRAPH_ENDPOINT: G_ENDPOINT, AZURE_SEARCH_GRAPH_QUERY_KEY: G_KEY, ...patch });
+const gBinding = id => ({ dataset: `${id}-en`, content: `g-${id}-content`, contentETag: '"c1"', graph: `g-${id}-graph`, graphETag: '"g1"',
+  topic: `g-${id}-topics`, topicETag: '"t1"', semanticConfiguration: `g-${id}-semantic`, vectorField: 'snippet_vector' });
+const gSchemas = id => {
+  const b = gBinding(id);
+  const f = (name, extra = {}) => ({ name, type: 'Edm.String', retrievable: true, ...extra });
+  return [
+    { index: b.content, etag: b.contentETag, schema: { name: b.content, fields: [f('uid', { key: true, searchable: true }), f('snippet', { searchable: true }), f('blob_url', { filterable: true }),
+      { name: 'snippet_vector', type: 'Collection(Edm.Single)', searchable: true, dimensions: 1536, vectorSearchProfile: 'p' }],
+    semantic: { configurations: [{ name: b.semanticConfiguration }] }, vectorSearch: { profiles: [{ name: 'p', algorithm: 'a', vectorizer: 'v' }], vectorizers: [{ name: 'v', kind: 'azureOpenAI' }] } } },
+    { index: b.graph, etag: b.graphETag, schema: { name: b.graph, fields: ['subject_id', 'predicate', 'object_id', 'chunk_id'].map(name => f(name)), graphProfile: { present: true } } },
+    { index: b.topic, etag: b.topicETag, schema: { name: b.topic, fields: ['subject_id', 'predicate', 'object_id', 'object_string', 'object_double'].map(name => f(name, { filterable: name === 'predicate' })) } },
+  ];
+};
+const gData = id => industryGraphConfig.industries[id];
+// Topic rows that reproduce this generation's leaves under titled roots (the first root carries the focus theme's title).
+const gTopicRows = id => {
+  const data = gData(id);
+  const focus = data.s09.find(preset => preset.focusTopic)?.focusTopic;
+  const parents = [...new Set(data.topics.leaves.map(leaf => leaf.parent).filter(Boolean))];
+  const extraRoots = Array.from({ length: 12 }, (_, i) => `topic:root-${i}`);
+  const rows = [];
+  [...parents, ...extraRoots].forEach((root, i) => {
+    rows.push({ subject_id: 'topicgraph:topicgraph-topic', predicate: 'HasRootTopic', object_id: root, object_string: null, object_double: null });
+    rows.push({ subject_id: root, predicate: 'prop:title', object_id: '', object_string: i === 0 ? focus : `Root theme ${i}`, object_double: null });
+    rows.push({ subject_id: root, predicate: 'prop:proportion', object_id: '', object_string: null, object_double: 0.5 / (i + 1) });
+  });
+  for (const leaf of data.topics.leaves) {
+    if (!leaf.parent) rows.push({ subject_id: 'topicgraph:topicgraph-topic', predicate: 'HasRootTopic', object_id: leaf.id, object_string: null, object_double: null });
+    else rows.push({ subject_id: leaf.parent, predicate: 'HasSubTopic', object_id: leaf.id, object_string: null, object_double: null });
+    if (leaf.title) rows.push({ subject_id: leaf.id, predicate: 'prop:title', object_id: '', object_string: leaf.title, object_double: null });
+    rows.push({ subject_id: leaf.id, predicate: 'prop:proportion', object_id: '', object_string: null, object_double: leaf.proportion });
+  }
+  return rows;
+};
+function graphHarness(id = 'energy', { handler } = {}) {
+  gData(id).sourceOfBlob[gHash(TEST_BLOB)] = 'NRG-TEST-1';
+  gData(id).sourceUrls['NRG-TEST-1'] = 'https://www.eia.gov/todayinenergy/detail.php?id=1';
+  const firstLeaf = gData(id).topics.leaves.find(leaf => leaf.title);
+  gData(id).topics.leafOfPassage[gHash('uid-1')] = firstLeaf.id;
+  const enabled = ['healthcare', id];
+  const passage = (uid, extra = {}) => ({ uid, snippet: `# Test passage ${uid}\n\nEvidence text for ${uid}.`, blob_url: TEST_BLOB, ...extra });
+  const graphHandler = async (url, init) => {
+    const body = JSON.parse(init.body);
+    if (url.includes('search.graph')) {
+      const statement = gData(id).s08.flatMap(preset => preset.statements).find(item => item.gql === body.gql);
+      if (statement?.expectRows === 0) return json({ value: [], '@search.graphDiagnostics': [] });
+      return json({ value: [{ a: 'Entity A', b: 'Entity B', '@search.graphProvenance': { evidence: [{ chunkId: 'chunk-1' }] } }, { a: 'Entity C', b: 'Entity D' }],
+        '@search.graphProvenanceDocuments': { 'chunk-1': passage('uid-1') },
+        '@search.graphDiagnostics': [{ severity: 'warning', code: 'Graph.Provenance.CollectionLimit', message: 'Provenance collection limit reached.' }] });
+    }
+    if (url.includes(`/indexes/g-${id}-topics/`)) return json({ value: gTopicRows(id) });
+    return json({ value: ['uid-1', 'uid-2', 'uid-3'].map((uid, i) => passage(uid, { '@search.score': 1 - i / 10, '@search.rerankerScore': 3 - i })) });
+  };
+  const bindings = industryBindingsFrom(privateIndustryBinding(enabled), attestations(undefined, undefined, industryEntries(enabled)), enabled);
+  const graph = { service: 'fiq-industry-test', apiVersion: AGENTIC_SEARCH_API_VERSION, industries: { [id]: gBinding(id) },
+    attestations: { service: 'fiq-industry-test', apiVersion: SEARCH_API_VERSION, entries: gSchemas(id) } };
+  return harness({ extra: industryEntries(enabled), industries: { enabled, bindings, graph },
+    handler: async (url, init) => url.startsWith(G_ENDPOINT) ? (handler || graphHandler)(url, init) : industryHandler(url, init) });
+}
+const gBody = (id, scenarioId, query) => ({ industry: id, scenarioId, mode: 'live', query, topK: 10, language: 'en' });
+
+test('industry S08 runs allowlisted graph statements on the graph service with cited paths, and never shows storage or keys', async () => {
+  const { app, calls } = graphHarness('energy');
+  const catalog = await (await catalogFor(app, '?industry=energy', { AZURE_SEARCH_GRAPH_ENDPOINT: G_ENDPOINT, AZURE_SEARCH_GRAPH_QUERY_KEY: G_KEY })).json();
+  const s08 = catalog.scenarios.find(scenario => scenario.id === 'S08');
+  assert.equal(s08.liveAvailable, true);
+  assert.deepEqual(s08.demoPresets.map(preset => preset.query), gData('energy').s08.map(preset => preset.question));
+  assert.equal((await (await app.handle('health', new Request(`${ORIGIN}/api/health`), gEnv())).json()).industryGraph, 'configured');
+  const odessa = gData('energy').s08.find(preset => preset.statements.length === 4);
+  const result = await (await app.handle('run', post('run', gBody('energy', 'S08', odessa.question)), gEnv())).json();
+  assert.equal(result.executionStatus, 'success', JSON.stringify(result).slice(0, 400));
+  assert.equal(calls.length, 5, 'one plain retrieval plus four graph statements fit the per-comparison budget');
+  assert.ok(calls.every(call => call.url.startsWith(G_ENDPOINT) && call.init.headers['api-key'] === G_KEY && call.init.method === 'POST'));
+  const before = JSON.parse(calls.find(call => !call.url.includes('search.graph')).init.body);
+  assert.deepEqual(before, { search: odessa.question, top: 5, select: 'uid,snippet,blob_url', queryType: 'semantic', semanticConfiguration: 'g-energy-semantic',
+    vectorQueries: [{ kind: 'text', text: odessa.question, fields: 'snippet_vector', k: 50 }] });
+  const graphBodies = calls.filter(call => call.url.includes('search.graph')).map(call => JSON.parse(call.init.body));
+  assert.deepEqual(graphBodies.map(body => body.gql), odessa.statements.map(statement => statement.gql));
+  assert.ok(graphBodies.every(body => body.provenance.hydrateDocuments.select === 'uid,snippet,blob_url'));
+  const statements = result.enhanced.graph.statements;
+  assert.equal(statements.length, 4);
+  assert.deepEqual(statements[0].rows[0].sources, ['NRG-TEST-1'], 'sources come from the hashed blob map');
+  assert.equal(statements[0].rows[1].citationUnavailable, true, 'a row without evidence is never given a citation');
+  assert.equal(result.enhanced.hits[0].sourceId, 'NRG-TEST-1');
+  assert.match(result.enhanced.hits[0].id, /^NRG-TEST-1#[0-9a-f]{8}$/, 'each passage keeps its own ID');
+  assert.equal(result.enhanced.hits[0].url, 'https://www.eia.gov/todayinenergy/detail.php?id=1');
+  const text = JSON.stringify(result);
+  for (const secret of [G_KEY, 'fiq-industry-test.search.windows.net', 'teststorageacct', TEST_BLOB]) assert.ok(!text.includes(secret), secret);
+  assert.match(result.enhanced.apiLog[0].url, /^https:\/\/<your-search-service>\.search\.windows\.net\/indexes\('g-energy-graph'\)\/docs\/search\.graph/);
+  assert.match(JSON.stringify(result.enhanced.apiLog), /\[document [0-9a-f]{10}\]/);
+  assert.equal(result.note.text, odessa.why);
+  calls.length = 0;
+  const free = await (await app.handle('run', post('run', gBody('energy', 'S08', 'Which grid events were caused by squirrels?')), gEnv())).json();
+  assert.equal(free.enhanced.curatedOnly, true);
+  assert.ok(calls.every(call => !call.url.includes('search.graph')), 'free text never sends GQL');
+  const premise = gData('energy').s08.find(preset => preset.statements.some(statement => statement.expectRows === 0));
+  const absence = await (await app.handle('run', post('run', gBody('energy', 'S08', premise.question)), gEnv())).json();
+  assert.ok(absence.enhanced.graph.statements.some(statement => statement.outcome === 'absence'));
+});
+
+test('industry S09 reads top themes or the focus theme from the topic graph, and diversity questions compare coverage', async () => {
+  const { app, calls } = graphHarness('energy');
+  const [themes, focus, diversity] = ['hierarchy', 'focus', 'diversity'].map(kind => gData('energy').s09.find(preset =>
+    kind === 'focus' ? preset.focusTopic : kind === 'hierarchy' ? preset.mode === 'hierarchy' && !preset.focusTopic : preset.mode === 'diversity'));
+  const run = async preset => (await app.handle('run', post('run', gBody('energy', 'S09', preset.question)), gEnv())).json();
+  let result = await run(themes);
+  assert.equal(result.executionStatus, 'success', JSON.stringify(result).slice(0, 300));
+  assert.equal(result.enhanced.themesOnly, true);
+  assert.equal(result.enhanced.hits.length, 0);
+  assert.equal(result.enhanced.topics.hierarchy.length, 8);
+  assert.ok(result.enhanced.topics.moreRoots > 0);
+  const shares = result.enhanced.topics.hierarchy.map(root => root.proportion);
+  assert.deepEqual(shares, [...shares].sort((a, b) => b - a), 'largest themes first');
+  assert.equal(result.baseline.hits.length, 3);
+  assert.equal(JSON.parse(calls.find(call => !call.url.includes('topics')).init.body).vectorQueries[0].topicGraph.kind, 'none');
+  result = await run(focus);
+  assert.deepEqual(result.enhanced.topics.hierarchy.map(root => root.title), [focus.focusTopic]);
+  assert.ok(result.enhanced.topics.hierarchy[0].children.length > 0);
+  calls.length = 0;
+  result = await run(diversity);
+  assert.equal(result.enhanced.themesOnly, undefined);
+  assert.equal(JSON.parse(calls.at(-1).init.body).vectorQueries[0].topicGraph.kind, calls.length === 2 ? JSON.parse(calls.at(-1).init.body).vectorQueries[0].topicGraph.kind : 'balanced');
+  assert.ok(calls.some(call => JSON.parse(call.init.body).vectorQueries?.[0].topicGraph?.kind === 'balanced'));
+  assert.ok(!calls.some(call => call.url.includes('topics')), 'diversity questions need no theme read');
+  assert.equal(result.enhanced.topicCoverage.compact, true);
+  assert.equal(result.enhanced.hits[0].topic.id, gData('energy').topics.leaves.find(leaf => leaf.title).id, 'per-passage topic from the hashed leaf map');
+  assert.equal(result.enhanced.topicCoverage.covered.length, result.enhanced.topicCoverage.total);
+});
+
+test('the build pins industry graph bindings to attested ETags and requires catalog examples to match the graph contract', () => {
+  const graph = { service: 'fiq-industry-test', apiVersion: '2026-11-01-preview', industries: { energy: gBinding('energy') } };
+  const attested = { apiVersion: SEARCH_API_VERSION, entries: gSchemas('energy') };
+  const built = industryGraphFrom(graph, attested, ['energy', 'retail'], industryGraphConfig);
+  assert.deepEqual(Object.keys(built.industries), ['energy']);
+  assert.equal(built.attestations.entries.length, 3);
+  assert.equal(industryGraphFrom(undefined, attested, ['energy'], industryGraphConfig), undefined);
+  assert.throws(() => industryGraphFrom(graph, { ...attested, entries: attested.entries.slice(1) }, ['energy'], industryGraphConfig), /graph schema attestation/);
+  assert.deepEqual(industryGraphPresetProblems(industryCatalog, industryGraphConfig, ['energy']), []);
+  const changed = structuredClone(industryCatalog);
+  changed.industries.find(item => item.id === 'energy').presets.S08[0].query = 'A different question';
+  assert.match(industryGraphPresetProblems(changed, industryGraphConfig, ['energy'])[0], /S08: catalog examples and graph-contract questions differ/);
+  for (const data of Object.values(industryGraphConfig.industries)) {
+    for (const preset of data.s08) for (const statement of preset.statements) assert.doesNotMatch(statement.gql, /NOT\s*\(|;/);
+    assert.ok(!JSON.stringify(data).includes('blob.core.windows.net') && !JSON.stringify(data).includes('-index'), 'no storage or index names in public config');
+  }
+});
+
+test('graph path rows give screen readers the path as text, not a prohibited aria-label on a plain div', () => {
+  const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
+  const start = client.indexOf('function renderPathRow(');
+  const body = client.slice(start, client.indexOf('\nfunction ', start + 10));
+  assert.doesNotMatch(body, /path\.setAttribute\('aria-label'/);
+  assert.match(body, /path\.append\(node\('span', pathText\(statement, row\), 'sr-only'\)\)/);
+  assert.match(body, /Citation unavailable/);
 });

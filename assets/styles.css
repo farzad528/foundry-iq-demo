@@ -112,6 +112,7 @@ a{color:var(--link);text-underline-offset:3px}
 .facet-more summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .facet-more[open]{display:flex;flex-wrap:wrap;gap:4px 6px;width:100%}
 .facet-more[open] summary{width:100%}
+.theme-more{margin:6px 0 0;font-size:12px;color:var(--ink-2)}
 .passage-text{white-space:pre-line;font-size:14px;line-height:1.6;margin:0;overflow-wrap:anywhere}
 .clamp-long{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
 

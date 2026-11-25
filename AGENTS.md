@@ -34,6 +34,10 @@ test runner. Match surrounding two-space JavaScript style and explicit imports.
   `STUDIO_INDUSTRIES` lists them. Filters, facets, scoring profiles and S10 documents
   come only from the server-side preset allowlist; never accept them from a request.
   Index names stay in the private industry binding.
+- `lib/industry-graph.mjs`, `config/studio-industry-graph.json`: industry S08/S09 on the
+  dedicated graph Search service (`AZURE_SEARCH_GRAPH_*`). GQL comes only from the
+  graph-contract allowlist; passage and blob keys are hashed, and index and storage
+  names stay in the private industry graph binding.
 - `lib/search-adapter.mjs`, `lib/vercel-app.mjs`, `scripts/build-vercel.mjs`: the
   personal Vercel build. Search docs/search (plus docs/search.graph on attested graph
   indexes) is the only upstream; schema checks use

@@ -64,9 +64,9 @@ export const industryScenarioCopy = {
   S07: { title: 'Agentic search', description: 'Compare single-pass hybrid retrieval with agentic retrieval on the same index. Evidence only: compare the documents and citations; neither arm generates an answer.',
     limits: 'Live uses agentic retrieval with a bounded runtime and compares evidence only; neither arm generates an answer.' },
   S08: { title: 'Entity graph search', description: 'Compare plain retrieval with Foundry IQ entity-graph search, which follows the relationships between people, organizations and records in this industry’s public documents.',
-    limits: 'Graph search for this industry isn’t configured on this deployment yet. The other scenarios work as usual.' },
+    limits: 'Graph traversal runs on the curated questions, with GQL from a server-side allowlist; free-text questions run plain retrieval only. Each path cites the passages its relationships came from.' },
   S09: { title: 'Topic graph search', description: 'Compare hybrid search with Foundry IQ topic-balanced retrieval, which spreads results across the themes of this industry’s public documents.',
-    limits: 'Topic graph search for this industry isn’t configured on this deployment yet. The other scenarios work as usual.' },
+    limits: 'Theme questions read the corpus themes and their share of passages from the topic graph; other questions compare hybrid retrieval with topic diversification off and on, without the semantic ranker.' },
   S10: { title: 'PDF layout extraction', description: 'Compare Content Understanding Read and Layout extraction of the same public PDF, with page and table-row citations. Extraction ran at ingestion.',
     limits: 'Both arms search one public PDF, extracted at ingestion; examples choose the PDF, and free-text questions search the first example’s PDF.' },
 };

@@ -86,6 +86,28 @@ export function industryBindingsFrom(privateBinding, attestations, enabled, used
   return { agentic: { maxRuntimeInSeconds: AGENTIC_MAX_RUNTIME_SECONDS }, industries };
 }
 
+/** Private industry graph binding for the enabled industries, pinned to the graph service's attested ETags. */
+export function industryGraphFrom(privateGraph, graphAttestations, enabled, graphConfig) {
+  if (!privateGraph) return undefined;
+  const etags = new Map((graphAttestations?.entries || []).map(entry => [entry.index, entry.etag]));
+  const industries = {};
+  const used = new Set();
+  for (const id of enabled) {
+    const binding = privateGraph.industries?.[id];
+    if (!binding) continue;
+    if (!graphConfig.industries?.[id] || graphConfig.industries[id].dataset !== binding.dataset) throw new Error(`Industry graph dataset mismatch for ${id}.`);
+    for (const [index, etag] of [[binding.content, binding.contentETag], [binding.graph, binding.graphETag], [binding.topic, binding.topicETag]]) {
+      if (etags.get(index) !== etag) throw new Error(`No matching graph schema attestation for ${index}.`);
+      used.add(index);
+    }
+    industries[id] = { ...binding };
+  }
+  if (!Object.keys(industries).length) return undefined;
+  if (!/^[a-z0-9][a-z0-9-]{1,59}$/.test(privateGraph.service || '') || privateGraph.apiVersion !== '2026-11-01-preview') throw new Error('Industry graph service or API version is invalid.');
+  return { service: privateGraph.service, apiVersion: privateGraph.apiVersion, industries,
+    attestations: { service: privateGraph.service, apiVersion: graphAttestations.apiVersion, entries: graphAttestations.entries.filter(entry => used.has(entry.index)).map(({ index, etag, schema }) => ({ index, etag, schema })) } };
+}
+
 /** Build-time checks of the public industry catalog against the attested schemas. */
 export function checkIndustryCatalog(catalog, enabled, attestations, bindings, { notesOptional = false } = {}) {
   const problems = [];
@@ -143,7 +165,8 @@ export function industryRecordingProblems(catalog, enabled, recorded) {
         const [before, after] = [result?.baseline?.hits?.[0]?.id, result?.enhanced?.hits?.[0]?.id];
         return result ? !!before && before === after : undefined;
       };
-      if (sameTop1(presets[0]) === true && presets.some(preset => sameTop1(preset) === false)) problems.push(`${id} ${scenarioId}: the first example has the same #1 in both arms; lead with one that differs`);
+      // Graph scenarios (S08/S09) compare paths and themes, not rankings.
+      if (!['S08', 'S09'].includes(scenarioId) && sameTop1(presets[0]) === true && presets.some(preset => sameTop1(preset) === false)) problems.push(`${id} ${scenarioId}: the first example has the same #1 in both arms; lead with one that differs`);
     }
   }
   return problems;
@@ -157,17 +180,36 @@ export function pageWithIndustries(html, enabled) {
   return html.replace(marker, `<meta name="studio-industries" content="${enabled.join(',')}">`);
 }
 
+/** Every curated industry S08/S09 example must be a graph-contract question with allowlisted statements, and vice versa. */
+export function industryGraphPresetProblems(catalog, graphConfig, ids) {
+  const problems = [];
+  for (const id of ids) {
+    const industry = catalog.industries.find(item => item.id === id);
+    const graph = graphConfig.industries?.[id];
+    for (const [scenarioId, key] of [['S08', 's08'], ['S09', 's09']]) {
+      const listed = (industry?.presets?.[scenarioId] || []).map(preset => preset.query);
+      const allowed = (graph?.[key] || []).map(preset => preset.question);
+      if (listed.join('\n') !== allowed.join('\n')) problems.push(`${id} ${scenarioId}: catalog examples and graph-contract questions differ`);
+    }
+    for (const preset of graph?.s08 || []) {
+      if (!preset.statements?.length || preset.statements.length > 4 || preset.statements.some(statement => !/^MATCH\s/i.test(statement.gql) || /NOT\s*\(/i.test(statement.gql))) problems.push(`${id} ${preset.id}: GQL statements`);
+    }
+  }
+  return problems;
+}
+
 export function reduceAttestations(attestations, used) {
   return { service: attestations.service, apiVersion: attestations.apiVersion,
     entries: attestations.entries.filter(entry => used.has(entry.index)).map(({ index, etag, schema }) => ({ index, etag, schema })) };
 }
 
 async function verifyOffline(liveConfig, attestations, industries = { enabled: [] }) {
+  const graphEnv = industries.graph ? { AZURE_SEARCH_GRAPH_ENDPOINT: `https://${industries.graph.service}.search.windows.net`, AZURE_SEARCH_GRAPH_QUERY_KEY: 'OfflineGraphVerificationPlaceholder00' } : {};
   const { createVercelApp } = await import(pathToFileURL(join(root, 'lib', 'vercel-app.mjs')));
   const { LIVE_SCENARIOS } = await import(pathToFileURL(join(root, 'lib', 'search-adapter.mjs')));
   const app = createVercelApp({ liveConfig, attestations, industries, log: () => {},
     fetchUpstream: () => { throw new Error('Offline build verification must not call Azure.'); } });
-  const env = { LIVE_ENABLED: 'true', AZURE_SEARCH_ENDPOINT: `https://${attestations.service}.search.windows.net`, AZURE_SEARCH_QUERY_KEY: 'OfflineBuildVerificationPlaceholder0000' };
+  const env = { LIVE_ENABLED: 'true', AZURE_SEARCH_ENDPOINT: `https://${attestations.service}.search.windows.net`, AZURE_SEARCH_QUERY_KEY: 'OfflineBuildVerificationPlaceholder0000', ...graphEnv };
   const origin = 'https://build.invalid';
   const matrix = [];
   for (const language of LANGUAGES) {
@@ -187,8 +229,12 @@ async function verifyOffline(liveConfig, attestations, industries = { enabled: [
     const scenarios = await (await app.handle('scenarios', new Request(`${origin}/api/scenarios?industry=${industry}`), env)).json();
     if (!Array.isArray(scenarios.scenarios) || !scenarios.scenarios.length) throw new Error(`${industry}: industry catalog unavailable: ${JSON.stringify(scenarios).slice(0, 300)}`);
     for (const item of scenarios.scenarios) {
-      // Industry graph scenarios stay visibly not configured until the industry graph contract and binding ship.
-      if (['S08', 'S09'].includes(item.id) && item.live.status === 'not_configured') { matrix.push(`${industry}:${item.id}=not_configured`); continue; }
+      // Industry graph scenarios are attested when this build binds the industry graph; otherwise they stay visibly not configured.
+      if (['S08', 'S09'].includes(item.id) && !industries.graph?.industries?.[industry]) {
+        if (item.live.status !== 'not_configured') throw new Error(`${industry}:${item.id} should be not configured without a graph binding.`);
+        matrix.push(`${industry}:${item.id}=not_configured`);
+        continue;
+      }
       if (!item.liveAvailable) throw new Error(`${industry}:${item.id} live unavailable: ${item.live.reason}`);
       const response = await app.handle('prepare', new Request(`${origin}/api/demo/prepare`, { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ industry, scenarioId: item.id, mode: 'live', query: item.sampleQuery || 'public guidance' }) }), env);
@@ -202,7 +248,7 @@ async function verifyOffline(liveConfig, attestations, industries = { enabled: [
 
 const escapeHtml = value => String(value).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 /** Replaces the About page's data-sources block with the Zava sources plus every enabled industry's public sources. */
-export function aboutWithDataSources(html, catalog, enabled) {
+export function aboutWithDataSources(html, catalog, enabled, { graph = false } = {}) {
   const start = '<!-- DATA_SOURCES:START -->', end = '<!-- DATA_SOURCES:END -->';
   if (!html.includes(start) || !html.includes(end)) throw new Error('about.html is missing the data-sources markers.');
   const groups = [catalog.zava, ...enabled.map(id => catalog.industries.find(item => item.id === id))];
@@ -216,7 +262,7 @@ export function aboutWithDataSources(html, catalog, enabled) {
   if (enabled.length) {
     const replace = (from, to) => { if (!page.includes(from)) throw new Error(`about.html changed: ${from}`); page = page.replace(from, to); };
     replace('<li>All content is synthetic (Zava Retail); no customer data.</li>',
-      '<li>The Zava store is synthetic. Industry demos search public U.S. government documents, in English only. No customer data.</li>\n          <li>Industry demos cover S01–S07, plus S10 where the corpus has PDFs. Industry graph search (S08, S09) isn’t configured yet, and image search (S11) uses the Zava store.</li>');
+      `<li>The Zava store is synthetic. Industry demos search public U.S. government documents, in English only. No customer data.</li>\n          <li>Industry demos cover S01–S07, plus S10 where the corpus has PDFs. ${graph ? 'Industry entity and topic graph search (S08, S09) runs on a dedicated Foundry IQ service for the curated questions' : 'Industry graph search (S08, S09) isn’t configured yet'}, and image search (S11) uses the Zava store.</li>`);
     replace('<footer><span>Synthetic demo content · Zava Retail · S01–S11</span>', '<footer><span>Public and synthetic demo data · <a href="#data-sources">Data sources</a></span>');
   }
   return page;
@@ -284,7 +330,14 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (missingIndustrySamples.length) process.stdout.write(`WARNING: development build without industry recorded Sample (${missingIndustrySamples.length} gaps).\n`);
   const recordingProblems = industryRecordingProblems(industryCatalog, enabledIndustries, recorded);
   if (recordingProblems.length) throw new Error(`Industry recordings do not support their notes:\n${recordingProblems.join('\n')}`);
-  const industries = { enabled: enabledIndustries, bindings: industryBindings };
+  // Industry graph (S08/S09): optional private binding plus the graph service's attested schemas.
+  const industryGraphConfig = JSON.parse(readFileSync('config/studio-industry-graph.json', 'utf8'));
+  const industryGraphPath = process.env.STUDIO_PRIVATE_INDUSTRY_GRAPH, graphAttestationPath = process.env.STUDIO_PRIVATE_INDUSTRY_GRAPH_ATTESTATIONS;
+  if (industryGraphPath && !(existsSync(industryGraphPath) && graphAttestationPath && existsSync(graphAttestationPath))) throw new Error('STUDIO_PRIVATE_INDUSTRY_GRAPH requires STUDIO_PRIVATE_INDUSTRY_GRAPH_ATTESTATIONS.');
+  const industryGraph = industryGraphPath ? industryGraphFrom(JSON.parse(readFileSync(industryGraphPath, 'utf8')), JSON.parse(readFileSync(graphAttestationPath, 'utf8')), enabledIndustries, industryGraphConfig) : undefined;
+  const graphPresetProblems = industryGraphPresetProblems(industryCatalog, industryGraphConfig, Object.keys(industryGraph?.industries || {}));
+  if (graphPresetProblems.length) throw new Error(`Industry graph presets don't match:\n${graphPresetProblems.join('\n')}`);
+  const industries = { enabled: enabledIndustries, bindings: industryBindings, ...(industryGraph ? { graph: industryGraph } : {}) };
   const matrix = await verifyOffline(liveConfig, attestations, industries);
 
   rmSync(out, { recursive: true, force: true });
@@ -294,7 +347,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const page = readFileSync('page.html', 'utf8').replace('__SCENARIOS__', () => JSON.stringify(catalog).replace(/</g, '\\u003c'));
   if (page.includes('/download') || !page.includes('/assets/foundry.svg') || !page.includes('rel="icon"')) throw new Error('Public page must link the Foundry logo and favicons and must not expose the source download route.');
   write('public/index.html', pageWithIndustries(page, enabledIndustries));
-  write('public/about.html', aboutWithDataSources(readFileSync('about.html', 'utf8'), industryCatalog, enabledIndustries));
+  write('public/about.html', aboutWithDataSources(readFileSync('about.html', 'utf8'), industryCatalog, enabledIndustries, { graph: !!industries.graph }));
   // Vercel serves public/404.html for unmatched paths; it must stay CSP-clean (external theme loader only).
   const notFound = readFileSync('404.html', 'utf8');
   if (/<script(?![^>]*\bsrc=)|\son[a-z]+=|javascript:/i.test(notFound) || !notFound.includes('href="/"')) {
@@ -322,7 +375,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   for (const [file, index] of [['zava-hat-blue.png', 0], ['zava-hat-red.png', 1], ['zava-bowl-blue.png', 3]]) write(`public/samples/${file}`, illustrationPng(index));
 
   // Server-only modules and private data.
-  for (const path of ['lib/protocol.mjs', 'lib/normalize.mjs', 'lib/studio.mjs', 'lib/native-graph.mjs', 'lib/industry.mjs', 'lib/search-adapter.mjs', 'lib/vercel-app.mjs',
+  for (const path of ['lib/protocol.mjs', 'lib/normalize.mjs', 'lib/studio.mjs', 'lib/native-graph.mjs', 'lib/industry.mjs', 'lib/industry-graph.mjs', 'lib/search-adapter.mjs', 'lib/vercel-app.mjs',
     ...archiveFiles.filter(path => /^config\/studio-(?!live\.example|recorded).*\.(?:mjs|json)$/.test(path))]) {
     mkdirSync(dirname(join(out, 'server', path)), { recursive: true });
     copyFileSync(path, join(out, 'server', path));

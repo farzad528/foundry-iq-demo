@@ -84,8 +84,8 @@ Do not commit or publish the private inputs or `dist/vercel`.
 | `AZURE_SEARCH_QUERY_KEY` | A dedicated Search **query** key. Mark it Sensitive and never commit it. |
 | `LIVE_ENABLED` | `true` enables Live. Any other value, or no value, pauses Live. |
 | `LIVE_DISABLED_SCENARIOS` | Optional, empty by default. A comma-separated list such as `S07,S11` pauses those scenarios for cost control. Invalid values pause all Live. |
-| `AZURE_SEARCH_GRAPH_ENDPOINT` | Optional; reserved for industry S08/S09. The industry graph Search service, set for Production to `https://fiq-industry-a30bcd4f-search.search.windows.net`. Used only once a build ships an industry graph binding. |
-| `AZURE_SEARCH_GRAPH_QUERY_KEY` | Optional; reserved for industry S08/S09. A dedicated **query** key on the industry graph service, set by the owner (Sensitive). Redacted like the main key. |
+| `AZURE_SEARCH_GRAPH_ENDPOINT` | Industry S08/S09 only. The industry graph Search service, `https://fiq-industry-a30bcd4f-search.search.windows.net` (Production). |
+| `AZURE_SEARCH_GRAPH_QUERY_KEY` | Industry S08/S09 only. A dedicated **query** key on the industry graph service, set by the owner (Sensitive). Redacted like the main key. |
 | `LIVE_DISABLED_INDUSTRIES` | Optional, empty by default; only for builds with industries. A comma-separated list of industry IDs (and `zava`) pauses those demos. Invalid values pause every demo. |
 
 If a variable is missing or invalid, Live fails closed with a configuration
@@ -174,8 +174,8 @@ identity override.
 **Stateless limits.** The build enforces these limits:
 
 - Requests are limited to 64 KiB, questions to 8,000 characters and top-K to 5/10/20/50.
-- A comparison can make at most 4 Search calls (S08's false-premise question uses
-  all 4: one plain retrieval plus three graph statements). Each call has a
+- A comparison can make at most 5 Search calls (Energy's Odessa question uses
+  all 5: one plain retrieval plus four graph statements). Each call has a
   45-second timeout (10 seconds for S08/S09), and the whole comparison has a
   55-second budget. Functions stop at 60 seconds.
 - There are no automatic retries.
@@ -246,23 +246,40 @@ licenses and applicability come from the Industry datasets contract
 | ID | Selector label | Index | Scenarios |
 | --- | --- | --- | --- |
 | `zava` (default) | Retail · Zava demo store | `zava-studio-*` | S01–S11, five languages |
-| `retail` | Retail · Product recalls (CPSC) | `foundry-iq-retail` | S01–S07 (S08/S09 not configured) |
-| `financial` | Financial services | `foundry-iq-financial` | S01–S07, S10 (S08/S09 not configured) |
-| `healthcare` | Healthcare & life sciences | `foundry-iq-healthcare` | S01–S07, S10 (S08/S09 not configured) |
-| `manufacturing` | Manufacturing | `foundry-iq-manufacturing` | S01–S07, S10 (S08/S09 not configured) |
-| `energy` | Energy & utilities | `foundry-iq-energy` | S01–S07, S10 (S08/S09 not configured) |
+| `retail` | Retail · Product recalls (CPSC) | `foundry-iq-retail` | S01–S09 |
+| `financial` | Financial services | `foundry-iq-financial` | S01–S10 |
+| `healthcare` | Healthcare & life sciences | `foundry-iq-healthcare` | S01–S10 |
+| `manufacturing` | Manufacturing | `foundry-iq-manufacturing` | S01–S10 |
+| `energy` | Energy & utilities | `foundry-iq-energy` | S01–S10 |
 
 - Industry demos are English-only: the language setting is disabled with a note.
   S11 (images) stays with the Zava store.
-- **Industry S08/S09** are listed but show “Graph search isn’t configured for this
-  industry yet”, send nothing and have no Sample. Their entity and topic graphs
-  will live on a second Search service, reached only through the optional
-  `AZURE_SEARCH_GRAPH_ENDPOINT` and `AZURE_SEARCH_GRAPH_QUERY_KEY`. They also
-  need a private industry graph binding and allowlisted GQL from the graph
-  contract; no build provides one yet. Missing or invalid graph variables fail
-  closed for industry S08/S09 only. `/api/health` reports `industryGraph`. The
-  API log shows the same host placeholder for both services. Zava S08/S09 stay
-  on the main service.
+- **Industry S08/S09** run native Foundry IQ entity-graph and topic-graph search
+  on a dedicated graph Search service (`lib/industry-graph.mjs`), reached only
+  through `AZURE_SEARCH_GRAPH_ENDPOINT` and `AZURE_SEARCH_GRAPH_QUERY_KEY` with the
+  same calls as the Zava graph (API `2026-11-01-preview`, 10-second per-call
+  timeout, no retries). Each industry has 4 curated S08 and 4 S09 questions from
+  the graph session's Phase 2 contract (`config/studio-industry-graph.json`,
+  commit `09cf71d`):
+  - S08: BEFORE is hybrid + semantic ranker on the content index; AFTER runs the
+    question's 1–4 allowlisted GQL statements with hydrated provenance. Source IDs
+    come from the contract's blob-URL map (keyed by SHA-256 prefixes, so no
+    storage names are published). A row without evidence shows “Citation
+    unavailable”; nothing is invented. Free text runs plain retrieval only.
+  - S09 theme questions read the topic index: the 8 largest themes plus
+    “+N smaller themes”, or the curated focus theme with its sub-themes. S09
+    diversity questions compare `topicGraph` none and balanced; theme chips use
+    the per-passage leaf map.
+  - Index names, ETags and attested schemas (read by the graph session with
+    Entra) are in the private binding (`STUDIO_PRIVATE_INDUSTRY_GRAPH`,
+    `STUDIO_PRIVATE_INDUSTRY_GRAPH_ATTESTATIONS`); the build fails if catalog
+    examples and graph-contract questions differ. API logs show the same host
+    placeholder for both services and replace storage URLs with short hashes.
+  - Without the graph variables or binding, industry S08/S09 fail closed with
+    “Graph search isn’t configured for this industry yet”. `/api/health` reports
+    `industryGraph`. Zava S08/S09 stay on the main service.
+  - The graph service bills the semantic ranker (Standard) beyond its free
+    monthly queries; `LIVE_DISABLED_SCENARIOS=S08` pauses S08 everywhere.
 - The URL keeps the view (`/?industry=healthcare&scenario=S04`), and Share copies
   that link. An unknown industry or inapplicable scenario opens the default.
 - Citations link to the original public source, only on each industry's reviewed
@@ -281,9 +298,10 @@ licenses and applicability come from the Industry datasets contract
   doesn't re-enable them) and sends nothing; any prepare or run failure ends the
   loading state with a visible error.
 - Recorded Sample replays every curated industry example (153: Retail 28,
-  Financial 31, Healthcare 32, Manufacturing 32, Energy 30), recorded from Live
-  on staged releases with request IDs removed. Full top-10 lists match the
-  contract evaluation for 305 of 306 arms.
+  Financial 31, Healthcare 32, Manufacturing 32, Energy 30), plus the 40
+  industry graph questions, recorded from Live on staged releases with request
+  IDs removed. Full top-10 lists match the contract evaluation for 305 of 306
+  arms; graph recordings match the contract's verified statements and coverage.
 
 **Request shapes** (from the Industry datasets evaluation; every arm filters
 `scope eq 'public' and variant eq 'primary'` unless noted):
@@ -331,7 +349,7 @@ npm run build:vercel
 - Notes describe only what the shipped comparison shows. The build rejects S03
   notes that mention a third (vector-only) arm, and S07 notes that claim
   planning the shipped recording doesn't show.
-- Industry recordings add about 18 MB to `config/studio-recorded.json` (23.5 MB
+- Industry recordings add about 20 MB to `config/studio-recorded.json` (25.5 MB
   in total), because public-document passages are long. The server bundle
   imports in about 250 ms locally.
 

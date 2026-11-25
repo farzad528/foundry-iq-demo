@@ -439,7 +439,8 @@ function renderArm(side, arm, scenario, result) {
   const hits = node('div', undefined, arm.kind === 'gallery' || arm.hits?.some(hit => hit.thumbnailUrl) ? 'gallery' : '');
   const baselineIds = result.baseline?.hits?.map(hit => hit.id);
   (arm.hits || []).forEach((hit, index) => hits.append(renderHit(hit, side, index, baselineIds)));
-  if (!arm.hits?.length && !arm.curatedOnly) hits.append(node('p', arm.graph?.kind === 'native' ? 'No cited passages were returned for these paths.' : 'No matching results for this query in this arm.', 'empty'));
+  if (arm.themesOnly) hits.append(node('p', 'These themes and their share of passages come straight from the topic graph; no passage search was needed.', 'meta'));
+  else if (!arm.hits?.length && !arm.curatedOnly) hits.append(node('p', arm.graph?.kind === 'native' ? 'No cited passages were returned for these paths.' : 'No matching results for this query in this arm.', 'empty'));
   if (arm.graph?.kind === 'native' && arm.hits?.length) container.append(node('h3', 'Cited passages', 'section-label'));
   container.append(hits);
   const trace = node('details', undefined, 'trace');
@@ -498,7 +499,8 @@ function entityChip(value, role) {
 function renderPathRow(statement, row, side, arm) {
   const item = node('li', undefined, 'graph-row');
   const path = node('div', undefined, 'graph-path');
-  path.setAttribute('aria-label', pathText(statement, row));
+  // Screen readers get the whole path as text; the drawn chips are decorative (aria-label isn't allowed on a plain div).
+  path.append(node('span', pathText(statement, row), 'sr-only'));
   if (statement.hops?.length) {
     chains(statement.hops).forEach((chain, i) => {
       const segment = node('span', undefined, 'graph-chain');
@@ -524,6 +526,8 @@ function renderPathRow(statement, row, side, arm) {
       } else cited.append(node('span', id));
     }
     item.append(cited);
+  } else if (row.citationUnavailable) {
+    item.append(node('p', 'Citation unavailable: Foundry IQ returned no evidence for this row. Nothing was substituted.', 'graph-cited graph-cited-label'));
   }
   return item;
 }
@@ -551,7 +555,8 @@ function renderNativeGraph(arm, side) {
 }
 function coverageLine(coverage) {
   const line = node('p', undefined, 'coverage');
-  line.append(node('strong', `Themes covered: ${coverage.covered.length} of ${coverage.total}`));
+  // Large topic graphs list only the themes these results cover.
+  line.append(node('strong', coverage.compact ? `Themes covered: ${coverage.covered.length}` : `Themes covered: ${coverage.covered.length} of ${coverage.total}`));
   for (const leaf of coverage.leaves) {
     const covered = coverage.covered.includes(leaf.id);
     const chip = node('span', `${covered ? '✓' : '–'} ${leaf.title}`, `coverage-chip${covered ? ' on' : ''}`);
@@ -579,7 +584,9 @@ function renderThemes(arm) {
     (topic.children || []).forEach(child => bar(child, depth + 1));
   };
   (arm.topics.hierarchy || []).forEach(root => bar(root, 0));
-  section.append(list, node('p', 'Share of passages per theme. Highlighted themes appear in these results.', 'meta'));
+  section.append(list);
+  if (arm.topics.moreRoots > 0) section.append(node('p', `+${arm.topics.moreRoots} smaller theme${arm.topics.moreRoots === 1 ? '' : 's'}`, 'theme-more'));
+  section.append(node('p', arm.themesOnly ? 'Share of passages per theme, from the Foundry IQ topic graph.' : 'Share of passages per theme. Highlighted themes appear in these results.', 'meta'));
   return section;
 }
 

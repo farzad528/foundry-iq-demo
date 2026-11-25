@@ -606,6 +606,112 @@
       ],
       "why": "Hybrid's top 5 are power-bank recalls and the Thermo Tents notice sits at #6; agentic retrieval returns Anker and Baseus power banks #1-2 and the Thermo Tents 'mislabeled as fire retardant' recall #3."
      }
+    ],
+    "S08": [
+     {
+      "id": "retail-s08-profeco-joint-recalls",
+      "label": "Which recalls were announced jointly with Mexico's consumer protection agency (PROFECO), and which company recalled each product?",
+      "hint": "Across many records",
+      "query": "Which recalls were announced jointly with Mexico's consumer protection agency (PROFECO), and which company recalled each product?",
+      "relevant": [
+       "RET-CPSC-19136",
+       "RET-CPSC-19186",
+       "RET-CPSC-19189",
+       "RET-CPSC-19752",
+       "RET-CPSC-21174",
+       "RET-CPSC-22089",
+       "RET-CPSC-22237",
+       "RET-CPSC-23721",
+       "RET-CPSC-25009",
+       "RET-CPSC-25413"
+      ],
+      "why": "The joint-recall flag sits in each notice's metadata; plain search returns at most five notices that mention Mexico, while one graph query returns all ten with their recalling companies, each cited."
+     },
+     {
+      "id": "retail-s08-co-linked-recalls",
+      "label": "Which carbon-monoxide recalls were later expanded or re-announced, and which earlier recall does each link to?",
+      "hint": "Multi-hop path",
+      "query": "Which carbon-monoxide recalls were later expanded or re-announced, and which earlier recall does each link to?",
+      "relevant": [
+       "RET-CPSC-22127",
+       "RET-CPSC-26494",
+       "RET-CPSC-23083",
+       "RET-CPSC-23107",
+       "RET-CPSC-24028"
+      ],
+      "why": "Each link is stated in only one notice's related-recall field; the graph turns those into edges, joins them to the carbon-monoxide hazard and returns both recall families in one query."
+     },
+     {
+      "id": "retail-s08-temu-shein",
+      "label": "Which recalled products were sold on Temu or Shein?",
+      "hint": "Across many records",
+      "query": "Which recalled products were sold on Temu or Shein?",
+      "relevant": [
+       "RET-CPSC-21769",
+       "RET-CPSC-24211",
+       "RET-CPSC-24265",
+       "RET-CPSC-25131",
+       "RET-CPSC-25166",
+       "RET-CPSC-25172",
+       "RET-CPSC-25233",
+       "RET-CPSC-25474",
+       "RET-CPSC-26148",
+       "RET-CPSC-26244",
+       "RET-CPSC-26524",
+       "RET-CPSC-26536",
+       "RET-CPSC-26654",
+       "RET-CPSC-26694",
+       "RET-CPSC-26779",
+       "RET-CPSC-26794"
+      ],
+      "why": "The retailer is one line inside each notice; plain search returns five notices, while the graph's product → sold-at edges return all sixteen recalls and their products, each cited."
+     },
+     {
+      "id": "retail-s08-false-premise-sturdy",
+      "label": "The STURDY Act recalls were about button-battery ingestion. Which products were affected?",
+      "hint": "Checks a false premise",
+      "query": "The STURDY Act recalls were about button-battery ingestion. Which products were affected?",
+      "relevant": [
+       "RET-CPSC-24217",
+       "RET-CPSC-26022",
+       "RET-CPSC-25087"
+      ],
+      "why": "Plain search returns dresser and battery passages side by side; the graph shows the STURDY recalls' hazards, proves no ingestion path exists and points to the rule that does cover batteries."
+     }
+    ],
+    "S09": [
+     {
+      "id": "retail-s09-themes",
+      "label": "What are the main themes across these product recalls, and how much of the collection does each cover?",
+      "hint": "Corpus themes",
+      "query": "What are the main themes across these product recalls, and how much of the collection does each cover?",
+      "relevant": [],
+      "why": "The Topic Graph answers the corpus-wide question with named themes and their share of passages; plain search can only return five passages and cannot measure coverage."
+     },
+     {
+      "id": "retail-s09-children-subthemes",
+      "label": "Break down the children's product recalls: which sub-themes are there and how large is each?",
+      "hint": "Corpus themes",
+      "query": "Break down the children's product recalls: which sub-themes are there and how large is each?",
+      "relevant": [],
+      "why": "The Topic Graph already knows how children's recalls split and in what proportion; plain search returns recall passages without grouping or measuring them."
+     },
+     {
+      "id": "retail-s09-diversity-a",
+      "label": "What topics come up in these CPSC recalls?",
+      "hint": "Topic-balanced retrieval",
+      "query": "What topics come up in these CPSC recalls?",
+      "relevant": [],
+      "why": "Plain hybrid search returns four light-up-toy recalls and one infant-sleep recall (2 areas); topic-balanced retrieval spreads its five recalls across 5 areas."
+     },
+     {
+      "id": "retail-s09-diversity-b",
+      "label": "What should parents know about recalled products?",
+      "hint": "Topic-balanced retrieval",
+      "query": "What should parents know about recalled products?",
+      "relevant": [],
+      "why": "Plain hybrid search returns three wintergreen-oil recalls among its five (3 areas); topic-balanced retrieval spreads them across 5, adding kitchen burns and water beads."
+     }
     ]
    }
   },
@@ -1323,6 +1429,92 @@
       "page": 87,
       "why": "Read returns page 87 as flattened text; layout returns Table 11 row 13 'Loans to builders secured by one- to four-family properties presold under firm contracts' with its 50%/100% risk weight and page/row."
      }
+    ],
+    "S08": [
+     {
+      "id": "financial-s08-wire-rules-complaints",
+      "label": "A customer says a wire transfer was sent to a scammer. Which rules govern wire transfers, and which consumer complaints describe wire-transfer problems?",
+      "hint": "Multi-hop path",
+      "query": "A customer says a wire transfer was sent to a scammer. Which rules govern wire transfers, and which consumer complaints describe wire-transfer problems?",
+      "relevant": [
+       "FIN-OCC-CH-PAYSYS-1990",
+       "FIN-FDIC-RMS-8-1",
+       "FIN-CFPB-*"
+      ],
+      "why": "Complaints describe what went wrong and supervisory guidance says which rules govern wires, and no single document holds both; the graph joins them through the shared wire-transfer channel and cites both sides."
+     },
+     {
+      "id": "financial-s08-rule-administrators",
+      "label": "Which agency administers each rule our payments compliance team tracks: the Bank Secrecy Act, OFAC regulations, Regulation E, Regulation J and the USA PATRIOT Act?",
+      "hint": "Across many records",
+      "query": "Which agency administers each rule our payments compliance team tracks: the Bank Secrecy Act, OFAC regulations, Regulation E, Regulation J and the USA PATRIOT Act?",
+      "relevant": [
+       "FIN-FDIC-RMS-8-1",
+       "FIN-OCC-CH-PAYSYS-1990",
+       "FIN-CFPB-19946499"
+      ],
+      "why": "The five answers sit in four documents; plain search returns FDIC manual passages that never pair Regulation E or Regulation J with their agencies, while one graph query returns every rule → agency pair with its citation."
+     },
+     {
+      "id": "financial-s08-benefit-card-relief",
+      "label": "Which complaints about government benefit cards (such as state unemployment debit cards) ended with monetary relief?",
+      "hint": "Multi-hop path",
+      "query": "Which complaints about government benefit cards (such as state unemployment debit cards) ended with monetary relief?",
+      "relevant": [
+       "FIN-CFPB-4421546",
+       "FIN-CFPB-4444894",
+       "FIN-CFPB-4523529",
+       "FIN-CFPB-4848417",
+       "FIN-CFPB-5144422"
+      ],
+      "why": "Plain search finds benefit-card complaints but mixes in one that got only non-monetary relief and misses one that was refunded, and the reader must open each to check the outcome; the graph returns all ten with their outcomes, five of them monetary relief."
+     },
+     {
+      "id": "financial-s08-false-premise-reg-e-wires",
+      "label": "Regulation E covers wire transfers, so which Regulation E error-resolution rights apply to a disputed wire?",
+      "hint": "Checks a false premise",
+      "query": "Regulation E covers wire transfers, so which Regulation E error-resolution rights apply to a disputed wire?",
+      "relevant": [
+       "FIN-OCC-CH-PAYSYS-2021",
+       "FIN-OCC-CH-PAYSYS-1990",
+       "FIN-FDIC-RMS-8-1"
+      ],
+      "why": "Plain search returns Regulation E passages that look relevant to any electronic payment; the graph shows what Regulation E actually governs, proves no Regulation E → wire link exists and names the rules that do govern wires."
+     }
+    ],
+    "S09": [
+     {
+      "id": "financial-s09-themes",
+      "label": "What are the main themes across these banking complaints and supervisory documents, and how much of the collection does each cover?",
+      "hint": "Corpus themes",
+      "query": "What are the main themes across these banking complaints and supervisory documents, and how much of the collection does each cover?",
+      "relevant": [],
+      "why": "The Topic Graph answers the corpus-wide question with named themes and their share of passages; plain search can only return five passages and cannot measure coverage."
+     },
+     {
+      "id": "financial-s09-fraud-subthemes",
+      "label": "Break down the complaints about fraudulent wires and account holds: which sub-themes are there and how large is each?",
+      "hint": "Corpus themes",
+      "query": "Break down the complaints about fraudulent wires and account holds: which sub-themes are there and how large is each?",
+      "relevant": [],
+      "why": "The Topic Graph already knows how these complaints split and in what proportion; plain search returns complaint passages without grouping or measuring them."
+     },
+     {
+      "id": "financial-s09-diversity-a",
+      "label": "What do regulators expect from banks?",
+      "hint": "Topic-balanced retrieval",
+      "query": "What do regulators expect from banks?",
+      "relevant": [],
+      "why": "Plain hybrid search draws all five passages from 3 capital areas; topic-balanced retrieval spreads them across 5, adding BSA funds-transfer monitoring, funds-transfer credit controls and payment-systems risk."
+     },
+     {
+      "id": "financial-s09-diversity-b",
+      "label": "What do consumers complain about to the CFPB?",
+      "hint": "Topic-balanced retrieval",
+      "query": "What do consumers complain about to the CFPB?",
+      "relevant": [],
+      "why": "Plain hybrid search draws its five complaints from 3 areas; topic-balanced retrieval spreads them across 5, adding money-transfer fraud and EFT disputes."
+     }
     ]
    }
   },
@@ -2016,6 +2208,100 @@
       ],
       "page": 5,
       "why": "Read returns pages 5/6/7; Layout's #1 is the Table 2 row 'AST or ALT increases to more than 8 times the ULN ... Permanently discontinue' (page 5)."
+     }
+    ],
+    "S08": [
+     {
+      "id": "healthcare-s08-mace-boxed-warning",
+      "label": "Which drugs in our label set carry a boxed warning for major adverse cardiovascular events (MACE), and what drug class are they?",
+      "hint": "Across many records",
+      "query": "Which drugs in our label set carry a boxed warning for major adverse cardiovascular events (MACE), and what drug class are they?",
+      "relevant": [
+       "HC-SPL-ABROCITINIB-*",
+       "HC-SPL-BARICITINIB-*",
+       "HC-SPL-RITLECITINIB-*",
+       "HC-SPL-RUXOLITINIB-*",
+       "HC-SPL-TOFACITINIB-*",
+       "HC-SPL-UPADACITINIB-*"
+      ],
+      "why": "The warning is repeated across six separate labels; plain search fills its top five with versions of one or two labels, while one graph query lists all six cited drugs and their class."
+     },
+     {
+      "id": "healthcare-s08-cyp3a4-interactions",
+      "label": "Which drugs are CYP3A4 substrates whose labels warn about strong CYP3A4 inhibitors, and which CYP3A inhibitors do the labels name?",
+      "hint": "Multi-hop path",
+      "query": "Which drugs are CYP3A4 substrates whose labels warn about strong CYP3A4 inhibitors, and which CYP3A inhibitors do the labels name?",
+      "relevant": [
+       "HC-SPL-FINERENONE-*",
+       "HC-SPL-APIXABAN-*",
+       "HC-SPL-FENTANYL-*",
+       "HC-SPL-HYDROCODONE-*",
+       "HC-SPL-OXYCODONE-*",
+       "HC-SPL-RUXOLITINIB-*",
+       "HC-SPL-TOFACITINIB-*"
+      ],
+      "why": "Substrate status and the inhibitor warning sit in different sections of seven labels; the graph intersects both edges across the whole set and names the inhibitors, where plain search returns a few interaction paragraphs."
+     },
+     {
+      "id": "healthcare-s08-adalimumab-biosimilars",
+      "label": "Which adalimumab biosimilars are in our label set, and which company labels each one?",
+      "hint": "Multi-hop path",
+      "query": "Which adalimumab biosimilars are in our label set, and which company labels each one?",
+      "relevant": [
+       "HC-SPL-ADALIMUMAB-08DBAFFE-*",
+       "HC-SPL-ADALIMUMAB-3468792F-*",
+       "HC-SPL-ADALIMUMAB-115EA79B-*",
+       "HC-SPL-ADALIMUMAB-5EF1C7CF-*",
+       "HC-SPL-ADALIMUMAB-4CAB600D-*",
+       "HC-SPL-ADALIMUMAB-B7178E36-*",
+       "HC-SPL-ADALIMUMAB-12F609C9-*"
+      ],
+      "why": "Each biosimilar has its own label with near-identical text, so plain search returns a few lookalike passages; the graph returns every biosimilar with its labeler, each row cited to its own label."
+     },
+     {
+      "id": "healthcare-s08-false-premise-idarucizumab",
+      "label": "Our bleeding protocol says idarucizumab (Praxbind) reverses apixaban. Which label supports that?",
+      "hint": "Checks a false premise",
+      "query": "Our bleeding protocol says idarucizumab (Praxbind) reverses apixaban. Which label supports that?",
+      "relevant": [
+       "HC-SPL-IDARUCIZUMAB-*",
+       "HC-SPL-ANDEXANET-*"
+      ],
+      "why": "Plain search returns reversal passages that mention both agents and leaves the reader to spot the mix-up; the graph shows idarucizumab reverses only dabigatran, proves no apixaban path exists and names the correct agent."
+     }
+    ],
+    "S09": [
+     {
+      "id": "healthcare-s09-themes",
+      "label": "What are the main themes across this drug label and coding collection, and how much of it does each cover?",
+      "hint": "Corpus themes",
+      "query": "What are the main themes across this drug label and coding collection, and how much of it does each cover?",
+      "relevant": [],
+      "why": "The Topic Graph answers the corpus-wide question with named themes and their share of passages; plain search can only return five passages and cannot measure coverage."
+     },
+     {
+      "id": "healthcare-s09-opioid-subthemes",
+      "label": "Break down the opioid labeling content: which sub-themes does it contain and how large is each?",
+      "hint": "Corpus themes",
+      "query": "Break down the opioid labeling content: which sub-themes does it contain and how large is each?",
+      "relevant": [],
+      "why": "The Topic Graph already knows how the opioid content splits by product and in what proportion; plain search returns opioid passages without grouping or measuring them."
+     },
+     {
+      "id": "healthcare-s09-diversity-a",
+      "label": "What is in this healthcare knowledge base?",
+      "hint": "Topic-balanced retrieval",
+      "query": "What is in this healthcare knowledge base?",
+      "relevant": [],
+      "why": "Plain hybrid search fills all five slots with ICD-10-CM coding passages from 2 areas; topic-balanced retrieval spreads them across 5 areas, adding oxycodone, Kerendia and sotalol labels."
+     },
+     {
+      "id": "healthcare-s09-diversity-b",
+      "label": "Brief me on medication safety",
+      "hint": "Topic-balanced retrieval",
+      "query": "Brief me on medication safety",
+      "relevant": [],
+      "why": "Plain hybrid search covers 4 areas, two of them anticoagulant labels; topic-balanced retrieval covers 5, adding GLP-1 and SGLT2-inhibitor labels."
      }
     ]
    }
@@ -2776,6 +3062,113 @@
       "page": 24,
       "why": "CU Read's #1 is all of page 24 (enterprise and MOM-level prose plus Table 13 captions); CU Layout's #1 is the Table 14 'ISO 22400' row (page 24, row 4): KPIs for manufacturing operations management as defined in IEC 62264-1."
      }
+    ],
+    "S08": [
+     {
+      "id": "manufacturing-s08-robot-injury-industries",
+      "label": "Which industries reported severe injuries involving industrial robots from 2015 through 2023?",
+      "hint": "Across many records",
+      "query": "Which industries reported severe injuries involving industrial robots from 2015 through 2023?",
+      "relevant": [
+       "MFG-OSHA-SIR-2015-041979",
+       "MFG-OSHA-SIR-2015-118882",
+       "MFG-OSHA-SIR-2016-010111",
+       "MFG-OSHA-SIR-2016-1110325",
+       "MFG-OSHA-SIR-2017-021191",
+       "MFG-OSHA-SIR-2017-065535",
+       "MFG-OSHA-SIR-2018-066216",
+       "MFG-OSHA-SIR-2018-076656",
+       "MFG-OSHA-SIR-2019-077288",
+       "MFG-OSHA-SIR-2019-0910191",
+       "MFG-OSHA-SIR-2020-098366",
+       "MFG-OSHA-SIR-2020-1110389",
+       "MFG-OSHA-SIR-2021-031862",
+       "MFG-OSHA-SIR-2021-108852",
+       "MFG-OSHA-SIR-2022-010137",
+       "MFG-OSHA-SIR-2022-021585",
+       "MFG-OSHA-SIR-2023-032373",
+       "MFG-OSHA-SIR-2023-054791"
+      ],
+      "why": "Each robot injury is its own report; plain search returns five of them, while one graph query returns all eighteen 2015-2023 reports with their industries, each cited."
+     },
+     {
+      "id": "manufacturing-s08-robot-maintenance-lockout",
+      "label": "Which industrial-robot injuries from 2015 through 2023 happened while machinery was being maintained or cleaned, and which OSHA standard requires the control for that hazard?",
+      "hint": "Multi-hop path",
+      "query": "Which industrial-robot injuries from 2015 through 2023 happened while machinery was being maintained or cleaned, and which OSHA standard requires the control for that hazard?",
+      "relevant": [
+       "MFG-OSHA-SIR-2015-041979",
+       "MFG-OSHA-SIR-2016-010111",
+       "MFG-OSHA-SIR-2016-1110325",
+       "MFG-OSHA-SIR-2018-066216",
+       "MFG-OSHA-SIR-2018-076656",
+       "MFG-OSHA-SIR-2019-0910191",
+       "MFG-OSHA-SIR-2021-031862",
+       "MFG-OSHA-SIR-2021-108852",
+       "MFG-OSHA-SIR-2022-021585",
+       "MFG-OSHA-SIR-2023-032373",
+       "MFG-OSHA-3120-REQUIREMENTS"
+      ],
+      "why": "The injury reports describe the incidents and OSHA's booklets name the standard; the graph joins each robot report's hazard to lockout/tagout and 29 CFR 1910.147, with citations on both sides."
+     },
+     {
+      "id": "manufacturing-s08-plc-scada-attacks",
+      "label": "Which cyber threats and real-world incidents involving PLCs and SCADA systems do the NIST OT security guides describe?",
+      "hint": "Across many records",
+      "query": "Which cyber threats and real-world incidents involving PLCs and SCADA systems do the NIST OT security guides describe?",
+      "relevant": [
+       "MFG-NIST-SP800-82R4IPD-APPC",
+       "MFG-NIST-SP800-82R3-APPC",
+       "MFG-NIST-SP800-82R3-SEC3",
+       "MFG-NIST-SP800-82R4IPD-SEC4"
+      ],
+      "why": "The incidents are scattered across sections and appendices of two revisions of NIST SP 800-82; plain search returns a few of those passages, while one graph query returns every system → threat pair with its citation."
+     },
+     {
+      "id": "manufacturing-s08-false-premise-press-brakes",
+      "label": "Our press brakes fall under OSHA's mechanical power press standard, 29 CFR 1910.217, so we need its PSDI certification for them, right?",
+      "hint": "Checks a false premise",
+      "query": "Our press brakes fall under OSHA's mechanical power press standard, 29 CFR 1910.217, so we need its PSDI certification for them, right?",
+      "relevant": [
+       "MFG-ECFR-29CFR1910-217",
+       "MFG-OSHA-3170"
+      ],
+      "why": "Plain search returns press passages that discuss presses and press brakes side by side; the graph shows what 1910.217 covers, proves no link to press brakes exists and names the standard that does apply."
+     }
+    ],
+    "S09": [
+     {
+      "id": "manufacturing-s09-themes",
+      "label": "What are the main themes across this manufacturing safety and OT security collection, and how much of it does each cover?",
+      "hint": "Corpus themes",
+      "query": "What are the main themes across this manufacturing safety and OT security collection, and how much of it does each cover?",
+      "relevant": [],
+      "why": "The Topic Graph answers the corpus-wide question with named themes and their share of passages; plain search can only return five passages and cannot measure coverage."
+     },
+     {
+      "id": "manufacturing-s09-safeguarding-subthemes",
+      "label": "Break down the machine safeguarding and energy control content: which sub-themes does it contain and how large is each?",
+      "hint": "Corpus themes",
+      "query": "Break down the machine safeguarding and energy control content: which sub-themes does it contain and how large is each?",
+      "relevant": [],
+      "why": "The Topic Graph already knows how the safeguarding content splits and in what proportion; plain search returns safeguarding passages without grouping or measuring them."
+     },
+     {
+      "id": "manufacturing-s09-diversity-a",
+      "label": "What should a new plant safety manager know?",
+      "hint": "Topic-balanced retrieval",
+      "query": "What should a new plant safety manager know?",
+      "relevant": [],
+      "why": "Plain hybrid search draws its five passages from 3 areas, mostly lockout/tagout; topic-balanced retrieval spreads them across 5, adding OT security, production-system standards and burn injuries."
+     },
+     {
+      "id": "manufacturing-s09-diversity-b",
+      "label": "What should a maintenance technician know before servicing equipment?",
+      "hint": "Topic-balanced retrieval",
+      "query": "What should a maintenance technician know before servicing equipment?",
+      "relevant": [],
+      "why": "Plain hybrid search returns five lockout/tagout passages from a single area; topic-balanced retrieval spreads them across 4, adding press safety, OT cybersecurity controls and incident response."
+     }
     ]
    }
   },
@@ -3376,6 +3769,110 @@
       ],
       "page": 47,
       "why": "CU Read's top 3 pages miss page 47 (#5), where the ERCOT North hub line is fifteen unlabeled numbers; CU Layout's #1 is the ERCOT North hub row (page 47, row 38) with the 2027 Q3 column: $50.95/MWh."
+     }
+    ],
+    "S08": [
+     {
+      "id": "energy-s08-oe417-cyber-events",
+      "label": "Which cyber events did utilities report to DOE on form OE-417 from 2019 through 2024?",
+      "hint": "Across many records",
+      "query": "Which cyber events did utilities report to DOE on form OE-417 from 2019 through 2024?",
+      "relevant": [
+       "NRG-OE417-2020-0370",
+       "NRG-OE417-2020-0372",
+       "NRG-OE417-2020-0377",
+       "NRG-OE417-2021-0018",
+       "NRG-OE417-2021-0106",
+       "NRG-OE417-2021-0118",
+       "NRG-OE417-2021-0122",
+       "NRG-OE417-2021-0239",
+       "NRG-OE417-2022-0023",
+       "NRG-OE417-2022-0078",
+       "NRG-OE417-2022-0267",
+       "NRG-OE417-2022-0307",
+       "NRG-OE417-2022-0332",
+       "NRG-OE417-2023-0053",
+       "NRG-OE417-2023-0093",
+       "NRG-OE417-2023-0117",
+       "NRG-OE417-2023-0316",
+       "NRG-OE417-2024-0033",
+       "NRG-OE417-2024-0114",
+       "NRG-OE417-2024-0187",
+       "NRG-OE417-2024-0192",
+       "NRG-OE417-2024-0214"
+      ],
+      "why": "Each OE-417 record is its own document; plain search returns five cyber events, while one graph query returns all twenty-two from 2019-2024, each cited to its record."
+     },
+     {
+      "id": "energy-s08-odessa-ride-through",
+      "label": "What caused the Odessa, Texas inverter disturbances, how did FERC respond, and which ride-through standards were finally approved?",
+      "hint": "Multi-hop path",
+      "query": "What caused the Odessa, Texas inverter disturbances, how did FERC respond, and which ride-through standards were finally approved?",
+      "relevant": [
+       "NRG-FR-2023-23581-*",
+       "NRG-FR-2025-14304-*",
+       "NRG-FR-2022-25589"
+      ],
+      "why": "Plain search finds the right Federal Register orders, but the reader still has to stitch the causes, FERC's response, the 2025 approval and the version chain together from five passages; the graph returns each hop as cited rows."
+     },
+     {
+      "id": "energy-s08-uri-vs-elliott",
+      "label": "What caused the energy disruptions in Winter Storm Uri (2021) and Winter Storm Elliott (2022), according to EIA and FERC?",
+      "hint": "Across many records",
+      "query": "What caused the energy disruptions in Winter Storm Uri (2021) and Winter Storm Elliott (2022), according to EIA and FERC?",
+      "relevant": [
+       "NRG-EIA-TIE-46836",
+       "NRG-EIA-TIE-47016",
+       "NRG-EIA-TIE-55359",
+       "NRG-FERC-WINTER-2025-26"
+      ],
+      "why": "The causes are spread across a dozen EIA articles, FERC's winter assessment and Federal Register orders; plain search returns five passages about one storm, while the graph lists each storm's cited causes side by side."
+     },
+     {
+      "id": "energy-s08-false-premise-eop-012-1",
+      "label": "EOP-012-1 is still the current extreme cold weather standard for generators, right?",
+      "hint": "Checks a false premise",
+      "query": "EOP-012-1 is still the current extreme cold weather standard for generators, right?",
+      "relevant": [
+       "NRG-FR-2024-14668-*",
+       "NRG-FR-2025-18393",
+       "NRG-FERC-WINTER-2025-26"
+      ],
+      "why": "Plain search surfaces EOP-012-1 passages that read as current; the graph follows the supersedes chain to EOP-012-3, proves nothing newer exists in the corpus and cites the approving order."
+     }
+    ],
+    "S09": [
+     {
+      "id": "energy-s09-themes",
+      "label": "What are the main themes across this grid reliability collection, and how much of it does each cover?",
+      "hint": "Corpus themes",
+      "query": "What are the main themes across this grid reliability collection, and how much of it does each cover?",
+      "relevant": [],
+      "why": "The Topic Graph answers the corpus-wide question with named themes and their share of passages; plain search can only return five passages and cannot measure coverage."
+     },
+     {
+      "id": "energy-s09-oe417-subthemes",
+      "label": "Break down the DOE OE-417 event records: which kinds of events are there and how large is each group?",
+      "hint": "Corpus themes",
+      "query": "Break down the DOE OE-417 event records: which kinds of events are there and how large is each group?",
+      "relevant": [],
+      "why": "The Topic Graph already knows how the OE-417 records split by event type and in what proportion; plain search returns individual event records without grouping or measuring them."
+     },
+     {
+      "id": "energy-s09-diversity-a",
+      "label": "What is in this energy knowledge base?",
+      "hint": "Topic-balanced retrieval",
+      "query": "What is in this energy knowledge base?",
+      "relevant": [],
+      "why": "Plain hybrid search draws its five passages from 2 areas, three of them from one EIA outlook; topic-balanced retrieval spreads them across 5."
+     },
+     {
+      "id": "energy-s09-diversity-b",
+      "label": "Give me a one-page overview of this collection",
+      "hint": "Topic-balanced retrieval",
+      "query": "Give me a one-page overview of this collection",
+      "relevant": [],
+      "why": "Plain hybrid search draws its five passages from 2 areas; topic-balanced retrieval spreads them across 4, adding inverter-based resource standards and generator cold-weather constraints."
      }
     ]
    }
