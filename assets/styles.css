@@ -130,7 +130,10 @@ a{color:var(--link);text-underline-offset:3px}
 .field input,.field select{width:100%}
 .upload{min-width:0;margin-top:12px;display:grid;grid-template-columns:minmax(0,420px) auto;gap:6px 16px;align-items:start}
 .upload .field{grid-column:1}
-.upload input{font-size:13px;min-width:0;padding:9px 10px}
+.upload input[type=file]{width:100%;font-size:13px;min-width:0;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer}
+.upload input[type=file]::file-selector-button{margin-right:12px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink);padding:6px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.upload input[type=file]:hover::file-selector-button{background:var(--surface-3)}
+.upload input[type=file]:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .upload p{grid-column:1/-1;font-size:12px;color:var(--muted);margin:2px 0 0}
 .upload img{grid-row:1/span 2;grid-column:2;width:120px;height:120px;object-fit:contain;border-radius:12px;background:var(--image-bg);padding:8px;box-shadow:0 7px 20px #0000000e}
 .upload button{font-size:12px;min-height:30px;padding:4px 9px;justify-self:start}

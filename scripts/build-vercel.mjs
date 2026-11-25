@@ -124,6 +124,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   write('public/index.html', page);
   write('public/about.html', readFileSync('about.html'));
   write('public/assets/client.mjs', readFileSync('assets/client.mjs'));
+  write('public/assets/header.mjs', readFileSync('assets/header.mjs'));
+  write('public/assets/about.mjs', readFileSync('assets/about.mjs'));
   write('public/assets/styles.css', readFileSync('assets/styles.css'));
   write('public/assets/theme.js', readFileSync('assets/theme.js'));
   write('public/assets/source.svg', readFileSync('assets/source.svg'));

@@ -7,7 +7,7 @@ export const archiveFiles = Object.freeze([
   'config/studio-languages.mjs', 'config/studio-localized.json', 'config/studio-recorded.json',
   'lib/protocol.mjs', 'lib/normalize.mjs', 'lib/quota.mjs', 'lib/http.mjs', 'lib/studio.mjs', 'lib/search-adapter.mjs', 'lib/vercel-app.mjs',
   'assets/client.mjs', 'assets/source-icons.mjs', 'assets/blob.svg', 'assets/search.svg', 'assets/web.svg', 'assets/fabric.svg', 'assets/sharepoint.svg', 'assets/source.svg', 'assets/foundry.svg', 'assets/PROVENANCE.md',
-  'assets/styles.css', 'assets/theme.js', 'assets/favicon-32.png', 'assets/apple-touch-icon.png', 'assets/favicon.ico', 'about.html',
+  'assets/styles.css', 'assets/theme.js', 'assets/header.mjs', 'assets/about.mjs', 'assets/favicon-32.png', 'assets/apple-touch-icon.png', 'assets/favicon.ico', 'about.html',
   'scripts/build.mjs', 'scripts/build.sh', 'scripts/dev.mjs', 'scripts/start.mjs', 'scripts/verify.mjs', 'scripts/validate-artifact.mjs',
   'scripts/source-files.mjs', 'scripts/test-support.mjs', 'scripts/fixtures/published-response.json',
   'scripts/studio-http-tests.mjs', 'scripts/studio-browser-tests.mjs', 'scripts/studio-tests.mjs', 'scripts/generate-studio.mjs',

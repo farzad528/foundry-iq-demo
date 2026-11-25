@@ -1,3 +1,5 @@
+import { initHeader, currentLanguage, currentLanguageLabel } from './header.mjs';
+
 const element = id => document.getElementById(id);
 let scenarios = [];
 let sequence = 0;
@@ -16,9 +18,6 @@ const node = (tag, text, className) => {
   return result;
 };
 const selectedScenario = () => scenarios.find(item => item.id === element('scenario').value);
-const languageInputs = () => [...document.querySelectorAll('input[name="document-language"]')];
-const currentLanguage = () => languageInputs().find(input => input.checked)?.value || 'en';
-const currentLanguageLabel = () => languageInputs().find(input => input.checked)?.parentElement.textContent.trim() || 'English';
 function setStatus(message, quiet = false) {
   element('status').textContent = message;
   element('status').classList.toggle('sr-only', quiet);
@@ -130,8 +129,6 @@ function invalidate() {
   element('baseline').replaceChildren();
   element('enhanced').replaceChildren();
   element('metrics').replaceChildren();
-  element('comparison-json').textContent = '';
-  element('comparison-details').open = false;
   element('error').hidden = true;
   element('error').textContent = '';
 }
@@ -160,13 +157,14 @@ function modeChanged() {
     S11: 'Compare keyword matching with Azure Vision image similarity: use an image, or describe the item in text. Not captions.',
   };
   const scenario = selectedScenario();
-  element('demo-description').textContent = mode === 'live' ? liveDescriptions[scenario?.id] || scenario?.liveDescription
-    : scenario?.description || scenario?.difference || '';
   const recorded = scenario?.sample?.recorded;
+  // Recorded Sample replays real Live responses, so it uses the Live description.
+  element('demo-description').textContent = mode === 'live' || recorded ? liveDescriptions[scenario?.id] || scenario?.liveDescription
+    : scenario?.description || scenario?.difference || '';
   element('mode-badge').hidden = true;
   element('mode-badge').textContent = recorded ? `Recorded Sample · ${recorded.recordedAt}` : 'Sample mode';
   element('mode-chip').dataset.mode = mode;
-  element('mode-chip').textContent = mode === 'live' ? 'Live · Azure AI Search' : recorded ? 'Sample · recorded' : 'Sample · fixtures';
+  element('mode-chip').textContent = mode === 'live' ? 'Live data' : 'Sample';
   element('mode-help').textContent = mode === 'live'
     ? 'Live sends real Azure AI Search queries from the server. Failures are shown as errors; Sample results are never substituted.'
     : recorded ? `Recorded Live responses captured on ${recorded.recordedAt}. Curated questions only; no Azure request is sent now.`
@@ -183,7 +181,9 @@ function modeChanged() {
   populatePresets();
   if (selectedScenario()?.id === 'S10' && mode === 'live') element('upload-help').textContent = 'Search the bundled original PDF. New document uploads need an approved durable extraction workflow.';
   if (selectedScenario()?.id === 'S11') {
-    element('upload-help').textContent = mode === 'live' && selectedScenario()?.liveAvailable
+    element('upload-help').textContent = mode === 'sample' && recorded
+      ? 'Recorded Sample replays the Live result captured for each bundled example image. Switch to Live data to search with your own JPEG, PNG or WebP image (up to 40 KiB).'
+      : mode === 'live' && selectedScenario()?.liveAvailable
       ? 'JPEG/PNG/WebP up to 40 KiB, sent once to Azure AI Search, which vectorizes it with Azure Vision. Nothing is stored or indexed. Without an image, your text is matched against the image vectors (text-to-image).'
       : 'Sample uses a fixed original illustration, not arbitrary image understanding. Live query-image similarity requires a compatible corpus/query encoder; unconfigured uploads are explicitly unsupported.';
   }
@@ -229,7 +229,7 @@ function renderHit(hit, side, index, baselineIds) {
   card.tabIndex = -1;
   const head = node('div', undefined, 'card-top');
   const originalRank = baselineIds?.indexOf(hit.id);
-  head.append(node('span', `#${hit.rank || index + 1}`, 'rank'), node('span', hit.sourceType || 'Synthetic source'));
+  head.append(node('span', `#${hit.rank || index + 1}`, 'rank'));
   card.append(head);
   const image = safeUrl(hit.thumbnailUrl);
   if (image) card.append(Object.assign(node('img'), { src: image, alt: hit.title || 'Synthetic product illustration', loading: 'lazy' }));
@@ -259,8 +259,6 @@ function renderArm(side, arm, scenario, result) {
   heading.append(node('div', side === 'baseline' ? 'BEFORE' : 'AFTER', 'arm-label'),
     node('h2', arm?.label || label(scenario[side], side === 'baseline' ? 'Baseline' : 'Enhanced')));
   container.replaceChildren(heading);
-  const explanation = arm?.trace?.configuration?.method || arm?.trace?.configuration?.adapter || arm?.trace?.configuration?.mechanism || arm?.kind;
-  if (explanation) container.append(node('p', explanation, 'arm-description'));
   if (!arm || arm.status === 'error' || arm.status === 'unavailable' || arm.status === 'failed') {
     container.append(node('p', errorText(arm?.error || 'This arm is unavailable.'), 'error'));
     return;
@@ -307,10 +305,10 @@ function renderArm(side, arm, scenario, result) {
   const hits = node('div', undefined, arm.kind === 'gallery' || arm.hits?.some(hit => hit.thumbnailUrl) ? 'gallery' : '');
   const baselineIds = result.baseline?.hits?.map(hit => hit.id);
   (arm.hits || []).forEach((hit, index) => hits.append(renderHit(hit, side, index, baselineIds)));
-  if (!arm.hits?.length) hits.append(node('p', 'No evidence hits. No results were invented.', 'empty'));
+  if (!arm.hits?.length) hits.append(node('p', 'No matching results for this query in this arm.', 'empty'));
   container.append(hits);
   const trace = node('details', undefined, 'trace');
-  trace.append(node('summary', 'Technical details'), node('pre', JSON.stringify({ executionMode: result.mode, status: arm.status, trace: arm.trace, usage: arm.usage }, null, 2)));
+  trace.append(node('summary', 'Technical details'), node('pre', JSON.stringify({ executionMode: result.mode, status: arm.status, trace: arm.trace, usage: arm.usage, sharedComparison: result.comparison }, null, 2)));
   container.append(trace);
 }
 
@@ -319,7 +317,6 @@ function renderResults(result, scenario) {
   element('results-title').textContent = `Search results for “${result.query}”${result.mode === 'sample' ? sampleLabel : ''} · ${element('count').value} supporting evidence maximum per arm`;
   renderArm('baseline', result.baseline, scenario, result);
   renderArm('enhanced', result.enhanced, scenario, result);
-  element('comparison-json').textContent = JSON.stringify(result.comparison, null, 2);
   element('metrics').replaceChildren();
   for (const side of ['baseline', 'enhanced']) {
     const evaluation = result.comparison?.evaluation?.[side];
@@ -442,10 +439,6 @@ element('scenario').addEventListener('change', scenarioChanged);
 const scenarioSelector = element('scenario').closest('.selector');
 element('scenario').addEventListener('pointerdown', () => { scenarioSelector.dataset.pointerFocus = 'true'; });
 document.addEventListener('keydown', () => { delete scenarioSelector.dataset.pointerFocus; }, { capture: true });
-for (const input of languageInputs()) input.addEventListener('change', () => {
-  try { localStorage.setItem('fiq-language', currentLanguage()); } catch { /* storage unavailable */ }
-  void loadScenarios(true);
-});
 element('mode').addEventListener('change', modeChanged);
 element('count').addEventListener('change', () => { invalidate(); setStatus('Result count changed. Search again to apply.'); });
 element('boost').addEventListener('change', () => { invalidate(); setStatus('Boost changed. Search again to apply.'); });
@@ -570,96 +563,14 @@ async function loadScenarios(changed = false) {
     showError(error.message);
   }
 }
-// Header: Share, profile menu (Settings, Help, About), settings panel (language, theme), "/" focus.
-const SHARE_URL = 'https://aka.ms/foundryiq-demo';
-let toastTimer;
-function toast(message) {
-  const box = element('toast');
-  box.textContent = message;
-  box.hidden = false;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { box.hidden = true; }, 4000);
-}
-element('share').addEventListener('click', async () => {
-  const data = { title: 'Foundry IQ Demo Studio', text: 'Compare Azure AI Search and Foundry IQ retrieval side by side.', url: SHARE_URL };
-  if (navigator.share && (!navigator.canShare || navigator.canShare(data))) {
-    try { await navigator.share(data); return; } catch (error) { if (error?.name === 'AbortError') return; }
-  }
-  try {
-    await navigator.clipboard.writeText(SHARE_URL);
-    toast(`Link copied: ${SHARE_URL}`);
-  } catch {
-    toast(`Copy this link: ${SHARE_URL}`);
-  }
-});
-const profileButton = element('profile-button');
-const profileMenu = element('profile-menu');
-const settingsPanel = element('settings-panel');
-const menuItems = () => [...profileMenu.querySelectorAll('[role="menuitem"]')];
-function closeMenu(focusButton = false) {
-  if (profileMenu.hidden) return;
-  profileMenu.hidden = true;
-  profileButton.setAttribute('aria-expanded', 'false');
-  if (focusButton) profileButton.focus();
-}
-function openMenu(focusIndex = 0) {
-  closeSettings();
-  profileMenu.hidden = false;
-  profileButton.setAttribute('aria-expanded', 'true');
-  menuItems()[focusIndex]?.focus();
-}
-function closeSettings(focusButton = false) {
-  if (settingsPanel.hidden) return;
-  settingsPanel.hidden = true;
-  if (focusButton) profileButton.focus();
-}
-function openSettings() {
-  closeMenu();
-  for (const input of document.querySelectorAll('input[name="theme"]')) input.checked = input.value === (window.fiqTheme?.get() || 'system');
-  settingsPanel.hidden = false;
-  (languageInputs().find(input => input.checked) || languageInputs()[0]).focus();
-}
-profileButton.addEventListener('click', () => (profileMenu.hidden ? openMenu(0) : closeMenu()));
-profileButton.addEventListener('keydown', event => {
-  if (['ArrowDown', 'ArrowUp'].includes(event.key)) {
-    event.preventDefault();
-    openMenu(event.key === 'ArrowUp' ? menuItems().length - 1 : 0);
-  }
-});
-profileMenu.addEventListener('keydown', event => {
-  const items = menuItems();
-  const index = items.indexOf(document.activeElement);
-  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-    event.preventDefault();
-    items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
-  } else if (event.key === 'Home' || event.key === 'End') {
-    event.preventDefault();
-    items[event.key === 'Home' ? 0 : items.length - 1].focus();
-  } else if (event.key === 'Escape') {
-    event.preventDefault();
-    closeMenu(true);
-  } else if (event.key === 'Tab') closeMenu();
-});
-element('menu-settings').addEventListener('click', openSettings);
-for (const link of [element('menu-help'), element('menu-about')]) link.addEventListener('click', () => closeMenu());
-element('settings-close').addEventListener('click', () => closeSettings(true));
-settingsPanel.addEventListener('keydown', event => {
-  if (event.key === 'Escape') { event.preventDefault(); closeSettings(true); }
-});
-for (const input of document.querySelectorAll('input[name="theme"]')) {
-  input.checked = input.value === (window.fiqTheme?.get() || 'system');
-  input.addEventListener('change', () => { if (input.checked) window.fiqTheme?.set(input.value); });
-}
-document.addEventListener('pointerdown', event => {
-  if (!event.target.closest('.menu-anchor')) { closeMenu(); closeSettings(); }
-});
+// Shared header (Share, menu, settings); language changes reload the localized catalog.
+const header = initHeader({ onLanguageChange: () => { void loadScenarios(true); } });
 document.addEventListener('keydown', event => {
   const target = event.target;
   const typing = target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
   if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
     event.preventDefault();
-    closeMenu();
-    closeSettings();
+    header.closeAll();
     element('query').focus();
     element('query').select();
   }
@@ -676,9 +587,4 @@ element('preset').addEventListener('change', () => {
   const preset = presetList()[Number(element('preset').value)];
   if (element('preset').value !== '' && preset) void choosePreset(preset, true);
 });
-try {
-  const saved = localStorage.getItem('fiq-language');
-  const match = languageInputs().find(input => input.value === saved);
-  if (match) match.checked = true;
-} catch { /* storage unavailable */ }
 await loadScenarios();
