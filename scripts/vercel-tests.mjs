@@ -1433,7 +1433,7 @@ test('shared helpers: unsafe URLs and credentials never leave the server, and st
   for (const unsafe of ['javascript:alert(1)', 'data:text/html,evil', '//evil.test', 'https://user:password@evil.test']) assert.equal(safeUrl(unsafe), null, unsafe);
   assert.equal(safeUrl('https://public.example.test/doc?sig=secret&se=expiry&topic=safe'), 'https://public.example.test/doc?topic=safe');
   assert.equal(safeUrl('/samples/zava-support.md'), '/samples/zava-support.md');
-  const cleaned = sanitize({ apiKey: KEY, nested: [{ text: `see https://x.test/a?sig=abc and ${KEY}`, authorization: 'Bearer abcdefghijklmnop' }] }, [KEY]);
+  const cleaned = sanitize({ apiKey: KEY, nested: [{ text: `see https://x.test/a?sig=abc and ${KEY}`, authorization: 'not-a-real-credential' }] }, [KEY]);
   assert.equal(cleaned.apiKey, '[redacted]');
   assert.equal(cleaned.nested[0].authorization, '[redacted]');
   assert.ok(!JSON.stringify(cleaned).includes(KEY) && !JSON.stringify(cleaned).includes('sig=abc'));
