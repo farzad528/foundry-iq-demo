@@ -1,4 +1,4 @@
-# Source icon provenance
+# Artwork and asset provenance
 
 ## Microsoft Foundry selector icon
 
@@ -10,53 +10,6 @@ SHA-256: `fab039a771f72780ae34e59065d61c66a02d3c347d50923ef2956f34912ea02c`.
 It identifies the product being demonstrated beside the Foundry IQ Demos selector,
 not an original application trademark. The product icon is subject to Microsoft's
 artwork terms, not the application's MIT license; shapes and colors are unchanged.
-
-## User-supplied product artwork
-
-On 2026-10-19, the user supplied `knowledge-source-icons.zip` and explicitly
-requested these icons in the demo and its existing pull request. The following
-SVGs are imported unchanged apart from their local filenames:
-
-| Local asset | Entry under `knowledge-source-icons/svg/` | Source kind |
-| --- | --- | --- |
-| `blob.svg` | `azure-blob-storage.svg` | `azureBlob` |
-| `search.svg` | `azure-ai-search-index.svg` | `searchIndex` |
-| `web.svg` | `web.svg` | `web` |
-| `fabric.svg` | `fabric-iq-onelake-catalog.svg` | `fabricDataAgent` (synthetic replay only) |
-| `sharepoint.svg` | `sharepoint-remote.svg` | `remoteSharePoint` (synthetic replay only) |
-
-Supplied ZIP SHA-256:
-`da1dd5f28ddf0ce5ec881aa0ff0421bd6f97a556a4da5f723878c787440e402f`.
-Unused icons, PNG copies and dark variants are not redistributed.
-The archive did not include a license or upstream provenance manifest; this
-records the supplied input and requested use, not independent verification that
-every SVG came from an official Microsoft distribution.
-
-Product artwork and trademarks are **not relicensed under this repository's
-MIT license**. They identify knowledge-source products in this educational
-integration demo, not the Explorer's own brand or an endorsement. Preserve
-their shapes, aspect ratios and colors. Microsoft reserves rights in its
-product icons; its published terms permit use in architecture diagrams,
-training materials and documentation:
-
-- [Azure icon guidelines and terms](https://learn.microsoft.com/azure/architecture/icons/)
-- [Microsoft Fabric icon guidelines and terms](https://learn.microsoft.com/fabric/fundamentals/icons)
-- [Microsoft 365 icon terms](https://learn.microsoft.com/previous-versions/microsoft-365/solutions/architecture-icons-templates)
-
-Review the applicable rights and permitted use before reusing product artwork
-outside this descriptive demo. No broader license grant is asserted here.
-
-## Original fallback and presentation
-
-`source.svg` remains the original neutral document drawing authored for this
-Explorer application under its MIT license. Unknown source kinds use this
-fallback, not a product logo.
-
-The local registry supplies source-name and Indexed/Remote text labels. Images
-are decorative (`alt=""`); labels remain available to assistive technology.
-No font, CDN or remote image is loaded. All bundled SVGs are self-contained,
-with no scripts, external resources or embedded HTML. Product-icon mappings do
-not enable new live connectors: Fabric and SharePoint remain synthetic-only.
 
 ## Original synthetic image corpus
 
@@ -77,8 +30,11 @@ declare editable embedding permitted (`OS/2.fsType=8`). Microsoft font rights
 remain separate from the application's MIT license; no font relicensing is
 asserted. Regeneration requires those locally installed fonts. Actual native
 Content Understanding Read/Layout outputs were ingested separately; no provider
-captures or operational evidence are distributed in the source ZIP.
+captures or operational evidence are distributed in this repository.
 
 ## Derived favicons
 
 `favicon.ico` (16/32/48 px), `favicon-32.png` and `apple-touch-icon.png` (180 px, white padding) were rendered on 2026-11-24 from the unchanged `foundry.svg` above, without editing its shapes, colors or aspect ratio. The deployed `/favicon.svg` is a byte-identical copy of `foundry.svg`. They remain subject to the same Microsoft artwork terms, not the MIT license.
+
+Microsoft reserves rights in its product icons: [Azure icon guidelines and terms](https://learn.microsoft.com/azure/architecture/icons/).
+Review the applicable rights before reusing product artwork outside this descriptive demo.

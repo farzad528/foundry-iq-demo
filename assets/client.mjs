@@ -197,8 +197,6 @@ function modeChanged() {
   const mode = element('mode').value;
   const scenario = selectedScenario();
   const recorded = scenario?.sample?.recorded;
-  // Recorded Sample replays real Live responses, so it uses the Live description.
-  element('demo-description').textContent = (mode === 'live' || recorded ? scenario?.liveDescription : scenario?.description) || '';
   element('mode-badge').hidden = true;
   element('mode-badge').textContent = recorded ? `Recorded Sample · ${recorded.recordedAt}` : 'Sample mode';
   element('mode-help').textContent = mode === 'live'
@@ -238,7 +236,6 @@ function scenarioChanged() {
   const scenario = selectedScenario();
   document.querySelector('.surface').dataset.tone = ['S10', 'S11'].includes(scenario.id) ? 'blue' : 'lavender';
   element('demo-title').textContent = scenario.title;
-  element('demo-description').textContent = scenario.description || 'Compare retrieval on the same synthetic Zava corpus and query.';
   element('query').value = scenario.sampleQuery || queryList(scenario)[0] || '';
   const sampleOption = element('mode').querySelector('[value=sample]');
   sampleOption.disabled = !scenario.sample?.available;
@@ -888,8 +885,6 @@ function renderIndustry() {
   element('industry').value = industry;
   const info = configuration.industry;
   element('industry-current').textContent = info?.label || '';
-  element('industry-blurb').hidden = !multiple || !info;
-  if (info) element('industry-blurb').textContent = info.englishOnly ? `${info.blurb} Public U.S. government data · English only.` : info.blurb;
   setLanguageLocked(industry !== 'zava');
   if (multiple) element('footer-data').replaceChildren('Public and synthetic demo data · ', Object.assign(node('a', 'Data sources'), { href: '/about#data-sources' }));
 }

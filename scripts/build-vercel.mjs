@@ -1,19 +1,23 @@
 // Builds dist/vercel: static public UI plus Search-only Vercel Functions.
-// Private bindings and schema attestations are compiled into the server bundle only,
-// never into public/ or the source ZIP. No Azure calls are made.
+// Private bindings and schema attestations are compiled into the server bundle only, never into public/.
+// Without the private files this builds the public Sample-only app (recorded Zava Sample, Live off). No Azure calls are made.
 import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { publicCatalog } from '../config/knowledge-bases.mjs';
-import { archiveFiles } from './source-files.mjs';
 import { illustrationPng } from './generate-studio.mjs';
 import { studioScenarios } from '../lib/studio.mjs';
 import { filterFields, isFacet } from '../lib/industry.mjs';
+import { SEARCH_API_VERSION } from '../config/studio-live.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 process.chdir(root);
 const out = join(root, 'dist', 'vercel');
+// Public files served from /samples (citations, S10 PDFs, S11 example images) and server-side config modules.
+export const sampleFiles = () => readdirSync('samples').filter(name => /^zava-[a-z0-9-]+\.(?:md|csv|pdf|svg)$/.test(name)).sort().map(name => `samples/${name}`);
+export const serverConfigFiles = () => readdirSync('config').filter(name => /^studio-(?!recorded)[a-z-]+\.(?:mjs|json)$/.test(name)).sort().map(name => `config/${name}`);
+export const SERVER_MODULES = Object.freeze(['lib/protocol.mjs', 'lib/normalize.mjs', 'lib/studio.mjs', 'lib/native-graph.mjs', 'lib/industry.mjs', 'lib/industry-graph.mjs',
+  'lib/search-adapter.mjs', 'lib/vercel-app.mjs']);
 const VECTORIZER = 'zava-text-vectorizer';
 const IMAGE_VECTORIZER = 'zava-image-vectorizer';
 // Verified on foundry-iq-demos: knowledgeRetrieval=standard; agentic canaries complete well within 10 s in all five languages.
@@ -203,6 +207,32 @@ export function reduceAttestations(attestations, used) {
     entries: attestations.entries.filter(entry => used.has(entry.index)).map(({ index, etag, schema }) => ({ index, etag, schema })) };
 }
 
+// Public Sample-only build: every Zava scenario replays its recorded Live result in every language, and Live stays unavailable
+// even when Live variables are set, because no index is attested.
+async function verifyPublic(liveConfig, attestations, recorded, notes) {
+  const { createVercelApp } = await import(pathToFileURL(join(root, 'lib', 'vercel-app.mjs')));
+  const app = createVercelApp({ liveConfig, attestations, recorded, notes, log: () => {},
+    fetchUpstream: () => { throw new Error('Offline build verification must not call Azure.'); } });
+  const env = { LIVE_ENABLED: 'true', AZURE_SEARCH_ENDPOINT: `https://${attestations.service}.search.windows.net`, AZURE_SEARCH_QUERY_KEY: 'OfflineBuildVerificationPlaceholder0000' };
+  const origin = 'https://build.invalid';
+  const matrix = [];
+  for (const language of LANGUAGES) {
+    const scenarios = await (await app.handle('scenarios', new Request(`${origin}/api/scenarios?language=${language}`), env)).json();
+    if (scenarios.scenarios?.length !== 11) throw new Error(`${language}: the public catalog must list S01–S11.`);
+    for (const item of scenarios.scenarios) {
+      if (item.liveAvailable || !item.sample?.available) throw new Error(`${language}:${item.id} must be Sample-only in the public build.`);
+      const preset = item.demoPresets[0];
+      const response = await app.handle('run', new Request(`${origin}/api/demo/run`, { method: 'POST', headers: { 'content-type': 'application/json', origin },
+        body: JSON.stringify({ scenarioId: item.id, mode: 'sample', language, topK: 10, query: preset.query || item.imageOnlyQuery,
+          ...(preset.boostSubtype ? { options: { boostSubtype: preset.boostSubtype } } : {}) }) }), env);
+      const result = await response.json();
+      if (response.status !== 200 || !result.recorded) throw new Error(`${language}:${item.id} recorded Sample replay failed: ${JSON.stringify(result).slice(0, 300)}`);
+      matrix.push(`${language}:${item.id}=sample`);
+    }
+  }
+  return matrix;
+}
+
 async function verifyOffline(liveConfig, attestations, industries = { enabled: [] }) {
   const graphEnv = industries.graph ? { AZURE_SEARCH_GRAPH_ENDPOINT: `https://${industries.graph.service}.search.windows.net`, AZURE_SEARCH_GRAPH_QUERY_KEY: 'OfflineGraphVerificationPlaceholder00' } : {};
   const { createVercelApp } = await import(pathToFileURL(join(root, 'lib', 'vercel-app.mjs')));
@@ -288,12 +318,16 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const bindingsPath = process.env.STUDIO_PRIVATE_BINDINGS;
   const attestationsPath = process.env.STUDIO_PRIVATE_ATTESTATIONS;
   const graphPath = process.env.STUDIO_PRIVATE_GRAPH;
-  if (![bindingsPath, attestationsPath, graphPath].every(path => path && existsSync(path))) {
-    throw new Error('Set STUDIO_PRIVATE_BINDINGS, STUDIO_PRIVATE_ATTESTATIONS and STUDIO_PRIVATE_GRAPH to the private studio-live-config.json, search-schema-attestations.json and native-graph-binding.json files.');
+  // Public build: no private bindings at all. Live stays unavailable (no attested index), industries are omitted and the
+  // recorded Zava Sample works in every language. A partial set of private variables is a configuration error.
+  const publicBuild = ![bindingsPath, attestationsPath, graphPath, process.env.STUDIO_INDUSTRIES].some(Boolean);
+  if (!publicBuild && ![bindingsPath, attestationsPath, graphPath].every(path => path && existsSync(path))) {
+    throw new Error('Set STUDIO_PRIVATE_BINDINGS, STUDIO_PRIVATE_ATTESTATIONS and STUDIO_PRIVATE_GRAPH to the private studio-live-config.json, search-schema-attestations.json and native-graph-binding.json files, or none of them for the public Sample-only build.');
   }
-  const bindings = JSON.parse(readFileSync(bindingsPath, 'utf8'));
-  const fullAttestations = JSON.parse(readFileSync(attestationsPath, 'utf8'));
-  const { config: liveConfig, used } = transformBindings(bindings, fullAttestations, JSON.parse(readFileSync(graphPath, 'utf8')));
+  const fullAttestations = publicBuild ? { service: 'foundry-iq-demos', apiVersion: SEARCH_API_VERSION, entries: [] } : JSON.parse(readFileSync(attestationsPath, 'utf8'));
+  const { config: liveConfig, used } = publicBuild
+    ? { config: { datasetVersion: 'zava-studio-2026-01', resourceVersion: 'public-sample-build', scenarios: {}, languages: {} }, used: new Set() }
+    : transformBindings(JSON.parse(readFileSync(bindingsPath, 'utf8')), fullAttestations, JSON.parse(readFileSync(graphPath, 'utf8')));
   // Industry demos stay out of a build unless STUDIO_INDUSTRIES lists them (comma-separated industry IDs).
   const enabledIndustries = (process.env.STUDIO_INDUSTRIES || '').split(',').map(item => item.trim()).filter(Boolean);
   const industryCatalog = JSON.parse(readFileSync('config/studio-industries.json', 'utf8'));
@@ -338,14 +372,12 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const graphPresetProblems = industryGraphPresetProblems(industryCatalog, industryGraphConfig, Object.keys(industryGraph?.industries || {}));
   if (graphPresetProblems.length) throw new Error(`Industry graph presets don't match:\n${graphPresetProblems.join('\n')}`);
   const industries = { enabled: enabledIndustries, bindings: industryBindings, ...(industryGraph ? { graph: industryGraph } : {}) };
-  const matrix = await verifyOffline(liveConfig, attestations, industries);
+  const matrix = publicBuild ? await verifyPublic(liveConfig, attestations, recorded, notes) : await verifyOffline(liveConfig, attestations, industries);
 
   rmSync(out, { recursive: true, force: true });
-  // Public, static UI. The source download link is removed in this build.
-  const fixtures = JSON.parse(readFileSync('config/scenarios.json', 'utf8'));
-  const catalog = publicCatalog(fixtures);
-  const page = readFileSync('page.html', 'utf8').replace('__SCENARIOS__', () => JSON.stringify(catalog).replace(/</g, '\\u003c'));
-  if (page.includes('/download') || !page.includes('/assets/foundry.svg') || !page.includes('rel="icon"')) throw new Error('Public page must link the Foundry logo and favicons and must not expose the source download route.');
+  // Public, static UI. There is no source download route.
+  const page = readFileSync('page.html', 'utf8');
+  if (page.includes('/download') || !page.includes('/assets/foundry.svg') || !page.includes('rel="icon"')) throw new Error('Public page must link the Foundry logo and favicons and must not expose a source download route.');
   write('public/index.html', pageWithIndustries(page, enabledIndustries));
   write('public/about.html', aboutWithDataSources(readFileSync('about.html', 'utf8'), industryCatalog, enabledIndustries, { graph: !!industries.graph }));
   // Vercel serves public/404.html for unmatched paths; it must stay CSP-clean (external theme loader only).
@@ -360,23 +392,18 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   write('public/assets/about.mjs', readFileSync('assets/about.mjs'));
   write('public/assets/styles.css', readFileSync('assets/styles.css'));
   write('public/assets/theme.js', readFileSync('assets/theme.js'));
-  write('public/assets/source.svg', readFileSync('assets/source.svg'));
   // The unchanged Microsoft Foundry mark (assets/PROVENANCE.md) and favicons rendered from that same file.
   write('public/assets/foundry.svg', readFileSync('assets/foundry.svg'));
   write('public/favicon.svg', readFileSync('assets/foundry.svg'));
   write('public/favicon.ico', readFileSync('assets/favicon.ico'));
   write('public/favicon-32.png', readFileSync('assets/favicon-32.png'));
   write('public/apple-touch-icon.png', readFileSync('assets/apple-touch-icon.png'));
-  // Knowledge-source kinds keep the neutral fallback icon; that product artwork has separate terms.
-  write('public/assets/source-icons.mjs', readFileSync('assets/source-icons.mjs', 'utf8')
-    .replace(/\/assets\/(?:blob|fabric|foundry|search|sharepoint|web)\.svg/g, '/assets/source.svg'));
   write('public/LICENSE', readFileSync('LICENSE'));
-  for (const path of archiveFiles.filter(path => path.startsWith('samples/'))) write(`public/${path}`, readFileSync(path));
+  for (const path of sampleFiles()) write(`public/${path}`, readFileSync(path));
   for (const [file, index] of [['zava-hat-blue.png', 0], ['zava-hat-red.png', 1], ['zava-bowl-blue.png', 3]]) write(`public/samples/${file}`, illustrationPng(index));
 
   // Server-only modules and private data.
-  for (const path of ['lib/protocol.mjs', 'lib/normalize.mjs', 'lib/studio.mjs', 'lib/native-graph.mjs', 'lib/industry.mjs', 'lib/industry-graph.mjs', 'lib/search-adapter.mjs', 'lib/vercel-app.mjs',
-    ...archiveFiles.filter(path => /^config\/studio-(?!live\.example|recorded).*\.(?:mjs|json)$/.test(path))]) {
+  for (const path of [...SERVER_MODULES, ...serverConfigFiles()]) {
     mkdirSync(dirname(join(out, 'server', path)), { recursive: true });
     copyFileSync(path, join(out, 'server', path));
   }
@@ -415,6 +442,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   ]);
   if (findings.length) throw new Error(`Public output scan failed:\n${findings.join('\n')}`);
   const digest = createHash('sha256').update(readFileSync(join(out, 'server/private-data.mjs'))).digest('hex');
-  process.stdout.write(`Built dist/vercel (${matrix.filter(item => item.endsWith('attested')).length} attested live scenario/language pairs, industries: ${enabledIndustries.join(',') || 'none'}, `
+  if (publicBuild) process.stdout.write(`Built dist/vercel as the public Sample-only app (${matrix.length} recorded Sample scenario/language pairs, Live unavailable, no industries). Public scan clean. No Azure calls performed.\n`);
+  else process.stdout.write(`Built dist/vercel (${matrix.filter(item => item.endsWith('attested')).length} attested live scenario/language pairs, industries: ${enabledIndustries.join(',') || 'none'}, `
     + `${matrix.filter(item => item.endsWith('gated')).length} gated, ${matrix.filter(item => item.endsWith('not_configured')).length} industry graph not configured). Private data SHA-256 ${digest}. Public scan clean. No Azure calls performed.\n`);
 }

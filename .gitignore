@@ -1,32 +1,30 @@
-# Current app artifacts and dependencies
+# Dependencies and build output
 /node_modules/
 /dist/
 npm-debug.log*
 *.log
 
-# Private environments, credentials and operational state
+# Secrets and local environments (only the empty template is tracked)
 .env*
 !.env.example
-rest-client.env.local.json
-*.http.mcp.json
-quotas.json
-.azure/
-.copilot-azure/
+.vercel/
 
-# Preserve ignored legacy artifacts/private work during the root migration
-/.next/
-/out/
-/build/
-/worker/
-/.vercel/
-.env.azure-swa
-DEPLOYMENT_COMPLETE.md
-*.tsbuildinfo
-next-env.d.ts
+# Private build inputs: Search bindings, schema attestations and graph bindings stay outside Git
+private/
+*binding*.json
+studio-live-config.json
+*attestation*.json
+*.pem
+*.key
 
-# Local editor and OS files
+# Verification output (canaries, screenshots, test reports)
+evidence/
+screenshots/
+test-results/
+playwright-report/
+
+# Editor and OS files
 .vscode/
 .idea/
-.claude/
 .DS_Store
 Thumbs.db

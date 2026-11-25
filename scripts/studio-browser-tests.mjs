@@ -2,13 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { chromium } from 'playwright';
-import { createApplication } from '../dist/server/index.mjs';
-import { createNodeServer } from '../lib/http.mjs';
+import { createLocalServer } from './serve.mjs';
 
-// Mirrors the client's example list: English local Sample S11 uses the fixed blue-hat reference; otherwise the showcase presets.
-const shownPresets = (scenario, englishSample) => englishSample && scenario.id === 'S11'
-  ? scenario.queries.filter(Boolean).slice(0, 4).map(query => ({ label: `${query} (fixed blue-hat Sample)`, query }))
-  : scenario.demoPresets;
+// Runs against the built public app (npm run build without private bindings): recorded Zava Sample in five languages, Live off.
+// Every example list shows the scenario's curated presets.
+const shownPresets = scenario => scenario.demoPresets;
 // Document language lives in the header settings panel.
 async function chooseLanguage(page, language) {
   await page.locator('#profile-button').click();
@@ -18,12 +16,10 @@ async function chooseLanguage(page, language) {
 }
 
 test('studio desktop/mobile comparisons, keyboard, reset and late response isolation', { timeout: 180000 }, async () => {
-  const app = createApplication({ fetchUpstream: () => assert.fail('Browser sample tests must not call Azure'), log: () => {} });
-  const serverEnv = { PUBLIC_ORIGIN: 'http://localhost:3000', FOUNDRY_IQ_LIVE_ENABLED: 'false' };
-  const server = createNodeServer(app, serverEnv);
+  const server = await createLocalServer({ env: {} });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
-  serverEnv.PUBLIC_ORIGIN = `http://127.0.0.1:${server.address().port}`;
+  const serverEnv = { PUBLIC_ORIGIN: `http://127.0.0.1:${server.address().port}` };
   const browser = await chromium.launch(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {});
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, hasTouch: true });
   const errors = [];
@@ -65,13 +61,16 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
     for (let i = 1; i <= 11; i++) {
       const id = `S${String(i).padStart(2, '0')}`;
       await page.selectOption('#scenario', id);
+      // The hero shows only the search type, and it follows the selected scenario.
+      assert.equal(await page.locator('#demo-title').textContent(), catalog.scenarios.find(item => item.id === id).title);
+      assert.equal(await page.locator('.intro .heading p').count(), 0);
       const before = runs;
       await page.locator('#query').click();
       assert.equal(await page.locator('#query').getAttribute('aria-expanded'), 'true');
       assert.equal(await page.locator('#query-suggestions [role=option]').count(), 4);
       const scenario = catalog.scenarios.find(item => item.id === id);
       const labels = await page.locator('#query-suggestions [role=option]').allTextContents();
-      const shown = shownPresets(scenario, true);
+      const shown = shownPresets(scenario);
       assert.deepEqual(labels.map(label => label.trim()), shown.map(preset => preset.label));
       const anchor = await page.locator('.query').evaluate(el => {
         // The list is anchored to the whole search box (leading icon included).
@@ -95,13 +94,15 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
       await page.locator('#query').click();
       await page.locator('#query-suggestions [role=option]').first().click();
       assert.equal(await page.locator('#query-suggestions').isVisible(), false);
+      // Bundled example images load locally before Search; the recorded Sample replays that image's Live result.
+      if (shown[0].image) await page.waitForFunction(() => document.querySelector('#status').textContent.includes('Bundled example image'));
       assert.equal(runs, before);
       await page.locator('#query').press('Enter');
       await page.waitForFunction(() => document.querySelector('#status').textContent === 'Comparison complete.');
       assert.equal(await page.locator('#results').isVisible(), true, `S${i} results`);
       assert.equal(await page.locator('#status').getAttribute('class'), 'sr-only');
       assert.equal(await page.locator('#status').getAttribute('aria-live'), 'polite');
-      assert.match(await page.locator('#results-title').textContent(), /Deterministic Sample mode/);
+      assert.match(await page.locator('#results-title').textContent(), /Recorded Sample \(captured /);
       assert.ok(await page.locator('#baseline .card').count() || await page.locator('#baseline .empty').count(), `S${i} baseline`);
       assert.ok(await page.locator('#enhanced .card').count() || await page.locator('#enhanced .empty').count(), `S${i} enhanced`);
       assert.equal(await page.locator('#baseline details.trace').getAttribute('open'), null);
@@ -114,10 +115,11 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
     }
     // Evidence count lives in Advanced options.
     await page.locator('#settings-toggle').click();
-    await page.selectOption('#count', '20');
+    // Recorded Sample was captured with 10 results per arm and replays 5 or 10.
+    await page.selectOption('#count', '5');
     await page.locator('#reset').click();
     assert.equal(await page.locator('#scenario').inputValue(), 'S11');
-    assert.equal(await page.locator('#count').inputValue(), '20');
+    assert.equal(await page.locator('#count').inputValue(), '5');
     assert.equal(await page.locator('#query').inputValue(), '');
     assert.equal(await page.locator('#results').isVisible(), false);
     assert.equal(await page.locator('#metrics').textContent(), '');
@@ -188,7 +190,7 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
         await page.selectOption('#scenario', scenario.id);
         await page.locator('#query').click();
         const presets = await page.locator('#query-suggestions [role=option]').allTextContents();
-        const shown = shownPresets(scenario, language === 'en');
+        const shown = shownPresets(scenario);
         assert.deepEqual(presets.map(label => label.trim()), shown.map(preset => preset.label));
         await page.locator('#query-suggestions [role=option]').first().click();
         assert.equal(await page.locator('#query').inputValue(), shown[0].query);
@@ -197,7 +199,7 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
       await page.locator('#query').press('Escape');
       await page.locator('#reset').click();
       assert.equal(await page.locator(`input[name="document-language"][value="${language}"]`).isChecked(), true);
-      assert.equal(await page.locator('#count').inputValue(), '20');
+      assert.equal(await page.locator('#count').inputValue(), '5');
       assert.equal(await page.locator('#query').inputValue(), '');
       assert.equal(await page.locator('#results').isVisible(), false);
       assert.equal(runs, before, 'Language/preset changes must not run a query');

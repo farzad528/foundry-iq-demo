@@ -10,6 +10,8 @@ import { illustrationPng } from './generate-studio.mjs';
 import { retryAfterSeconds } from '../lib/studio.mjs';
 import { imageOnlyQuery } from '../config/studio-languages.mjs';
 import { displayText, notConfigured, passageView, repairMojibake, frontMatter, METADATA_ONLY } from '../assets/display.mjs';
+import { sanitize, safeUrl } from '../lib/normalize.mjs';
+import { readBounded } from '../lib/protocol.mjs';
 
 const KEY = 'QueryKeyForTestsOnly0123456789abcdefABCDEF';
 const ENDPOINT = 'https://foundry-iq-demos.search.windows.net';
@@ -1425,4 +1427,29 @@ test('recorded graph replays add path source links, and Cited by links open the 
   assert.match(body, /safeUrl\(arm\.graph\?\.sourceLinks\?\.\[id\]\)/);
   assert.match(body, /link\.target = '_blank'/);
   assert.match(body, /citation unavailable/, 'only a source without any URL says citation unavailable');
+});
+
+test('shared helpers: unsafe URLs and credentials never leave the server, and streamed bodies are bounded UTF-8', async () => {
+  for (const unsafe of ['javascript:alert(1)', 'data:text/html,evil', '//evil.test', 'https://user:password@evil.test']) assert.equal(safeUrl(unsafe), null, unsafe);
+  assert.equal(safeUrl('https://public.example.test/doc?sig=secret&se=expiry&topic=safe'), 'https://public.example.test/doc?topic=safe');
+  assert.equal(safeUrl('/samples/zava-support.md'), '/samples/zava-support.md');
+  const cleaned = sanitize({ apiKey: KEY, nested: [{ text: `see https://x.test/a?sig=abc and ${KEY}`, authorization: 'Bearer abcdefghijklmnop' }] }, [KEY]);
+  assert.equal(cleaned.apiKey, '[redacted]');
+  assert.equal(cleaned.nested[0].authorization, '[redacted]');
+  assert.ok(!JSON.stringify(cleaned).includes(KEY) && !JSON.stringify(cleaned).includes('sig=abc'));
+  const stream = text => new Response(text).body;
+  assert.equal(await readBounded(stream('héllo'), 64), 'héllo');
+  await assert.rejects(readBounded(stream('x'.repeat(65)), 64), { code: 'body_too_large' });
+  await assert.rejects(readBounded(new Response(new Uint8Array([0xff, 0xfe])).body, 64), { code: 'invalid_encoding' });
+});
+
+test('the hero shows only the search type: no scenario description or industry blurb', () => {
+  const page = readFileSync(new URL('../page.html', import.meta.url), 'utf8');
+  const hero = page.slice(page.indexOf('<div class="heading">'), page.indexOf('<div class="selectors">'));
+  assert.match(hero, /<h1 id="demo-title">/);
+  assert.doesNotMatch(hero, /<p\b/, 'nothing but the search-type heading');
+  assert.doesNotMatch(page, /demo-description|industry-blurb/);
+  const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(client, /demo-description|industry-blurb/);
+  assert.match(client, /element\('demo-title'\)\.textContent = scenario\.title;/);
 });
