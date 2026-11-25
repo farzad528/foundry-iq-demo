@@ -1107,7 +1107,7 @@ test('passages display as plain text (Markdown removed) while raw values stay un
   assert.match(client, /'hit-open'/);
   assert.match(client, /shownTitle\(hit\) \|\| hit\.id, 'hit-open'/);
   assert.match(client, /node\('p', shownPassage\(hit\) \|\| 'No passage returned\.'/);
-  assert.match(client, /const viewOf = hit => passageView\(hit, \{ englishOnly: industry !== 'zava' \}\)/);
+  assert.match(client, /const viewOf = hit => passageView\(hit, \{ englishOnly: industry !== 'zava', siblings: \[\.\.\.\(lastResult\?\.baseline\?\.hits \|\| \[\]\), \.\.\.\(lastResult\?\.enhanced\?\.hits \|\| \[\]\)\] \}\)/);
   assert.match(client, /const allFields = \{ \.\.\.document_, content: hit\.snippet \}/, 'Raw hit JSON keeps the exact retrieved passage');
 });
 
@@ -1120,6 +1120,10 @@ test('graph-service passages display without metadata headers or code-page mojib
   assert.equal(repairMojibake(`SKU ${dash}LDQ-BR,${dash} or ${dash}LDQ-NA${dash} is printed`), 'SKU “LDQ-BR,” or “LDQ-NA” is printed');
   assert.equal(repairMojibake('17 U.S.C. ยง105 · Sautรฉ Pans · Snugakittyโ\uFFFDข Swing · \nโ\uFFFDข Deposit'), '17 U.S.C. §105 · Sauté Pans · Snugakitty™ Swing · \n• Deposit');
   assert.equal(repairMojibake('Clean text — “quoted” and 2019–2020'), 'Clean text — “quoted” and 2019–2020');
+  // After a closing bracket, a word continues the sentence (em dash); a possessive "’s" after letters or a bracket stays.
+  assert.equal(repairMojibake(`Electric Reliability Council of Texas (ERCOT)${dash}the grid operator; [1]${dash}see below`),
+    'Electric Reliability Council of Texas (ERCOT)—the grid operator; [1]—see below');
+  assert.equal(repairMojibake(`the Commission (FERC)${dash}s order; it isn${dash}t; Reese${dash}s Law`), 'the Commission (FERC)’s order; it isn’t; Reese’s Law');
   // Metadata headers: a leading block, a chunk that starts inside it, a truncated one, a JSON header; a Markdown rule is not one.
   const header = '---\ndocId: "NRG-1"\ntitle: "Winter storms disrupted gas"\nurl: "https://www.eia.gov/x"\nlicense: "Public domain (17 U.S.C. ยง105)"\nmetadata: {"states": ["Texas"]}\n---';
   assert.deepEqual(frontMatter(`${header}\n\nProduction fell 45%.`), { body: 'Production fell 45%.', metadataOnly: false,
@@ -1131,15 +1135,27 @@ test('graph-service passages display without metadata headers or code-page mojib
   const view = passageView({ title: 'Passage', snippet: header }, { englishOnly: true });
   assert.deepEqual([view.title, view.passage, view.header.license], ['Winter storms disrupted gas', METADATA_ONLY, 'Public domain (17 U.S.C. ยง105)']);
   assert.equal(passageView({ title: 'Zava', snippet: header }).passage, displayText(header), 'Zava text is shown as before');
+  // A header-only chunk cut before its title borrows the document title from another chunk in the response; "Passage" is last.
+  const untitledHeader = { id: 'HC-OXY#1', sourceId: 'HC-OXY', title: 'Passage', snippet: '"2016-01-25"\nlicense: "CC0"\nretrievedAt: "2026-11-25"\nmetadata: {"brandName": "OxyContin"}' };
+  const headerSibling = { id: 'HC-OXY#2', sourceId: 'HC-OXY', title: 'Passage', snippet: '---\ndocId: "HC-OXY"\ntitle: "OxyContin prescribing information"\nlicense: "CC0"\n---' };
+  const titledSibling = { id: 'HC-OXY#3', sourceId: 'HC-OXY', title: 'Purdue Pharma LP', snippet: 'Body text.' };
+  const otherDocument = { id: 'HC-X#1', sourceId: 'HC-X', title: 'Another label', snippet: 'Body.' };
+  assert.equal(passageView(untitledHeader, { englishOnly: true }).passage, METADATA_ONLY);
+  assert.equal(passageView(untitledHeader, { englishOnly: true, siblings: [untitledHeader, otherDocument, titledSibling, headerSibling] }).title, 'OxyContin prescribing information');
+  assert.equal(passageView(untitledHeader, { englishOnly: true, siblings: [untitledHeader, titledSibling] }).title, 'Purdue Pharma LP');
+  assert.equal(passageView(untitledHeader, { englishOnly: true, siblings: [untitledHeader, otherDocument] }).title, 'Passage', 'only the same document lends a title');
+  assert.equal(passageView({ ...titledSibling, title: 'Passage' }, { englishOnly: true, siblings: [headerSibling] }).title, 'Passage', 'body chunks keep their own title');
   // Regression over every recorded industry S08/S09 hit: no displayed title or passage starts with "---", shows header keys or mojibake.
   const recorded = JSON.parse(readFileSync(new URL('../config/studio-recorded.json', import.meta.url), 'utf8'));
   let checked = 0, headers = 0;
   for (const entry of Object.values(recorded.entries)) {
     if (!entry.industry || !['S08', 'S09'].includes(entry.scenarioId)) continue;
+    const siblings = [...(entry.result.baseline?.hits || []), ...(entry.result.enhanced?.hits || [])];
     for (const side of ['baseline', 'enhanced']) for (const hit of entry.result[side]?.hits || []) {
-      const shown = passageView(hit, { englishOnly: true });
+      const shown = passageView(hit, { englishOnly: true, siblings });
       checked += 1;
       if (/^\s*---/.test(hit.snippet)) headers += 1;
+      assert.ok(!(shown.passage === METADATA_ONLY && shown.title === 'Passage'), `${entry.industry} ${entry.scenarioId} ${hit.id}: header-only chunk without a title`);
       for (const text of [shown.title, shown.passage]) {
         assert.ok(!/^\s*---/.test(text) && !/[\u0E01-\u0E5B\uFFFD]/.test(text) && !/(^|\s)docId:\s*"|\bmetadata:\s*\{|\blicense:\s*"|\bretrievedAt:\s*"/.test(text),
           `${entry.industry} ${entry.scenarioId} ${hit.id}: ${text.slice(0, 120)}`);

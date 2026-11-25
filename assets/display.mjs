@@ -32,6 +32,8 @@ export function repairMojibake(value) {
         else if (lead === 0xE2 && b1 === null && b2 === null) {
           // General punctuation E2 80 80–A0: dashes, curly quotes and apostrophes.
           if (WORD.test(before) && WORD.test(next)) out += /\d/.test(before) && /\d/.test(next) ? '–' : /^(?:s|t|d|m|ll|re|ve)(?![\p{L}\p{N}])/iu.test(after) ? '’' : '—';
+          // After a closing bracket, a word continues the sentence: "(ERCOT)—the grid operator" (a possessive "(FERC)’s" stays).
+          else if (/[)\]]/.test(before) && WORD.test(next)) out += /^s(?![\p{L}\p{N}])/iu.test(after) ? '’' : '—';
           else if ((!before || /\s/.test(before)) && (!next || /\s/.test(next))) out += '—';
           else if (!before || /[\s([{/]/.test(before)) { open = true; out += '“'; }
           else { out += open ? '”' : '’'; open = false; }
@@ -118,10 +120,18 @@ export function displayText(value, { englishOnly = false } = {}) {
 }
 
 /** What a result card and the details drawer show for a hit: its title and passage as display text, plus the passage's
- * metadata header fields (industry graph passages). englishOnly enables the industry-corpus repairs. */
-export function passageView(hit, { englishOnly = false } = {}) {
+ * metadata header fields (industry graph passages). englishOnly enables the industry-corpus repairs. A header-only chunk
+ * without its own title borrows one from another chunk of the same document in the response (siblings); "Passage" is the
+ * last resort. */
+export function passageView(hit, { englishOnly = false, siblings = [] } = {}) {
   const header = englishOnly ? frontMatter(hit?.snippet) : null;
-  const title = (!hit?.title || hit.title === 'Passage') && typeof header?.fields?.title === 'string' ? header.fields.title : hit?.title;
+  const untitled = !hit?.title || hit.title === 'Passage';
+  let title = untitled && typeof header?.fields?.title === 'string' ? header.fields.title : hit?.title;
+  if (header?.metadataOnly && (!title || title === 'Passage')) {
+    const same = (siblings || []).filter(other => other && other !== hit && other.id !== hit.id && other.sourceId && other.sourceId === hit?.sourceId);
+    title = same.map(other => frontMatter(other.snippet)?.fields?.title).find(value => typeof value === 'string' && value.trim())
+      || same.map(other => other.title).find(value => typeof value === 'string' && value.trim() && value !== 'Passage') || 'Passage';
+  }
   return { title: displayText(title, { englishOnly }), header: header?.fields || {},
     passage: header?.metadataOnly ? METADATA_ONLY : displayText(header ? header.body : hit?.snippet, { englishOnly }) };
 }

@@ -29,7 +29,8 @@ const searchBlocked = () => !!catalogLoad || notConfigured(selectedScenario());
 const shownText = value => displayText(value, { englishOnly: industry !== 'zava' });
 // Industry graph passages may carry the source file's metadata header; cards and the drawer show the body (or "Metadata only")
 // under the header's title, and repair code-page mojibake. Raw hit JSON and the API log keep the exact retrieved text.
-const viewOf = hit => passageView(hit, { englishOnly: industry !== 'zava' });
+// Siblings: every hit in the response, so a header-only chunk can borrow its document's title from another chunk.
+const viewOf = hit => passageView(hit, { englishOnly: industry !== 'zava', siblings: [...(lastResult?.baseline?.hits || []), ...(lastResult?.enhanced?.hits || [])] });
 const shownTitle = hit => viewOf(hit).title;
 const shownPassage = hit => viewOf(hit).passage;
 const shownValue = value => industry !== 'zava' && typeof value === 'string' ? repairMojibake(value) : value;
