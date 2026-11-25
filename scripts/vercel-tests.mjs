@@ -5,6 +5,7 @@ import { liveStatus, searchOnlyFetch, attemptBudget, attestedMetadata, disabledS
 import { transformBindings, reduceAttestations } from './build-vercel.mjs';
 import { SEARCH_API_VERSION, AGENTIC_SEARCH_API_VERSION } from '../config/studio-live.mjs';
 import { illustrationPng } from './generate-studio.mjs';
+import { retryAfterSeconds } from '../lib/studio.mjs';
 
 const KEY = 'QueryKeyForTestsOnly0123456789abcdefABCDEF';
 const ENDPOINT = 'https://foundry-iq-demos.search.windows.net';
@@ -351,4 +352,41 @@ test('recorded Sample replays curated non-English examples without Azure and nev
   const paused = await (await app.handle('run', post('run', body), env({ LIVE_ENABLED: 'false' }))).json();
   assert.equal(paused.recorded.recordedAt, '2026-11-24');
   assert.equal(calls.length, 0);
+});
+
+test('responses redact keys, the Search hostname and server paths while keeping index provenance', async () => {
+  const leaky = `key ${KEY} host foundry-iq-demos.search.windows.net path C:\\Users\\op\\private\\studio-live-config.json task /var/task/server/private-data.mjs`;
+  const { app } = harness({ handler: async () => new Response(JSON.stringify({ '@odata.count': 1, value: [{ id: 'DRILL-1001', title: 'Compact hammer drill',
+    content: leaky, url: 'https://user:pw@foundry-iq-demos.search.windows.net/x?api-key=abc', scope: 'public', '@search.score': 2.5 }] }),
+  { status: 200, headers: { 'content-type': 'application/json', 'request-id': 'svc-request-1' } }) });
+  const response = await app.handle('run', post('run', liveBody()), env());
+  const text = await response.text();
+  assert.equal(response.status, 200);
+  for (const forbidden of [KEY, 'foundry-iq-demos.search.windows.net', 'user:pw', 'api-key=abc', 'C:\\\\Users', '/var/task', 'private-data.mjs', 'studio-live-config.json']) {
+    assert.ok(!text.includes(forbidden), `response must not include ${forbidden}`);
+  }
+  assert.match(text, /zava-studio-products/);
+  assert.match(text, /\[internal path removed\]/);
+});
+
+test('Search throttling reaches the arm with a bounded Retry-After and is never retried', async () => {
+  assert.deepEqual(['7', '600', '0', null, 'Wed, 21 Oct 2015 07:28:00 GMT'].map(retryAfterSeconds), [7, 60, 1, 10, 10]);
+  const { app, calls } = harness({ handler: async () => new Response('{}', { status: 429, headers: { 'retry-after': '7' } }) });
+  const result = await (await app.handle('run', post('run', liveBody()), env())).json();
+  assert.ok(calls.length <= 2);
+  for (const side of ['baseline', 'enhanced']) {
+    assert.equal(result[side].error.code, 'studio_upstream_throttled');
+    assert.equal(result[side].error.retryAfter, 7);
+  }
+});
+
+test('S10 labels the flattened-text limitation as a note, not a grounded answer', async () => {
+  const { app, calls } = harness();
+  const result = await (await app.handle('run', post('run', { scenarioId: 'S10', mode: 'sample',
+    query: 'What is the maximum concrete drilling diameter of model DCD796?' }), env())).json();
+  assert.equal(calls.length, 0);
+  assert.equal(result.baseline.answerKind, 'note');
+  assert.match(result.baseline.answer, /row association/);
+  assert.equal(result.enhanced.answerKind, undefined);
+  assert.match(result.enhanced.answer, /DCD796/);
 });

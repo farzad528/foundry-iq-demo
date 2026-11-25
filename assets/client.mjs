@@ -266,7 +266,7 @@ function renderArm(side, arm, scenario, result) {
   if (arm.error) container.append(node('p', `Partial result: ${errorText(arm.error)}`, 'error'));
   if (arm.answer) {
     const answer = node('article', undefined, 'card');
-    answer.append(node('h3', 'Grounded answer'), node('p', arm.answer, 'snippet'));
+    answer.append(node('h3', arm.answerKind === 'note' ? 'Why this arm can’t answer' : 'Grounded answer'), node('p', arm.answer, 'snippet'));
     const citations = node('div', undefined, 'citations');
     (arm.citations || []).forEach((citation, i) => {
       const id = typeof citation === 'string' ? citation : citation.sourceId || citation.id || citation.referenceId;
@@ -337,6 +337,18 @@ function renderResults(result, scenario) {
     : result.executionStatus === 'error' ? 'Both comparison arms failed.' : 'Comparison complete.', result.executionStatus === 'success');
 }
 
+// Tolerates non-JSON platform responses and the Vercel Firewall's 429 body ({ error: { code, message } }).
+async function readResult(response) {
+  let data;
+  try { data = await response.json(); } catch { data = {}; }
+  if (response.ok) return data;
+  if (response.status === 429) {
+    const seconds = Number.parseInt(response.headers.get('retry-after') || data.retryAfter, 10);
+    throw new Error(`Too many requests from this network in the last minute. Wait ${Number.isInteger(seconds) && seconds > 0 && seconds <= 600 ? `${seconds} seconds` : 'about a minute'}, then Search again.`);
+  }
+  throw new Error(typeof data.error === 'string' ? data.error : 'The request failed. Try again shortly.');
+}
+
 async function run(event) {
   event?.preventDefault();
   const scenario = selectedScenario();
@@ -385,9 +397,8 @@ async function run(event) {
         const prepared = await fetch('/api/demo/prepare', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal,
         });
-        const plan = await prepared.json();
+        const plan = await readResult(prepared);
         if (id !== sequence) return;
-        if (!prepared.ok) throw new Error(plan.error || 'Live preparation is unavailable. Try again shortly.');
         if (plan.ready === true) break;
         if (!Number.isInteger(plan.retryAfter) || plan.retryAfter < 1 || plan.retryAfter > 61 || Date.now() + plan.retryAfter * 1000 > deadline) {
           throw new Error('The live allowance is still busy. Wait a minute, then Search again.');
@@ -413,9 +424,8 @@ async function run(event) {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal,
       });
     } finally { clearTimeout(slow); }
-    const result = await response.json();
+    const result = await readResult(response);
     if (id !== sequence) return;
-    if (!response.ok) throw new Error(result.error || 'The request failed.');
     renderResults(result, scenario);
   } catch (error) {
     if (id !== sequence) return;

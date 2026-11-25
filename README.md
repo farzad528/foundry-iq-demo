@@ -130,8 +130,17 @@ identity override.
 - There are no automatic retries.
 - Each instance allows at most 8 live comparisons in flight (best effort).
 - The Vercel Firewall rule "Rate limit live demo API" allows 30 requests per
-  60 seconds per IP on `/api/demo/`.
+  60 seconds per IP on `/api/demo/`. Its 429 response comes from the platform
+  and cannot carry a `Retry-After` header; the UI tells visitors to wait about a
+  minute. Every app-level 429 (and the per-instance 503) does send
+  `Retry-After`, and Search throttling is reported on the affected arm with a
+  bounded 1–60 second `retryAfter`, without retrying.
 - The `LIVE_ENABLED` and `LIVE_DISABLED_SCENARIOS` switches pause Live.
+
+Unknown paths return the static, CSP-clean `404.html` (theme-aware, links back
+to the demo). Technical details intentionally show index and binding names as
+provenance. Every API payload is redacted for the query key, the Search
+hostname, credentialed URLs and server file paths.
 
 The first vector query after a quiet period can take about 20–25 seconds while
 the Search-to-model path warms up. The UI says so after 6 seconds.

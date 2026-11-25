@@ -123,6 +123,12 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (page.includes('/download') || !page.includes('/assets/foundry.svg') || !page.includes('rel="icon"')) throw new Error('Public page must link the Foundry logo and favicons and must not expose the source download route.');
   write('public/index.html', page);
   write('public/about.html', readFileSync('about.html'));
+  // Vercel serves public/404.html for unmatched paths; it must stay CSP-clean (external theme loader only).
+  const notFound = readFileSync('404.html', 'utf8');
+  if (/<script(?![^>]*\bsrc=)|\son[a-z]+=|javascript:/i.test(notFound) || !notFound.includes('href="/"')) {
+    throw new Error('404.html must link back to the demo and must not contain inline scripts or event handlers.');
+  }
+  write('public/404.html', notFound);
   write('public/assets/client.mjs', readFileSync('assets/client.mjs'));
   write('public/assets/header.mjs', readFileSync('assets/header.mjs'));
   write('public/assets/about.mjs', readFileSync('assets/about.mjs'));
