@@ -2,7 +2,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { createVercelApp } from '../lib/vercel-app.mjs';
-import { liveStatus, searchOnlyFetch, attemptBudget, attestedMetadata, disabledScenarios, disabledIndustries, LIVE_SCENARIOS } from '../lib/search-adapter.mjs';
+import { liveStatus, searchOnlyFetch, attemptBudget, attestedMetadata, disabledScenarios, disabledIndustries, graphServiceStatus, LIVE_SCENARIOS } from '../lib/search-adapter.mjs';
 import { transformBindings, reduceAttestations, industryBindingsFrom, checkIndustryCatalog, aboutWithDataSources, industryRecordingProblems, pageWithIndustries } from './build-vercel.mjs';
 import { industryCatalog, industryById, filterFields, isFacet, BASE_FILTER } from '../lib/industry.mjs';
 import { SEARCH_API_VERSION, AGENTIC_SEARCH_API_VERSION } from '../config/studio-live.mjs';
@@ -819,11 +819,20 @@ test('industries are off by default; when built in, each lists only its applicab
   const healthcare = await (await catalogFor(app, '?industry=healthcare')).json();
   const item = industryById('healthcare');
   assert.deepEqual(healthcare.scenarios.map(scenario => scenario.id), item.scenarios);
-  assert.ok(!healthcare.scenarios.some(scenario => ['S08', 'S09', 'S11'].includes(scenario.id)), 'graph and image search use the Zava store');
+  assert.ok(!healthcare.scenarios.some(scenario => scenario.id === 'S11'), 'image search uses the Zava store');
+  for (const id of ['S08', 'S09']) {
+    const graph = healthcare.scenarios.find(scenario => scenario.id === id);
+    assert.equal(graph.live.status, 'not_configured', id);
+    assert.equal(graph.liveAvailable, false, id);
+    assert.equal(graph.sample.available, false, id);
+    assert.deepEqual(graph.demoPresets, [], id);
+    assert.match(graph.live.reason, /Graph search isn’t configured for this industry yet/, id);
+  }
+  const ready = healthcare.scenarios.filter(scenario => !['S08', 'S09'].includes(scenario.id));
   assert.equal(healthcare.industry.englishOnly, true);
   assert.deepEqual(healthcare.industry.sourceHosts, item.sourceHosts);
   assert.equal(healthcare.defaultMode, 'live');
-  assert.ok(healthcare.scenarios.every(scenario => scenario.liveAvailable && !scenario.sample.available && scenario.language === 'en'));
+  assert.ok(ready.every(scenario => scenario.liveAvailable && !scenario.sample.available && scenario.language === 'en'));
   const s06 = healthcare.scenarios.find(scenario => scenario.id === 'S06');
   assert.deepEqual(s06.boostSubtypes, item.boostSubtypes);
   const s03 = healthcare.scenarios.find(scenario => scenario.id === 'S03');
@@ -844,7 +853,7 @@ test('industries are off by default; when built in, each lists only its applicab
 test('industry requests reject client filters, other languages, inapplicable scenarios and unknown boosts before Azure', async () => {
   const { app, calls } = industryHarness();
   for (const [patch, code] of [[{ filter: "scope eq 'private'" }, 'invalid_studio_request'], [{ options: { filter: 'x' } }, 'invalid_studio_request'],
-    [{ language: 'fr' }, 'invalid_studio_request'], [{ scenarioId: 'S11' }, 'invalid_studio_request'], [{ scenarioId: 'S08' }, 'invalid_studio_request'],
+    [{ language: 'fr' }, 'invalid_studio_request'], [{ scenarioId: 'S11' }, 'invalid_studio_request'],
     [{ scenarioId: 'S06', options: { boostSubtype: 'availability' } }, 'invalid_studio_request'], [{ industry: 'energy' }, 'invalid_industry'],
     [{ industry: 'zava ' }, 'invalid_industry'], [{ topK: 7 }, 'invalid_studio_request'], [{ mode: 'sample' }, 'invalid_studio_request']]) {
     const response = await app.handle('run', post('run', industryBody(patch.scenarioId || 'S03', patch)), env());
@@ -923,11 +932,12 @@ test('LIVE_DISABLED_INDUSTRIES pauses chosen industries (zava included) and inva
   assert.equal(disabledIndustries('nope', ['healthcare']).ok, false);
   const { app, calls } = industryHarness();
   const paused = await (await catalogFor(app, '?industry=healthcare', { LIVE_DISABLED_INDUSTRIES: 'healthcare' })).json();
-  assert.ok(paused.scenarios.every(scenario => !scenario.liveAvailable && /LIVE_DISABLED_INDUSTRIES/.test(scenario.live.reason)));
+  const notGraph = scenario => !['S08', 'S09'].includes(scenario.id);
+  assert.ok(paused.scenarios.filter(notGraph).every(scenario => !scenario.liveAvailable && /LIVE_DISABLED_INDUSTRIES/.test(scenario.live.reason)));
   const run = await app.handle('run', post('run', industryBody('S03')), env({ LIVE_DISABLED_INDUSTRIES: 'healthcare' }));
   assert.equal(run.status, 503);
   assert.equal((await run.json()).errorCode, 'studio_live_unavailable');
-  assert.ok((await (await catalogFor(app, '?industry=retail', { LIVE_DISABLED_INDUSTRIES: 'healthcare' })).json()).scenarios.every(scenario => scenario.liveAvailable));
+  assert.ok((await (await catalogFor(app, '?industry=retail', { LIVE_DISABLED_INDUSTRIES: 'healthcare' })).json()).scenarios.filter(notGraph).every(scenario => scenario.liveAvailable));
   assert.ok((await (await catalogFor(app, '', { LIVE_DISABLED_INDUSTRIES: 'zava' })).json()).scenarios.every(scenario => !scenario.liveAvailable));
   for (const query of ['', '?industry=retail']) {
     assert.ok((await (await catalogFor(app, query, { LIVE_DISABLED_INDUSTRIES: 'typo' })).json()).scenarios.every(scenario => !scenario.liveAvailable), query);
@@ -976,13 +986,14 @@ test('build pins industry bindings to attested ETags, checks the public catalog 
   healthcare.presets.S05[0].facets = ['titlePlain'];
   healthcare.presets.S10[0].sourceHash = 'nope';
   healthcare.presets.S03[0].filter = "secretField eq 'x' and search.ismatch('x')";
+  healthcare.presets.S03[1].why = 'Keyword misses it; vector-only ranks it #2; hybrid ranks it #1.';
   healthcare.presets.S11 = [{ id: 'x', query: 'hat' }];
   const problems = checkIndustryCatalog(tampered, ids, full, bindings);
   assert.ok(['agency', 'docType,count:5', 'publishedDate,interval:year', 'agency,sort:-count,count:10'].every(isFacet));
   assert.ok(!['agency,interval:fortnight', 'agency,count:5;x', "agency,values:'a'", ''].some(isFacet));
   assert.deepEqual(filterFields("category eq 'A and b eq c' and retailers/any(r: r eq 'Temu') and search.in(genericName, 'x,y', ',') and hospitalized ge 1"),
     ['category', 'retailers', 'hospitalized', 'genericName']);
-  for (const expected of [/S01.*filter/, /facet titlePlain/, /S10 source hash/, /inapplicable S11/, /S03-01: filter$/, /filter field secretField/]) assert.ok(problems.some(problem => expected.test(problem)), `${expected}: ${problems}`);
+  for (const expected of [/S01.*filter/, /facet titlePlain/, /S10 source hash/, /inapplicable S11/, /S03-01: filter$/, /filter field secretField/, /S03-02: note describes an arm the app doesn’t show/]) assert.ok(problems.some(problem => expected.test(problem)), `${expected}: ${problems}`);
   // S07 planning varies between runs: a note may claim sub-queries only if the shipped recording shows them.
   const s07 = structuredClone(industryCatalog);
   const planned = s07.industries.find(item => item.id === 'healthcare').presets.S07[0];
@@ -1012,4 +1023,39 @@ test('build pins industry bindings to attested ETags, checks the public catalog 
     for (const source of item.sources) assert.match(source.url, /^https:\/\//, `${item.id} ${source.agency}`);
     assert.deepEqual(staleIn(item.blurb), [], item.id);
   }
+});
+
+test('industry graph search fails closed on its own without the optional graph service, and graph values are redacted', async () => {
+  const GRAPH_KEY = 'GraphQueryKeyForTestsOnly0123456789abcdef';
+  const GRAPH_ENDPOINT = 'https://fiq-industry-test-search.search.windows.net';
+  const graphEnv = { AZURE_SEARCH_GRAPH_ENDPOINT: GRAPH_ENDPOINT, AZURE_SEARCH_GRAPH_QUERY_KEY: GRAPH_KEY };
+  assert.equal(graphServiceStatus({}).ready, false);
+  assert.equal(graphServiceStatus({ AZURE_SEARCH_GRAPH_ENDPOINT: GRAPH_ENDPOINT }).ready, false);
+  assert.equal(graphServiceStatus({ ...graphEnv, AZURE_SEARCH_GRAPH_ENDPOINT: 'http://fiq-industry-test-search.search.windows.net' }).ready, false);
+  assert.equal(graphServiceStatus({ ...graphEnv, AZURE_SEARCH_GRAPH_QUERY_KEY: 'bad key!' }).ready, false);
+  assert.ok(!JSON.stringify(graphServiceStatus({ ...graphEnv, AZURE_SEARCH_GRAPH_QUERY_KEY: 'bad key!' })).includes('bad key!'));
+  assert.equal(graphServiceStatus(graphEnv).ready, true);
+  // A result that echoes the graph key or host must never reach the browser.
+  const { app, calls } = industryHarness({ handler: async (url, init) => JSON.parse(init.body).queryType === 'agentic' ? industryHandler(url, init)
+    : json({ value: [industryDoc('DOC-1', { title: `leak ${GRAPH_KEY} fiq-industry-test-search.search.windows.net` })] }) });
+  for (const patch of [{}, graphEnv]) {
+    const health = await (await app.handle('health', new Request(`${ORIGIN}/api/health`), env(patch))).json();
+    assert.equal(health.industryGraph, 'not_configured', 'no build ships an industry graph binding yet');
+    for (const scenarioId of ['S08', 'S09']) {
+      for (const mode of ['live', 'sample']) {
+        const response = await app.handle('run', post('run', industryBody(scenarioId, { mode })), env(patch));
+        assert.equal(response.status, 503, `${scenarioId} ${mode}`);
+        const body = await response.json();
+        assert.equal(body.errorCode, 'studio_graph_not_configured');
+        assert.match(body.error, /isn’t configured for this industry yet/);
+      }
+    }
+    const zava = await (await catalogFor(app, '', patch)).json();
+    assert.ok(['S08', 'S09'].every(id => zava.scenarios.find(scenario => scenario.id === id).live.status !== 'not_configured'), 'Zava graphs use the main service');
+  }
+  assert.equal(calls.length, 0, 'graph scenarios send nothing');
+  const other = await (await app.handle('run', post('run', industryBody('S03')), env(graphEnv))).json();
+  assert.equal(other.executionStatus, 'success', 'every other industry scenario keeps working');
+  const text = JSON.stringify(other);
+  assert.ok(!text.includes(GRAPH_KEY) && !text.includes('fiq-industry-test-search.search.windows.net'));
 });

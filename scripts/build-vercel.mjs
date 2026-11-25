@@ -108,6 +108,8 @@ export function checkIndustryCatalog(catalog, enabled, attestations, bindings, {
         if (preset.boostSubtype !== undefined && (scenarioId !== 'S06' || !industry.boostSubtypes.includes(preset.boostSubtype))) problems.push(`${where}: boost`);
         if ((scenarioId === 'S10') !== /^[a-f0-9]{64}$/.test(preset.sourceHash || '')) problems.push(`${where}: S10 source hash`);
         if (!notesOptional && (typeof preset.why !== 'string' || !preset.why.trim())) problems.push(`${where}: Why AFTER wins note`);
+        // Notes describe only the two arms the app shows; S03 compares keyword with hybrid, never a vector-only third arm.
+        if (scenarioId === 'S03' && /vector-only|three arms|all three/i.test(preset.why || '')) problems.push(`${where}: note describes an arm the app doesn’t show`);
       }
     }
     for (const facet of industry.defaults?.S05?.facets || []) if (!isFacet(facet) || !fields.get(facet.split(',')[0])?.facetable) problems.push(`${id}: default facet ${facet}`);
@@ -178,6 +180,8 @@ async function verifyOffline(liveConfig, attestations, industries = { enabled: [
     const scenarios = await (await app.handle('scenarios', new Request(`${origin}/api/scenarios?industry=${industry}`), env)).json();
     if (!Array.isArray(scenarios.scenarios) || !scenarios.scenarios.length) throw new Error(`${industry}: industry catalog unavailable: ${JSON.stringify(scenarios).slice(0, 300)}`);
     for (const item of scenarios.scenarios) {
+      // Industry graph scenarios stay visibly not configured until the industry graph contract and binding ship.
+      if (['S08', 'S09'].includes(item.id) && item.live.status === 'not_configured') { matrix.push(`${industry}:${item.id}=not_configured`); continue; }
       if (!item.liveAvailable) throw new Error(`${industry}:${item.id} live unavailable: ${item.live.reason}`);
       const response = await app.handle('prepare', new Request(`${origin}/api/demo/prepare`, { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ industry, scenarioId: item.id, mode: 'live', query: item.sampleQuery || 'public guidance' }) }), env);
@@ -204,7 +208,7 @@ export function aboutWithDataSources(html, catalog, enabled) {
   if (enabled.length) {
     const replace = (from, to) => { if (!page.includes(from)) throw new Error(`about.html changed: ${from}`); page = page.replace(from, to); };
     replace('<li>All content is synthetic (Zava Retail); no customer data.</li>',
-      '<li>The Zava store is synthetic. Industry demos search public U.S. government documents, in English only. No customer data.</li>\n          <li>Industry demos cover S01–S07, plus S10 where the corpus has PDFs. Image search (S11) and the graph scenarios (S08, S09) use the Zava store.</li>');
+      '<li>The Zava store is synthetic. Industry demos search public U.S. government documents, in English only. No customer data.</li>\n          <li>Industry demos cover S01–S07, plus S10 where the corpus has PDFs. Industry graph search (S08, S09) isn’t configured yet, and image search (S11) uses the Zava store.</li>');
     replace('<footer><span>Synthetic demo content · Zava Retail · S01–S11</span>', '<footer><span>Public and synthetic demo data · <a href="#data-sources">Data sources</a></span>');
   }
   return page;
@@ -350,5 +354,5 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (findings.length) throw new Error(`Public output scan failed:\n${findings.join('\n')}`);
   const digest = createHash('sha256').update(readFileSync(join(out, 'server/private-data.mjs'))).digest('hex');
   process.stdout.write(`Built dist/vercel (${matrix.filter(item => item.endsWith('attested')).length} attested live scenario/language pairs, industries: ${enabledIndustries.join(',') || 'none'}, `
-    + `${matrix.filter(item => item.endsWith('gated')).length} gated). Private data SHA-256 ${digest}. Public scan clean. No Azure calls performed.\n`);
+    + `${matrix.filter(item => item.endsWith('gated')).length} gated, ${matrix.filter(item => item.endsWith('not_configured')).length} industry graph not configured). Private data SHA-256 ${digest}. Public scan clean. No Azure calls performed.\n`);
 }

@@ -193,6 +193,8 @@ function modeChanged() {
       : selectedScenario()?.liveAvailable ? 'Ready to search.' : selectedScenario()?.live?.reason || 'Live data is currently unavailable for this scenario.')
     : 'Curated sample mode ready.', mode === 'live' && selectedScenario()?.liveAvailable);
   element('sample-reference').hidden = selectedScenario()?.id !== 'S11' || mode !== 'sample' || !!selectedScenario()?.sample?.recorded;
+  // A scenario this deployment hasn't configured (industry graph search) shows why and sends nothing.
+  element('search').disabled = scenario?.live?.status === 'not_configured' && !scenario.sample?.available;
   closeSuggestions();
   if (['S10', 'S11'].includes(scenario?.id)) element('upload-help').textContent = uploadHelp(scenario, mode);
 }

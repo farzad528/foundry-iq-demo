@@ -12,12 +12,13 @@ Foundry IQ (Azure AI Search) is the knowledge and retrieval layer for agents and
 
 ## What this demo does
 
-- Runs one query through two retrieval setups, **BEFORE** and **AFTER**, on the same synthetic Zava Retail corpus and ranks the results side by side.
+- Runs one query through two retrieval setups, **BEFORE** and **AFTER**, on the same corpus and ranks the results side by side.
+- Covers the synthetic Zava store plus public U.S. government data for four industries: retail product recalls (CPSC), financial services, healthcare and manufacturing. Pick one with the **Industry** selector.
 - Explains why AFTER wins for every curated example, written from the recorded Live run.
 - Cites every result back to its source document, page or table row. Open a result for its fields, scores and rank change.
 - Shows the exact Foundry IQ request and response for each side in the **API log**, with the service host and key hidden.
 - Queries Foundry IQ from the server in **Live data** mode. **Sample** replays recorded Live responses and is always labeled.
-- Works in five document languages: English, Français, Español, 日本語 and Deutsch.
+- Works in five document languages for the Zava store: English, Français, Español, 日本語 and Deutsch. The industry demos are in English.
 
 ## Scenarios at a glance
 

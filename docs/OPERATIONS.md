@@ -84,6 +84,8 @@ Do not commit or publish the private inputs or `dist/vercel`.
 | `AZURE_SEARCH_QUERY_KEY` | A dedicated Search **query** key. Mark it Sensitive and never commit it. |
 | `LIVE_ENABLED` | `true` enables Live. Any other value, or no value, pauses Live. |
 | `LIVE_DISABLED_SCENARIOS` | Optional, empty by default. A comma-separated list such as `S07,S11` pauses those scenarios for cost control. Invalid values pause all Live. |
+| `AZURE_SEARCH_GRAPH_ENDPOINT` | Optional; reserved for industry S08/S09. The industry graph Search service, set for Production to `https://fiq-industry-a30bcd4f-search.search.windows.net`. Used only once a build ships an industry graph binding. |
+| `AZURE_SEARCH_GRAPH_QUERY_KEY` | Optional; reserved for industry S08/S09. A dedicated **query** key on the industry graph service, set by the owner (Sensitive). Redacted like the main key. |
 | `LIVE_DISABLED_INDUSTRIES` | Optional, empty by default; only for builds with industries. A comma-separated list of industry IDs (and `zava`) pauses those demos. Invalid values pause every demo. |
 
 If a variable is missing or invalid, Live fails closed with a configuration
@@ -234,29 +236,40 @@ change: re-run the attestation and binding step, then re-record S08/S09.
 
 ### Industry demos (behind build configuration)
 
-An **Industry** selector beside the scenario picker adds five public corpora to
-the Zava store demo. They are compiled into a build only when `STUDIO_INDUSTRIES`
-lists them; **the default build has none**, and the live site is unchanged until a
-release enables them.
+An **Industry** selector beside the scenario picker adds public corpora to the
+Zava store demo. They are compiled into a build only when `STUDIO_INDUSTRIES`
+lists them; **the default build has none**. Production enables
+`retail,financial,healthcare,manufacturing`. Energy stays out until its corpus
+rebuild and presets land.
 
 | ID | Selector label | Index | Scenarios |
 | --- | --- | --- | --- |
 | `zava` (default) | Retail · Zava demo store | `zava-studio-*` | S01–S11, five languages |
-| `retail` | Retail · Product recalls (CPSC) | `foundry-iq-retail` | S01–S07 |
-| `financial` | Financial services | `foundry-iq-financial` | S01–S07, S10 |
-| `healthcare` | Healthcare | `foundry-iq-healthcare` | S01–S07, S10 |
-| `manufacturing` | Manufacturing | `foundry-iq-manufacturing` | S01–S07, S10 |
-| `energy` | Energy | `foundry-iq-energy` | S01–S07 |
+| `retail` | Retail · Product recalls (CPSC) | `foundry-iq-retail` | S01–S07 (S08/S09 not configured) |
+| `financial` | Financial services | `foundry-iq-financial` | S01–S07, S10 (S08/S09 not configured) |
+| `healthcare` | Healthcare | `foundry-iq-healthcare` | S01–S07, S10 (S08/S09 not configured) |
+| `manufacturing` | Manufacturing | `foundry-iq-manufacturing` | S01–S07, S10 (S08/S09 not configured) |
+| `energy` | Energy (not in production yet) | `foundry-iq-energy` | S01–S07, no presets yet |
 
 - Industry demos are English-only: the language setting is disabled with a note.
-  S08/S09 (graphs) and S11 (images) stay with the Zava store.
+  S11 (images) stays with the Zava store.
+- **Industry S08/S09** are listed but show “Graph search isn’t configured for this
+  industry yet”, send nothing and have no Sample. Their entity and topic graphs
+  will live on a second Search service, reached only through the optional
+  `AZURE_SEARCH_GRAPH_ENDPOINT` and `AZURE_SEARCH_GRAPH_QUERY_KEY`. They also
+  need a private industry graph binding and allowlisted GQL from the graph
+  contract; no build provides one yet. Missing or invalid graph variables fail
+  closed for industry S08/S09 only. `/api/health` reports `industryGraph`. The
+  API log shows the same host placeholder for both services. Zava S08/S09 stay
+  on the main service.
 - The URL keeps the view (`/?industry=healthcare&scenario=S04`), and Share copies
   that link. An unknown industry or inapplicable scenario opens the default.
 - Citations link to the original public source, only on each industry's reviewed
   hosts. Cards and the details drawer show agency, publisher, document type,
   license and published date. About lists every data source and license.
-- Recorded Sample is per industry and curated example. Until recordings ship,
-  industries are Live-only.
+- Recorded Sample replays every curated industry example (123: Retail 28,
+  Financial 31, Healthcare 32, Manufacturing 32), recorded from Live on the
+  staged release with request IDs removed.
 
 **Request shapes** (from the Industry datasets evaluation; every arm filters
 `scope eq 'public' and variant eq 'primary'` unless noted):
@@ -301,6 +314,13 @@ npm run build:vercel
 - `config/studio-industries.json` (public) is generated from the Industry datasets
   contract by an operator importer. It holds labels, sources, licenses, reviewed
   hosts and presets, never index names. Regenerate it when the contract changes.
+- Notes describe only what the shipped comparison shows. The importer drops the
+  evaluation's extra vector-only clause from S03 notes (the app compares keyword
+  with hybrid), and FIN-S07-01 omits a planning claim that no run recorded. The
+  build rejects S03 notes that mention a third arm.
+- Industry recordings add about 14.7 MB to `config/studio-recorded.json` (19.9 MB
+  in total), because public-document passages are long. The server bundle
+  imports in about 250 ms locally.
 
 **Azure.** The industry indexes are owned by the Industry datasets session. This
 framework made **no Azure changes**: only read-only Get Index calls (attestation)

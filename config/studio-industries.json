@@ -1,7 +1,7 @@
 {
  "version": 1,
  "datasetVersion": "foundry-iq-industry-2026-11",
- "provenance": "Generated from the Industry datasets contract (presets and evaluation evidence, status draft) and a read-only index discovery on 2026-11-25. Index names stay in the private binding.",
+ "provenance": "Generated from the Industry datasets contract (presets and evaluation evidence, status final) and a read-only index discovery on 2026-11-25. Index names stay in the private binding.",
  "zava": {
   "id": "zava",
   "label": "Retail · Zava demo store",
@@ -35,7 +35,7 @@
    "languages": [
     "en"
    ],
-   "status": "draft",
+   "status": "final",
    "evaluatedAt": "2026-11-25T12:14:51Z",
    "scenarios": [
     "S01",
@@ -44,7 +44,9 @@
     "S04",
     "S05",
     "S06",
-    "S07"
+    "S07",
+    "S08",
+    "S09"
    ],
    "boostSubtypes": [
     "freshness",
@@ -216,7 +218,7 @@
       "relevant": [
        "RET-CPSC-26199"
       ],
-      "why": "Keyword is pulled by 'mini' (Yoto Mini speakers, mini trampolines) and has the EFMIS121 notice only at #5; vector-only ranks the July-2025 Curtis minifridge recall (models EFMIS129-175, not EFMIS121) #1 and the expansion #2; hybrid puts the Jan-2026 expansion that adds model EFMIS121 at #1."
+      "why": "Keyword is pulled by 'mini' (Yoto Mini speakers, mini trampolines) and has the EFMIS121 notice only at #5; hybrid puts the Jan-2026 expansion that adds model EFMIS121 at #1."
      },
      {
       "id": "RET-S03-02",
@@ -226,7 +228,7 @@
       "relevant": [
        "RET-CPSC-25253"
       ],
-      "why": "Keyword latches onto 'chest' and 'finger' (Generac finger-amputation generators, chests of drawers) and has the Igloo expansion at #9; vector-only ranks the original Igloo 90-qt cooler recall (its SKU list lacks 34785) #1 and the expansion #2; hybrid puts the expansion that lists SKU 34785 at #1."
+      "why": "Keyword latches onto 'chest' and 'finger' (Generac finger-amputation generators, chests of drawers) and has the Igloo expansion at #9; hybrid puts the expansion that lists SKU 34785 at #1."
      },
      {
       "id": "RET-S03-03",
@@ -236,7 +238,7 @@
       "relevant": [
        "RET-CPSC-20762"
       ],
-      "why": "Keyword matches 'bed' and 'fall' (Agrish adult bed rails, baby walkers, Murphy beds) and has the DaVinci notice at #5; vector-only ranks DaVinci's Dec-2019 bassinet recall (M0934G/Q/N/W, no M0934E) #1 and the July-2020 recall that lists M0934E #3; hybrid ranks the M0934E recall #1."
+      "why": "Keyword matches 'bed' and 'fall' (Agrish adult bed rails, baby walkers, Murphy beds) and has the DaVinci notice at #5; hybrid ranks the M0934E recall #1."
      },
      {
       "id": "RET-S03-04",
@@ -246,7 +248,7 @@
       "relevant": [
        "RET-CPSC-26203"
       ],
-      "why": "Keyword grabs 'machine' and 'gym' (Sensio and SOWTECH espresso machines, Skip Hop activity gyms) and has the TF30 notice at #4; vector-only ranks the 2022 Matrix T1/T3 commercial treadmill recall (no TF30) #1 and the 2026 expansion #2; hybrid puts the expansion that adds the TF30 at #1."
+      "why": "Keyword grabs 'machine' and 'gym' (Sensio and SOWTECH espresso machines, Skip Hop activity gyms) and has the TF30 notice at #4; hybrid puts the expansion that adds the TF30 at #1."
      }
     ],
     "S04": [
@@ -615,7 +617,7 @@
    "languages": [
     "en"
    ],
-   "status": "draft",
+   "status": "final",
    "evaluatedAt": "2026-11-25T13:20:42Z",
    "scenarios": [
     "S01",
@@ -625,6 +627,8 @@
     "S05",
     "S06",
     "S07",
+    "S08",
+    "S09",
     "S10"
    ],
    "boostSubtypes": [
@@ -831,7 +835,7 @@
        "FIN-CFPB-20289997",
        "FIN-CFPB-20194760"
       ],
-      "why": "Keyword-only ranks six FDIC wire-transfer rule chunks (recordkeeping, wire activities, ML risks) that repeat 'wire' and 'intermediary'; vector-only returns other wire complaints (a phone wire, spoofed payment instructions, an account-takeover wire); hybrid's #1/#2 are the complaints where a wire went through an intermediary bank and never arrived or its return could not be traced."
+      "why": "Keyword-only ranks six FDIC wire-transfer rule chunks (recordkeeping, wire activities, ML risks) that repeat 'wire' and 'intermediary'; hybrid's #1/#2 are the complaints where a wire went through an intermediary bank and never arrived or its return could not be traced."
      },
      {
       "id": "FIN-S03-02",
@@ -843,7 +847,7 @@
        "FIN-CFPB-6019327",
        "FIN-CFPB-8954156"
       ],
-      "why": "Keyword-only returns three OCC ACH examination/third-party-sender sections; vector-only's #1 is a complaint about a confirmed wire the bank later rescinded; hybrid fuses both signals and ranks the complaint whose outbound ACH transfer got the account frozen #1."
+      "why": "Keyword-only returns three OCC ACH examination/third-party-sender sections; hybrid fuses both signals and ranks the complaint whose outbound ACH transfer got the account frozen #1."
      },
      {
       "id": "FIN-S03-03",
@@ -857,7 +861,7 @@
        "FIN-CFPB-9175859",
        "FIN-CFPB-8726358"
       ],
-      "why": "Keyword-only latches onto 'Fedwire'/'wire' and returns OCC payment-system credit-risk and Fedwire sections plus FDIC wire guidance; vector-only finds one returned-wire complaint among unrelated wire complaints (1 of 3 relevant); hybrid's top 3 are all returned wires the sender never got credited for (brokerage wire returned but not credited, domestic return discrepancy, fintech with no record of the return)."
+      "why": "Keyword-only latches onto 'Fedwire'/'wire' and returns OCC payment-system credit-risk and Fedwire sections plus FDIC wire guidance; hybrid's top 3 are all returned wires the sender never got credited for (brokerage wire returned but not credited, domestic return discrepancy, fintech with no record of the return)."
      }
     ],
     "S04": [
@@ -1085,7 +1089,7 @@
         "FIN-CFPB-6100480"
        ]
       ],
-      "why": "Hybrid's top 3 are all FDIC OFAC/wire guidance; agentic retrieval splits the question and returns OFAC blocking and program guidance at #1–2 plus a consumer's request for a license to release a sanctions-blocked payment at #3."
+      "why": "Hybrid’s top 3 are all FDIC OFAC/wire guidance; agentic retrieval returns OFAC blocking and program guidance at #1–2 plus a consumer’s request for a license to release a sanctions-blocked payment at #3."
      },
      {
       "id": "FIN-S07-02",
@@ -1306,7 +1310,7 @@
    "languages": [
     "en"
    ],
-   "status": "draft",
+   "status": "final",
    "evaluatedAt": "2026-11-25T13:25:07Z",
    "scenarios": [
     "S01",
@@ -1316,6 +1320,8 @@
     "S05",
     "S06",
     "S07",
+    "S08",
+    "S09",
     "S10"
    ],
    "boostSubtypes": [
@@ -1544,7 +1550,7 @@
        "HC-ICD10CM-FY2027-I-C-19-c006",
        "HC-ICD10CM-FY2027-I-C-19-c004"
       ],
-      "why": "With the current-documents filter on all three arms, keyword-only returns the ICD-10-CM Introduction, I.A conventions and Appendix I (adverse-effect rule only at #8), vector-only ranks the I.C.19 toxic-effects rule first (adverse-effect rule #2), and hybrid ranks the FY 2027 I.C.19 adverse-effect rule #1."
+      "why": "With the current-documents filter on both arms, keyword-only returns the ICD-10-CM Introduction, I.A conventions and Appendix I (adverse-effect rule only at #8), and hybrid ranks the FY 2027 I.C.19 adverse-effect rule #1."
      },
      {
       "id": "HC-S03-02",
@@ -1555,7 +1561,7 @@
       "relevant": [
        "HC-ICD10CM-FY2027-I-C-2-c003"
       ],
-      "why": "Keyword-only matches 'ICD-10-CM'/'rule' to the Introduction, Appendix I and Section IV (the answer is #5); vector-only returns I.C.19 adverse effects, I.C.21 and I.C.2 anemia but not the answer; hybrid's #1 is I.C.2 'admitted for ... immunotherapy and develops complications such as ... dehydration: Z51.12 first'."
+      "why": "Keyword-only matches 'ICD-10-CM'/'rule' to the Introduction, Appendix I and Section IV (the answer is #5); hybrid's #1 is I.C.2 'admitted for ... immunotherapy and develops complications such as ... dehydration: Z51.12 first'."
      },
      {
       "id": "HC-S03-03",
@@ -1566,7 +1572,7 @@
       "relevant": [
        "HC-ICD10CM-FY2027-I-C-2-c002"
       ],
-      "why": "Keyword-only's top 3 are Appendix I chunks (answer at #4); vector-only's top 2 are OPDIVO label chunks (answer at #3); hybrid ranks I.C.2 'Anemia associated with chemotherapy, immunotherapy' (anemia first, then neoplasm and T45.1X5-) #1."
+      "why": "Keyword-only's top 3 are Appendix I chunks (answer at #4); hybrid ranks I.C.2 'Anemia associated with chemotherapy, immunotherapy' (anemia first, then neoplasm and T45.1X5-) #1."
      },
      {
       "id": "HC-S03-04",
@@ -1578,7 +1584,7 @@
        "HC-ICD10CM-FY2027-I-C-19-c006",
        "HC-ICD10CM-FY2027-I-C-19-c004"
       ],
-      "why": "Keyword-only returns I.A conventions, a BAVENCIO label chunk and I.C.19 toxic effects (answer at #5); vector-only returns LIBTAYO colitis rows and an IDACIO chunk (answer at #4); hybrid ranks the FY 2027 I.C.19 adverse-effect rule #1."
+      "why": "Keyword-only returns I.A conventions, a BAVENCIO label chunk and I.C.19 toxic effects (answer at #5); hybrid ranks the FY 2027 I.C.19 adverse-effect rule #1."
      }
     ],
     "S04": [
@@ -1975,7 +1981,7 @@
    "languages": [
     "en"
    ],
-   "status": "draft",
+   "status": "final",
    "evaluatedAt": "2026-11-25T11:58:30Z",
    "scenarios": [
     "S01",
@@ -1985,6 +1991,8 @@
     "S05",
     "S06",
     "S07",
+    "S08",
+    "S09",
     "S10"
    ],
    "boostSubtypes": [
@@ -2131,7 +2139,7 @@
        "MFG-NIST-SP800-82R3-APPC-c008",
        "MFG-NIST-SP800-82R3-APPF-c014"
       ],
-      "why": "Keyword latches onto the 'SP 800-82 Rev. 3' tokens and returns the change log, Appendix F intro and SP 800 series list (no remote-access text in its top 10); vector-only ranks NISTIR 8183 Rev. 1 remote-maintenance rows #1-2 (a different publication) and Rev. 3 6.2.10 only #3; hybrid puts SP 800-82 Rev. 3 6.2.10 Remote Access #1."
+      "why": "Keyword latches onto the 'SP 800-82 Rev. 3' tokens and returns the change log, Appendix F intro and SP 800 series list (no remote-access text in its top 10); hybrid puts SP 800-82 Rev. 3 6.2.10 Remote Access #1."
      },
      {
       "id": "MFG-S03-02",
@@ -2146,7 +2154,7 @@
        "MFG-NIST-SP800-82R3-APPC-c009",
        "MFG-NIST-SP800-82R3-SEC6-c010"
       ],
-      "why": "Keyword returns Rev. 3 boilerplate first (first relevant at #8); vector-only returns NISTIR 8183 portable-storage rows and the Rev. 4 draft media-protection section (first Rev. 3 hit #4); hybrid ranks Rev. 3 6.3.2.3 Malicious Code Detection #1 and has 6.2.7 Media Protection (USB memory sticks) at #5."
+      "why": "Keyword returns Rev. 3 boilerplate first (first relevant at #8); hybrid ranks Rev. 3 6.3.2.3 Malicious Code Detection #1 and has 6.2.7 Media Protection (USB memory sticks) at #5."
      },
      {
       "id": "MFG-S03-03",
@@ -2157,7 +2165,7 @@
        "MFG-NIST-SP800-82R3-SEC6-c022",
        "MFG-NIST-SP800-82R3-APPF-c024"
       ],
-      "why": "Keyword finds only Rev. 3 boilerplate (no relevant hit in its top 10); vector-only puts the NISTIR 8183 Rev. 1 'Disable defined functions, ports, protocols' row #1 (not the cited publication) and Rev. 3 6.2.4.1 #2; hybrid ranks SP 800-82 Rev. 3 6.2.4.1 Least Functionality (PR.IP-1) #1."
+      "why": "Keyword finds only Rev. 3 boilerplate (no relevant hit in its top 10); hybrid ranks SP 800-82 Rev. 3 6.2.4.1 Least Functionality (PR.IP-1) #1."
      },
      {
       "id": "MFG-S03-04",
@@ -2172,7 +2180,7 @@
        "MFG-NIST-SP800-82R3-SEC6-c046",
        "MFG-NIST-SP800-82R3-SEC6-c047"
       ],
-      "why": "Keyword returns Rev. 3 appendices first (first relevant #8); vector-only ranks Malicious Code Detection and two Rev. 4 draft detection sections above Rev. 3 response planning (#5); hybrid puts Rev. 3 6.2.4.5 Response and Recovery Plans #1."
+      "why": "Keyword returns Rev. 3 appendices first (first relevant #8); hybrid puts Rev. 3 6.2.4.5 Response and Recovery Plans #1."
      }
     ],
     "S04": [
@@ -2662,7 +2670,7 @@
    "languages": [
     "en"
    ],
-   "status": "draft",
+   "status": "pending",
    "evaluatedAt": null,
    "scenarios": [
     "S01",
