@@ -65,7 +65,8 @@ The build does the following:
   language; their ETags come from the attestations. They are never
   copied to `public/` or the source ZIP.
 - Compiles `config/studio-recorded.json` (recorded Sample) into the server bundle.
-- Checks all 55 scenario/language pairs offline against the attested schemas.
+- Checks all 55 scenario/language pairs (plus every enabled industry scenario)
+  offline against the attested schemas.
 - Fails if recorded Sample coverage is incomplete or contains request IDs.
 - Scans `public/` for private markers and credential-shaped values.
 
@@ -83,6 +84,7 @@ Do not commit or publish the private inputs or `dist/vercel`.
 | `AZURE_SEARCH_QUERY_KEY` | A dedicated Search **query** key. Mark it Sensitive and never commit it. |
 | `LIVE_ENABLED` | `true` enables Live. Any other value, or no value, pauses Live. |
 | `LIVE_DISABLED_SCENARIOS` | Optional, empty by default. A comma-separated list such as `S07,S11` pauses those scenarios for cost control. Invalid values pause all Live. |
+| `LIVE_DISABLED_INDUSTRIES` | Optional, empty by default; only for builds with industries. A comma-separated list of industry IDs (and `zava`) pauses those demos. Invalid values pause every demo. |
 
 If a variable is missing or invalid, Live fails closed with a configuration
 message that never includes the value. Sample results are never substituted.
@@ -141,6 +143,7 @@ message that never includes the value. Sample results are never substituted.
 **User interface.** The top-right controls are:
 
 - **Share**: the Web Share API, or copy `https://aka.ms/foundryiq-demo` with a confirmation.
+  A non-default industry or scenario shares a link to that exact view.
 - **GitHub**: a link to the repository.
 - **Avatar menu** (no sign-in), with these items:
   - **Settings**: document language, and a System/Light/Dark theme that is saved
@@ -228,6 +231,82 @@ change: re-run the attestation and binding step, then re-record S08/S09.
   revoke the key.
 - Attestations are point-in-time. A later change to a bound index is not detected
   at runtime. After any change, regenerate the attestations, then rebuild and redeploy.
+
+### Industry demos (behind build configuration)
+
+An **Industry** selector beside the scenario picker adds five public corpora to
+the Zava store demo. They are compiled into a build only when `STUDIO_INDUSTRIES`
+lists them; **the default build has none**, and the live site is unchanged until a
+release enables them.
+
+| ID | Selector label | Index | Scenarios |
+| --- | --- | --- | --- |
+| `zava` (default) | Retail · Zava demo store | `zava-studio-*` | S01–S11, five languages |
+| `retail` | Retail · Product recalls (CPSC) | `foundry-iq-retail` | S01–S07 |
+| `financial` | Financial services | `foundry-iq-financial` | S01–S07, S10 |
+| `healthcare` | Healthcare | `foundry-iq-healthcare` | S01–S07, S10 |
+| `manufacturing` | Manufacturing | `foundry-iq-manufacturing` | S01–S07, S10 |
+| `energy` | Energy | `foundry-iq-energy` | S01–S07 |
+
+- Industry demos are English-only: the language setting is disabled with a note.
+  S08/S09 (graphs) and S11 (images) stay with the Zava store.
+- The URL keeps the view (`/?industry=healthcare&scenario=S04`), and Share copies
+  that link. An unknown industry or inapplicable scenario opens the default.
+- Citations link to the original public source, only on each industry's reviewed
+  hosts. Cards and the details drawer show agency, publisher, document type,
+  license and published date. About lists every data source and license.
+- Recorded Sample is per industry and curated example. Until recordings ship,
+  industries are Live-only.
+
+**Request shapes** (from the Industry datasets evaluation; every arm filters
+`scope eq 'public' and variant eq 'primary'` unless noted):
+
+| Scenario | BEFORE | AFTER |
+| --- | --- | --- |
+| S01 | `searchMode: all` over `titlePlain,contentPlain` (no stemming or synonyms) | `searchMode: any` over `title,content` (analyzers + `zava-studio-synonyms`) |
+| S02 | keyword | `kind: text` vector query on `contentVector`, `k: 50`, pre-filter |
+| S03 | keyword + preset filter | hybrid + the same preset filter |
+| S04 | one shared hybrid candidate set | semantic L2 over those exact IDs (`<id>-semantic`) |
+| S05 | keyword, no preset filter | hybrid + preset filter + preset facets |
+| S06 | hybrid | hybrid + `<id>-freshness`, `-authority` or `-impact` |
+| S07 | hybrid | native agentic (`2026-11-01-preview`, `maxRuntimeInSeconds: 10`) |
+| S10 | keyword over `extractionAnalyzer eq 'prebuilt-read'` pages | `prebuilt-layout` rows; both filtered to the preset's `sourceHash` (no `variant` filter) |
+
+Filters, facets, scoring profiles and S10 documents come only from the preset
+allowlist in `config/studio-industries.json`, matched by exact question. The
+browser can't send any of them. Free text runs without a preset filter (S05 uses
+the default facets, and S10 searches the first example's PDF). Notes come from
+the preset's `why`, written from the Industry datasets session's verified Live
+evaluation.
+
+**Build inputs and checks.**
+
+```powershell
+$env:STUDIO_INDUSTRIES = 'retail,financial,healthcare,manufacturing,energy'
+$env:STUDIO_PRIVATE_INDUSTRIES = '<private>\industry-bindings.json'
+# STUDIO_PRIVATE_ATTESTATIONS must also attest the five industry indexes.
+npm run build:vercel
+```
+
+- `industry-bindings.json` (private) maps each industry to its index, semantic
+  configuration, vector field and scoring profiles. Index ETags come from the
+  attestations, captured by a read-only Get Index per index.
+- The build fails if a preset filter appears outside S03/S05, uses a field that
+  isn't filterable or a `search.*` function other than `search.in`; if a facet is
+  malformed or not facetable; or if an S10 preset lacks a PDF hash.
+- A release build also needs a recording and a note for every preset.
+  `STUDIO_INDUSTRY_SAMPLES_OPTIONAL=1` relaxes recordings for development builds
+  only. S07 planning varies between runs, so an S07 note that claims sub-queries
+  fails the build unless the shipped recording shows them.
+- `config/studio-industries.json` (public) is generated from the Industry datasets
+  contract by an operator importer. It holds labels, sources, licenses, reviewed
+  hosts and presets, never index names. Regenerate it when the contract changes.
+
+**Azure.** The industry indexes are owned by the Industry datasets session. This
+framework made **no Azure changes**: only read-only Get Index calls (attestation)
+and read-only queries for local verification. If an index is rebuilt (for
+example `foundry-iq-energy`), its ETag changes: re-attest, rebuild and
+re-record. The query key reads these public-domain indexes too.
 
 **Revoke or rotate the key.**
 

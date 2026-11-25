@@ -1,0 +1,2698 @@
+{
+ "version": 1,
+ "datasetVersion": "foundry-iq-industry-2026-11",
+ "provenance": "Generated from the Industry datasets contract (presets and evaluation evidence, status draft) and a read-only index discovery on 2026-11-25. Index names stay in the private binding.",
+ "zava": {
+  "id": "zava",
+  "label": "Retail · Zava demo store",
+  "short": "Zava demo store",
+  "group": "Retail",
+  "blurb": "Synthetic Zava products, support articles and a product manual, in five languages.",
+  "sources": [
+   {
+    "agency": "Zava (fictional)",
+    "name": "Synthetic products, support articles, manual and images in this repository",
+    "url": "https://github.com/farzad528/foundry-iq-demo/tree/main/samples",
+    "license": "MIT License (this repository)"
+   }
+  ]
+ },
+ "industries": [
+  {
+   "id": "retail",
+   "label": "Retail · Product recalls (CPSC)",
+   "short": "Product recalls (CPSC)",
+   "group": "Retail",
+   "blurb": "U.S. Consumer Product Safety Commission recall notices: hazards, remedies, retailers and injuries.",
+   "sources": [
+    {
+     "agency": "CPSC",
+     "name": "Recall notices (CPSC Recalls API)",
+     "url": "https://www.cpsc.gov/Recalls",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105). Recall notices may be freely copied and distributed; credit CPSC, no endorsement implied."
+    }
+   ],
+   "languages": [
+    "en"
+   ],
+   "status": "draft",
+   "evaluatedAt": "2026-11-25T12:14:51Z",
+   "scenarios": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07"
+   ],
+   "boostSubtypes": [
+    "freshness",
+    "authority",
+    "impact"
+   ],
+   "sourceHosts": [
+    "cpsc.gov",
+    "www.cpsc.gov"
+   ],
+   "defaults": {
+    "S05": {
+     "facets": [
+      "hazards,count:10",
+      "retailers,count:10",
+      "remedies,count:5",
+      "regions,count:10"
+     ]
+    }
+   },
+   "presets": {
+    "S01": [
+     {
+      "id": "RET-S01-01",
+      "label": "dresser tipover",
+      "hint": "Dresser tipover",
+      "query": "dresser tipover",
+      "relevant": [
+       "RET-CPSC-19116",
+       "RET-CPSC-19209",
+       "RET-CPSC-20085",
+       "RET-CPSC-20161",
+       "RET-CPSC-21019",
+       "RET-CPSC-21718",
+       "RET-CPSC-22755",
+       "RET-CPSC-24217",
+       "RET-CPSC-25146",
+       "RET-CPSC-25292",
+       "RET-CPSC-25474",
+       "RET-CPSC-26022",
+       "RET-CPSC-26066",
+       "RET-CPSC-26522",
+       "RET-CPSC-26663",
+       "RET-CPSC-26726",
+       "RET-CPSC-26794"
+      ],
+      "why": "Plain keyword needs the literal token 'tipover' and returns 0 hits; stemming + synonyms (tipover -> tip over, dresser -> chest of drawers) put South Shore's 'Chest of Drawers ... Tip-Over' recall at #1 and all 10 AFTER results are dresser/clothing-storage tip-over recalls."
+     },
+     {
+      "id": "RET-S01-02",
+      "label": "ebike battery fire",
+      "hint": "Ebike battery fires",
+      "query": "ebike battery fire",
+      "relevant": [
+       "RET-CPSC-22132",
+       "RET-CPSC-23007",
+       "RET-CPSC-23716",
+       "RET-CPSC-24092",
+       "RET-CPSC-25244",
+       "RET-CPSC-25391",
+       "RET-CPSC-25403"
+      ],
+      "why": "No notice contains the token 'ebike', so plain keyword returns 0 hits; the synonym map expands ebike -> e bike / electric bicycle and AFTER's top 7 are all e-bike fire recalls (VIVI, Ancheer, Gyroor, Santa Cruz x2, Pacific Cycle, FENGQS)."
+     },
+     {
+      "id": "RET-S01-03",
+      "label": "CO alarm failed to alert",
+      "hint": "CO alarms that fail to alert",
+      "query": "CO alarm failed to alert",
+      "relevant": [
+       "RET-CPSC-25045",
+       "RET-CPSC-24236"
+      ],
+      "why": "Notices say 'carbon monoxide' and 'failure to alert', so all-terms plain keyword returns 0 hits; CO -> carbon monoxide plus stemming puts New Cosmos' natural gas/CO alarms at #1 and the CHZHVAN smoke/CO detectors at #3."
+     },
+     {
+      "id": "RET-S01-04",
+      "label": "li-ion power banks overheating",
+      "hint": "Li-ion power banks overheating",
+      "query": "li-ion power banks overheating",
+      "relevant": [
+       "RET-CPSC-19090",
+       "RET-CPSC-20013",
+       "RET-CPSC-22009",
+       "RET-CPSC-22237",
+       "RET-CPSC-23147",
+       "RET-CPSC-24287",
+       "RET-CPSC-24344",
+       "RET-CPSC-24350",
+       "RET-CPSC-25011",
+       "RET-CPSC-25437",
+       "RET-CPSC-26011",
+       "RET-CPSC-26090"
+      ],
+      "why": "Plain keyword requires the literal 'li-ion' and 'overheating' and returns 0 hits; li ion -> lithium ion and stemming put Fantasia/Anker, ESR HaloLock and Anker power-bank recalls at #1-3 (7 of the top 10 are power banks)."
+     }
+    ],
+    "S02": [
+     {
+      "id": "RET-S02-01",
+      "label": "baby fell asleep in the angled rocker and stopped breathing",
+      "hint": "Infant inclined rocker deaths",
+      "query": "baby fell asleep in the angled rocker and stopped breathing",
+      "relevant": [
+       "RET-CPSC-19105",
+       "RET-CPSC-19112",
+       "RET-CPSC-20060",
+       "RET-CPSC-20075",
+       "RET-CPSC-21052",
+       "RET-CPSC-21125",
+       "RET-CPSC-23088",
+       "RET-CPSC-23290",
+       "RET-CPSC-24325",
+       "RET-CPSC-25009",
+       "RET-CPSC-25290",
+       "RET-CPSC-25312"
+      ],
+      "why": "BM25 latches onto 'baby' (Cpzzkq loungers, 4moms strap-entanglement rockers, baby walkers) with no inclined-sleep recall in its top 3; vector reads 'angled rocker ... stopped breathing' as inclined sleep and returns Fisher-Price Rock 'n Play, Kids II Rocking Sleepers and Kolcraft's inclined sleeper at #1-3."
+     },
+     {
+      "id": "RET-S02-02",
+      "label": "my phone's portable charger got hot and melted in my bag",
+      "hint": "Phone charger melted",
+      "query": "my phone's portable charger got hot and melted in my bag",
+      "relevant": [
+       "RET-CPSC-19090",
+       "RET-CPSC-20013",
+       "RET-CPSC-22009",
+       "RET-CPSC-22237",
+       "RET-CPSC-23147",
+       "RET-CPSC-24287",
+       "RET-CPSC-24344",
+       "RET-CPSC-24350",
+       "RET-CPSC-25011",
+       "RET-CPSC-25437",
+       "RET-CPSC-26011",
+       "RET-CPSC-26090",
+       "RET-CPSC-21003"
+      ],
+      "why": "BM25 matches 'portable' and 'hot' (water immersion heaters, infant swings, jewelry kits) and first reaches a battery phone case at #5; vector maps 'portable charger' to power banks and returns myCharge, Belkin and Daniel M. Friedman power-bank recalls at #1-3."
+     },
+     {
+      "id": "RET-S02-03",
+      "label": "my teenager's VR goggles padding gave her a rash on her face",
+      "hint": "VR headset face padding rash",
+      "query": "my teenager's VR goggles padding gave her a rash on her face",
+      "relevant": [
+       "RET-CPSC-21768"
+      ],
+      "why": "No notice says 'VR goggles', 'padding' or 'rash', so BM25 returns unrelated infant-swing and burn-pad notices with nothing relevant in its top 10; vector puts the Oculus Quest 2 removable foam facial-interface (skin irritation) recall at #1."
+     },
+     {
+      "id": "RET-S02-04",
+      "label": "the paddles on the overhead fan in our living room came loose and fell",
+      "hint": "Ceiling fan blades came loose",
+      "query": "the paddles on the overhead fan in our living room came loose and fell",
+      "relevant": [
+       "RET-CPSC-26702"
+      ],
+      "why": "BM25 latches onto 'paddles' and 'fan' (Vornado tower heaters, stand-up paddleboard paddles) and only reaches the ceiling fan at #6; vector reads 'paddles on the overhead fan' as ceiling-fan blades and ranks the Hampton Bay Halwin ceiling fan recall #1."
+     }
+    ],
+    "S03": [
+     {
+      "id": "RET-S03-01",
+      "label": "model EFMIS121 mini fridge sparking",
+      "hint": "Minifridge model EFMIS121",
+      "query": "model EFMIS121 mini fridge sparking",
+      "relevant": [
+       "RET-CPSC-26199"
+      ],
+      "why": "Keyword is pulled by 'mini' (Yoto Mini speakers, mini trampolines) and has the EFMIS121 notice only at #5; vector-only ranks the July-2025 Curtis minifridge recall (models EFMIS129-175, not EFMIS121) #1 and the expansion #2; hybrid puts the Jan-2026 expansion that adds model EFMIS121 at #1."
+     },
+     {
+      "id": "RET-S03-02",
+      "label": "SKU 34785 ice chest pinched finger",
+      "hint": "Rolling cooler SKU 34785",
+      "query": "SKU 34785 ice chest pinched finger",
+      "relevant": [
+       "RET-CPSC-25253"
+      ],
+      "why": "Keyword latches onto 'chest' and 'finger' (Generac finger-amputation generators, chests of drawers) and has the Igloo expansion at #9; vector-only ranks the original Igloo 90-qt cooler recall (its SKU list lacks 34785) #1 and the expansion #2; hybrid puts the expansion that lists SKU 34785 at #1."
+     },
+     {
+      "id": "RET-S03-03",
+      "label": "model M0934E baby bed fall risk",
+      "hint": "Bassinet model M0934E",
+      "query": "model M0934E baby bed fall risk",
+      "relevant": [
+       "RET-CPSC-20762"
+      ],
+      "why": "Keyword matches 'bed' and 'fall' (Agrish adult bed rails, baby walkers, Murphy beds) and has the DaVinci notice at #5; vector-only ranks DaVinci's Dec-2019 bassinet recall (M0934G/Q/N/W, no M0934E) #1 and the July-2020 recall that lists M0934E #3; hybrid ranks the M0934E recall #1."
+     },
+     {
+      "id": "RET-S03-04",
+      "label": "TF30 jogging machine caught fire at the gym",
+      "hint": "Treadmill model TF30",
+      "query": "TF30 jogging machine caught fire at the gym",
+      "relevant": [
+       "RET-CPSC-26203"
+      ],
+      "why": "Keyword grabs 'machine' and 'gym' (Sensio and SOWTECH espresso machines, Skip Hop activity gyms) and has the TF30 notice at #4; vector-only ranks the 2022 Matrix T1/T3 commercial treadmill recall (no TF30) #1 and the 2026 expansion #2; hybrid puts the expansion that adds the TF30 at #1."
+     }
+    ],
+    "S04": [
+     {
+      "id": "RET-S04-01",
+      "label": "Which space heater could switch on by itself without anyone touching it?",
+      "hint": "Heater that turns on by itself",
+      "query": "Which space heater could switch on by itself without anyone touching it?",
+      "relevant": [
+       "RET-CPSC-24298"
+      ],
+      "why": "Hybrid ranks generic space-heater fire recalls first (DREO, Shop LC, AmazonBasics) and Atomi at #4; the semantic reranker reads Atomi's hazard 'smart heaters can turn on without user input' and moves it to #1."
+     },
+     {
+      "id": "RET-S04-02",
+      "label": "Which recall involved honeycomb window shades from a well-known brand?",
+      "hint": "Honeycomb shades recall",
+      "query": "Which recall involved honeycomb window shades from a well-known brand?",
+      "relevant": [
+       "RET-CPSC-19761"
+      ],
+      "why": "Hybrid ranks Amazon roller-shade recalls (Shadeks, ChrisDowa) above Levolor at #3; the reranker connects 'honeycomb' with Levolor's 'Custom Cellular Shades' and moves it to #1."
+     },
+     {
+      "id": "RET-S04-03",
+      "label": "Which pretend-food play set had magnets a child could swallow?",
+      "hint": "Pretend-food play set magnets",
+      "query": "Which pretend-food play set had magnets a child could swallow?",
+      "relevant": [
+       "RET-CPSC-26205"
+      ],
+      "why": "Hybrid fills its top 5 with generic magnet-set recalls (Mag Cube, magnetic building sticks, ball sets, chess games) and has Gagaku's Children's Ice Cream Toy Playsets at #6; the reranker recognizes 'pretend-food play set' and moves it to #1."
+     },
+     {
+      "id": "RET-S04-04",
+      "label": "Which children's dresser was sold exclusively at a furniture store chain and violated the new tip-over standard?",
+      "hint": "Chain-exclusive children's dresser",
+      "query": "Which children's dresser was sold exclusively at a furniture store chain and violated the new tip-over standard?",
+      "relevant": [
+       "RET-CPSC-24217"
+      ],
+      "why": "Hybrid ranks the Winston Porter/Seeday and EnHomee dressers first and the Rooms To Go children's dressers at #3; the reranker matches 'children's dresser', 'sold exclusively at a furniture store chain' and the clothing-storage-unit regulation and moves it to #1."
+     }
+    ],
+    "S05": [
+     {
+      "id": "RET-S05-01",
+      "label": "space heaters sold at Amazon with a refund",
+      "hint": "Space heaters on Amazon with refund",
+      "query": "space heaters sold at Amazon with a refund",
+      "filter": "category eq 'Heating & cooling' and retailers/any(r: r eq 'Amazon') and remedies/any(m: m eq 'refund')",
+      "facets": [
+       "hazards,count:10",
+       "retailers,count:10",
+       "remedies,count:5",
+       "regions,count:10"
+      ],
+      "relevant": [
+       "RET-CPSC-19752",
+       "RET-CPSC-22723",
+       "RET-CPSC-23148",
+       "RET-CPSC-25036",
+       "RET-CPSC-24298",
+       "RET-CPSC-22168",
+       "RET-CPSC-26532"
+      ],
+      "why": "Keyword-only #2 is the DREO space heater (Home Depot/Lowe's/Costco/Best Buy, replacement remedy - ineligible) and #5 a water immersion heater; filters category=Heating & cooling, retailers=Amazon, remedies=refund leave 9 recalls with AmazonBasics, Shop LC and Vornado SRTH heaters at #1-3, and facets show all 9 fire-burn, refund, made in China."
+     },
+     {
+      "id": "RET-S05-02",
+      "label": "power banks under $75 sold on Amazon with burn injuries reported",
+      "hint": "Amazon power banks under $75 with injuries",
+      "query": "power banks under $75 sold on Amazon with burn injuries reported",
+      "filter": "category eq 'Batteries & chargers' and retailers/any(r: r eq 'Amazon') and priceMaxUsd le 75 and injuriesReported eq true",
+      "facets": [
+       "retailers,count:10",
+       "remedies,count:5",
+       "regions,count:10",
+       "hazards,count:10"
+      ],
+      "relevant": [
+       "RET-CPSC-23147",
+       "RET-CPSC-24287",
+       "RET-CPSC-25011"
+      ],
+      "why": "Keyword #1 is the ESR HaloLock power bank recall ('No injuries have been reported') - ineligible; filters Batteries & chargers + Amazon + priceMaxUsd <= 75 + injuriesReported leave exactly the Anker ($60), Baseus ($55) and Fantasia/Anker ($70) power-bank recalls with reported burn injuries."
+     },
+     {
+      "id": "RET-S05-03",
+      "label": "children's products sold on Temu or Shein that violate federal safety rules",
+      "hint": "Temu/Shein children's products",
+      "query": "children's products sold on Temu or Shein that violate federal safety rules",
+      "filter": "retailers/any(r: r eq 'Temu' or r eq 'Shein')",
+      "facets": [
+       "category,count:10",
+       "retailers,count:10",
+       "hazards,count:10",
+       "remedies,count:5"
+      ],
+      "relevant": [
+       "RET-CPSC-21769",
+       "RET-CPSC-24211",
+       "RET-CPSC-24265",
+       "RET-CPSC-25131",
+       "RET-CPSC-25166",
+       "RET-CPSC-25172",
+       "RET-CPSC-26536",
+       "RET-CPSC-26654"
+      ],
+      "why": "Keyword #2 is Grizzly's children's tool kits sold on Amazon, not Temu or Shein; the retailer filter (Temu or Shein) returns SHEIN children's sleepwear and pajama sets and Temu-exclusive kids' bike helmets at #1-3, with category/retailer/hazard/remedy facets for the marketplace review."
+     },
+     {
+      "id": "RET-S05-04",
+      "label": "e-bikes, scooters and hoverboards sold on Amazon with injuries reported",
+      "hint": "E-mobility on Amazon with injuries",
+      "query": "e-bikes, scooters and hoverboards sold on Amazon with injuries reported",
+      "filter": "category eq 'E-bikes & e-scooters' and retailers/any(r: r eq 'Amazon') and injuriesReported eq true",
+      "facets": [
+       "retailers,count:10",
+       "remedies,count:5",
+       "regions,count:10",
+       "hazards,count:10"
+      ],
+      "relevant": [
+       "RET-CPSC-23007",
+       "RET-CPSC-23716",
+       "RET-CPSC-24065"
+      ],
+      "why": "Keyword's top 3 (VIVI e-bikes, Jetson hoverboards, FENGQS e-bikes) each fail a constraint - no injuries reported or sold only at Target; filters leave exactly Ancheer and Gyroor e-bikes and the Hover-1 Helix hoverboard, all sold on Amazon with burn or smoke-inhalation injuries."
+     }
+    ],
+    "S06": [
+     {
+      "id": "RET-S06-01",
+      "label": "latest adult portable bed rail entrapment recall",
+      "hint": "Latest bed rail recall notice",
+      "query": "latest adult portable bed rail entrapment recall",
+      "boostSubtype": "freshness",
+      "relevant": [
+       "RET-CPSC-27014"
+      ],
+      "why": "Hybrid ranks Medline (2024), Essential Medical's 2024 reannouncement and Agrish's original Jan-2026 notice first and the Oct-2026 'Agrish Reannounces and Expands' notice at #6; freshness puts that latest reannouncement at #1."
+     },
+     {
+      "id": "RET-S06-02",
+      "label": "latest fabric dresser tip-over recall",
+      "hint": "Latest fabric dresser recall notice",
+      "query": "latest fabric dresser tip-over recall",
+      "boostSubtype": "freshness",
+      "relevant": [
+       "RET-CPSC-26726"
+      ],
+      "why": "Hybrid ranks the WLIVE fabric dressers (Oct 2025) and the original May-2026 Mainstays notice first; freshness lifts Walmart's Aug-2026 reannouncement of the Mainstays fabric dresser recall from #4 to #1 (the later Yuyitop and Winston Porter dressers are wood)."
+     },
+     {
+      "id": "RET-S06-03",
+      "label": "largest pressure cooker burn hazard recall",
+      "hint": "Largest pressure cooker recall",
+      "query": "largest pressure cooker burn hazard recall",
+      "boostSubtype": "impact",
+      "relevant": [
+       "RET-CPSC-25247"
+      ],
+      "why": "Hybrid ranks Sensio (860,000 units), Ambiano (46,660) and Insignia (930,000) pressure cookers first; the units-recalled impact profile lifts SharkNinja's 1.8-million-unit Foodi pressure cooker recall from #4 to #1."
+     },
+     {
+      "id": "RET-S06-04",
+      "label": "biggest magnetic ball set ingestion recall",
+      "hint": "Largest magnet set recall",
+      "query": "biggest magnetic ball set ingestion recall",
+      "boostSubtype": "impact",
+      "relevant": [
+       "RET-CPSC-21179"
+      ],
+      "why": "Hybrid ranks small magnetic ball-set recalls first (Mag Cube 600 units, Joybuy sets 650 and 4,240); the units-recalled impact profile lifts the Zen Magnets/Neoballs recall (about 10 million units) from #6 to #1."
+     }
+    ],
+    "S07": [
+     {
+      "id": "RET-S07-01",
+      "label": "Which products were recalled for violating Reese's Law on button batteries, and which dressers were recalled for violating the STURDY Act tip-over standard?",
+      "hint": "Reese's Law + STURDY Act violations",
+      "query": "Which products were recalled for violating Reese's Law on button batteries, and which dressers were recalled for violating the STURDY Act tip-over standard?",
+      "relevant": [
+       "RET-CPSC-24325",
+       "RET-CPSC-25087",
+       "RET-CPSC-25111",
+       "RET-CPSC-25120",
+       "RET-CPSC-25290",
+       "RET-CPSC-25312",
+       "RET-CPSC-26465",
+       "RET-CPSC-26670",
+       "RET-CPSC-26785",
+       "RET-CPSC-27090",
+       "RET-CPSC-24217",
+       "RET-CPSC-25292",
+       "RET-CPSC-25474",
+       "RET-CPSC-26022",
+       "RET-CPSC-26066",
+       "RET-CPSC-26522",
+       "RET-CPSC-26663",
+       "RET-CPSC-26726",
+       "RET-CPSC-26794"
+      ],
+      "relevantGroups": [
+       [
+        "RET-CPSC-24325",
+        "RET-CPSC-25087",
+        "RET-CPSC-25111",
+        "RET-CPSC-25120",
+        "RET-CPSC-25290",
+        "RET-CPSC-25312",
+        "RET-CPSC-26465",
+        "RET-CPSC-26670",
+        "RET-CPSC-26785",
+        "RET-CPSC-27090"
+       ],
+       [
+        "RET-CPSC-24217",
+        "RET-CPSC-25292",
+        "RET-CPSC-25474",
+        "RET-CPSC-26022",
+        "RET-CPSC-26066",
+        "RET-CPSC-26522",
+        "RET-CPSC-26663",
+        "RET-CPSC-26726",
+        "RET-CPSC-26794"
+       ]
+      ],
+      "why": "Hybrid's top 9 are all STURDY-Act dresser recalls, leaving the Reese's Law half unanswered in its top 3; agentic retrieval returns SIG SAUER's Reese's Law violation #1, a STURDY dresser #2 and Pella's Reese's Law patio doors #3."
+     },
+     {
+      "id": "RET-S07-02",
+      "label": "Which roller window shades violated the federal window covering standard, and which aerosol bug spray cans could burst and cut people?",
+      "hint": "Window covering rule + bursting aerosol cans",
+      "query": "Which roller window shades violated the federal window covering standard, and which aerosol bug spray cans could burst and cut people?",
+      "relevant": [
+       "RET-CPSC-25105",
+       "RET-CPSC-25128",
+       "RET-CPSC-25147",
+       "RET-CPSC-25151",
+       "RET-CPSC-25198",
+       "RET-CPSC-25230",
+       "RET-CPSC-25233",
+       "RET-CPSC-25234",
+       "RET-CPSC-23252"
+      ],
+      "relevantGroups": [
+       [
+        "RET-CPSC-25105",
+        "RET-CPSC-25128",
+        "RET-CPSC-25147",
+        "RET-CPSC-25151",
+        "RET-CPSC-25198",
+        "RET-CPSC-25230",
+        "RET-CPSC-25233",
+        "RET-CPSC-25234"
+       ],
+       [
+        "RET-CPSC-23252"
+       ]
+      ],
+      "why": "Hybrid's top 8 are roller-shade and roll-up blind recalls and the aerosol-can recall is only #9; agentic retrieval returns Maggie's Farm aerosol bed bug & flea killer cans #1 and LINKCOO and Shadeks roller shades #2-3."
+     },
+     {
+      "id": "RET-S07-03",
+      "label": "Which e-bikes were recalled for lithium-ion battery fires, and which kids' outfit had plastic cord tips that could pop off and choke a toddler?",
+      "hint": "E-bike fires + kids' cord-tip choking",
+      "query": "Which e-bikes were recalled for lithium-ion battery fires, and which kids' outfit had plastic cord tips that could pop off and choke a toddler?",
+      "relevant": [
+       "RET-CPSC-22132",
+       "RET-CPSC-23007",
+       "RET-CPSC-23716",
+       "RET-CPSC-24092",
+       "RET-CPSC-25244",
+       "RET-CPSC-25391",
+       "RET-CPSC-25403",
+       "RET-CPSC-24152"
+      ],
+      "relevantGroups": [
+       [
+        "RET-CPSC-22132",
+        "RET-CPSC-23007",
+        "RET-CPSC-23716",
+        "RET-CPSC-24092",
+        "RET-CPSC-25244",
+        "RET-CPSC-25391",
+        "RET-CPSC-25403"
+       ],
+       [
+        "RET-CPSC-24152"
+       ]
+      ],
+      "why": "Hybrid's top 6 are all e-bike fire recalls and the TJX pants-set recall is absent from its top 10; agentic retrieval puts TJX's twill pants sets (plastic tips on the faux drawstrings can come off - choking) #1 and Ancheer e-bikes #2."
+     },
+     {
+      "id": "RET-S07-04",
+      "label": "Which power banks were recalled because the lithium-ion battery overheats, and which camping tents were falsely labeled as fire retardant?",
+      "hint": "Power bank fires + mislabeled tents",
+      "query": "Which power banks were recalled because the lithium-ion battery overheats, and which camping tents were falsely labeled as fire retardant?",
+      "relevant": [
+       "RET-CPSC-19090",
+       "RET-CPSC-20013",
+       "RET-CPSC-22009",
+       "RET-CPSC-22237",
+       "RET-CPSC-23147",
+       "RET-CPSC-24287",
+       "RET-CPSC-24344",
+       "RET-CPSC-24350",
+       "RET-CPSC-25011",
+       "RET-CPSC-25437",
+       "RET-CPSC-26011",
+       "RET-CPSC-26090",
+       "RET-CPSC-21713"
+      ],
+      "relevantGroups": [
+       [
+        "RET-CPSC-19090",
+        "RET-CPSC-20013",
+        "RET-CPSC-22009",
+        "RET-CPSC-22237",
+        "RET-CPSC-23147",
+        "RET-CPSC-24287",
+        "RET-CPSC-24344",
+        "RET-CPSC-24350",
+        "RET-CPSC-25011",
+        "RET-CPSC-25437",
+        "RET-CPSC-26011",
+        "RET-CPSC-26090"
+       ],
+       [
+        "RET-CPSC-21713"
+       ]
+      ],
+      "why": "Hybrid's top 5 are power-bank recalls and the Thermo Tents notice sits at #6; agentic retrieval returns Anker and Baseus power banks #1-2 and the Thermo Tents 'mislabeled as fire retardant' recall #3."
+     }
+    ]
+   }
+  },
+  {
+   "id": "financial",
+   "label": "Financial services",
+   "short": "Financial services",
+   "group": "Industries",
+   "blurb": "OCC Comptroller’s Handbook, FDIC examination manual, interagency guidance and CFPB consumer complaints (company names masked).",
+   "sources": [
+    {
+     "agency": "OCC",
+     "name": "Comptroller’s Handbook",
+     "url": "https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/index-comptrollers-handbook.html",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "FDIC",
+     "name": "RMS Manual of Examination Policies",
+     "url": "https://www.fdic.gov/risk-management-manual-examination-policies",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "CFPB",
+     "name": "Consumer Complaint Database narratives",
+     "url": "https://www.consumerfinance.gov/data-research/consumer-complaints/",
+     "license": "Public domain (U.S. Government data); published narratives with company names masked"
+    }
+   ],
+   "languages": [
+    "en"
+   ],
+   "status": "draft",
+   "evaluatedAt": "2026-11-25T13:20:42Z",
+   "scenarios": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07",
+    "S10"
+   ],
+   "boostSubtypes": [
+    "freshness",
+    "authority"
+   ],
+   "sourceHosts": [
+    "www.consumerfinance.gov",
+    "www.fdic.gov",
+    "www.occ.gov"
+   ],
+   "defaults": {
+    "S05": {
+     "facets": [
+      "category,count:10",
+      "tags,count:10",
+      "subcategory,count:10"
+     ]
+    },
+    "S10": {
+     "sourceHash": "1f89b420ae3375c0ba00c53600d3c2e9a4d29bdc89634b121a10b9911cdfaef9"
+    }
+   },
+   "presets": {
+    "S01": [
+     {
+      "id": "FIN-S01-01",
+      "label": "KYC requirements for high risk customers",
+      "hint": "KYC for high-risk customers",
+      "query": "KYC requirements for high risk customers",
+      "relevant": [
+       "FIN-FDIC-RMS-8-1-c066",
+       "FIN-FDIC-RMS-8-1-c067",
+       "FIN-FDIC-RMS-8-1-c068",
+       "FIN-FDIC-RMS-8-1-c069",
+       "FIN-FDIC-RMS-8-1-c070",
+       "FIN-FDIC-RMS-8-1-c071",
+       "FIN-FDIC-RMS-8-1-c096",
+       "FIN-FDIC-RMS-8-1-c097",
+       "FIN-FDIC-RMS-8-1-c098",
+       "FIN-FDIC-RMS-8-1-c099",
+       "FIN-FDIC-RMS-8-1-c100"
+      ],
+      "why": "Regulators never write 'KYC' (the FDIC BSA manual says customer due diligence/CDD), so all-terms plain keyword returns 0 hits; the synonym map expands KYC → customer due diligence/CDD and AFTER's #1–2 are the FDIC 8.1 'Customer Due Diligence (CDD)' and 'CDD Program Guidance' sections."
+     },
+     {
+      "id": "FIN-S01-02",
+      "label": "EDD for private banking accounts",
+      "hint": "EDD for private banking",
+      "query": "EDD for private banking accounts",
+      "relevant": [
+       "FIN-FDIC-RMS-8-1-c096",
+       "FIN-FDIC-RMS-8-1-c097",
+       "FIN-FDIC-RMS-8-1-c098",
+       "FIN-FDIC-RMS-8-1-c099",
+       "FIN-FDIC-RMS-8-1-c100"
+      ],
+      "why": "'EDD' never appears in regulator text (the corpus only uses it for California EDD unemployment cards), so plain keyword returns 0 hits; the synonym edd → enhanced due diligence puts the FDIC 8.1 'Enhanced Due Diligence for Non-U.S. Persons Maintaining Private Banking Accounts' sections at ranks 1–5."
+     },
+     {
+      "id": "FIN-S01-03",
+      "label": "ISDA master agreement netting and collateral",
+      "hint": "ISDA netting and collateral",
+      "query": "ISDA master agreement netting and collateral",
+      "relevant": [
+       "FIN-OCC-CCR-2011-c013",
+       "FIN-OCC-CCR-2011-c029",
+       "FIN-OCC-CCR-2011-c030",
+       "FIN-OCC-CCR-2011-c032",
+       "FIN-OCC-CCR-2011-c035",
+       "FIN-OCC-CCR-2011-c036"
+      ],
+      "why": "All-terms plain keyword needs 'ISDA' in the same chunk as master/agreement/netting/collateral and returns 0 hits; any-term English search ranks the 2011 interagency CCR 'Legal and Operational Risk Management' section (annual review of netting and collateral agreement enforceability, trading without a master agreement) #1."
+     },
+     {
+      "id": "FIN-S01-04",
+      "label": "HQLA haircuts for level 2B assets",
+      "hint": "HQLA level 2B haircuts",
+      "query": "HQLA haircuts for level 2B assets",
+      "relevant": [
+       "FIN-OCC-CH-LIQUIDITY-2023-c086",
+       "FIN-OCC-CH-LIQUIDITY-2023-c087",
+       "FIN-OCC-CH-LIQUIDITY-2023-c088",
+       "FIN-OCC-CH-LIQUIDITY-2023-c089",
+       "FIN-OCC-CH-LIQUIDITY-2023-c090",
+       "FIN-OCC-CH-LIQUIDITY-2023-c091"
+      ],
+      "why": "All-terms plain keyword finds no chunk containing every word and returns 0 hits; Foundry IQ full-text ranks the OCC Liquidity handbook HQLA section stating level 2B assets take a 50% haircut and are capped at 15% of HQLA #1, with two more HQLA sections at #2–3."
+     }
+    ],
+    "S02": [
+     {
+      "id": "FIN-S02-01",
+      "label": "what happens if a bank runs low on its safety cushion",
+      "hint": "Running low on the capital buffer",
+      "query": "what happens if a bank runs low on its safety cushion",
+      "relevant": [
+       "FIN-FDIC-RMS-2-1-l029",
+       "FIN-FDIC-RMS-2-1-l034",
+       "FIN-FDIC-RMS-2-1-l035",
+       "FIN-FDIC-RMS-2-1-t03r02",
+       "FIN-FDIC-RMS-2-1-t03r03",
+       "FIN-FDIC-RMS-2-1-t03r04",
+       "FIN-FDIC-RMS-2-1-t03r05",
+       "FIN-OCC-CH-CAPITAL-2018-l048",
+       "FIN-OCC-CH-CAPITAL-2018-l050",
+       "FIN-OCC-CH-CAPITAL-2018-l056",
+       "FIN-OCC-CH-CAPITAL-2018-t04r01",
+       "FIN-OCC-CH-CAPITAL-2018-t04r02",
+       "FIN-OCC-CH-CAPITAL-2018-t04r03",
+       "FIN-OCC-CH-CAPITAL-2018-t04r04",
+       "FIN-OCC-CH-CAPITAL-2018-t04r05",
+       "FIN-OCC-CH-LIQUIDITY-2023-c072"
+      ],
+      "why": "BM25 matches the words literally and returns the Liquidity 'Fundamentals' chunk, an advanced-approaches parallel-run chunk and a payments safety-and-soundness chunk; vector search maps 'safety cushion' to the FDIC capital conservation buffer sections (#1 and #3), which spell out the payout restrictions."
+     },
+     {
+      "id": "FIN-S02-02",
+      "label": "someone pretending to be from my bank talked me into moving my savings",
+      "hint": "Bank impersonation scam",
+      "query": "someone pretending to be from my bank talked me into moving my savings",
+      "relevant": [
+       "FIN-CFPB-8984934",
+       "FIN-CFPB-9584060",
+       "FIN-CFPB-8723551",
+       "FIN-CFPB-5032563",
+       "FIN-CFPB-5068136",
+       "FIN-CFPB-20078880",
+       "FIN-CFPB-4757861",
+       "FIN-CFPB-8713113",
+       "FIN-CFPB-5205009",
+       "FIN-CFPB-5448564"
+      ],
+      "why": "BM25's top 3 are complaints sharing words like 'bank' and 'savings' (an ACH transfer hold, an account opened without consent, an unemployment-card claim); vector search's top 3 are all fraud-department impersonation scams that pushed consumers to wire their money."
+     },
+     {
+      "id": "FIN-S02-03",
+      "label": "how examiners judge whether a bank could survive a sudden loss of funding",
+      "hint": "Surviving a funding run",
+      "query": "how examiners judge whether a bank could survive a sudden loss of funding",
+      "relevant": [
+       "FIN-OCC-CH-LIQUIDITY-2023-c021",
+       "FIN-OCC-CH-LIQUIDITY-2023-c026",
+       "FIN-OCC-CH-LIQUIDITY-2023-c066",
+       "FIN-OCC-CH-LIQUIDITY-2023-c071",
+       "FIN-OCC-CH-LIQUIDITY-2023-c072",
+       "FIN-OCC-CH-LIQUIDITY-2023-c073",
+       "FIN-OCC-CH-LIQUIDITY-2023-c074",
+       "FIN-OCC-CH-LIQUIDITY-2023-c075",
+       "FIN-OCC-CH-LIQUIDITY-2023-c076",
+       "FIN-OCC-CH-LIQUIDITY-2023-c077",
+       "FIN-OCC-CH-LIQUIDITY-2023-c078",
+       "FIN-OCC-CH-LIQUIDITY-2023-c079",
+       "FIN-OCC-CH-LIQUIDITY-2023-c080",
+       "FIN-OCC-CH-LIQUIDITY-2023-c081",
+       "FIN-OCC-CH-LIQUIDITY-2023-c086",
+       "FIN-OCC-CH-LIQUIDITY-2023-c093",
+       "FIN-OCC-CH-LIQUIDITY-2023-c121",
+       "FIN-OCC-CH-LIQUIDITY-2023-c122",
+       "FIN-OCC-CH-LIQUIDITY-2023-c135",
+       "FIN-OCC-CH-LIQUIDITY-2023-c143",
+       "FIN-OCC-CH-LIQUIDITY-2023-c148",
+       "FIN-OCC-CH-LIQUIDITY-2023-c158",
+       "FIN-OCC-CH-LIQUIDITY-2023-c159",
+       "FIN-OCC-CH-LIQUIDITY-2023-c160",
+       "FIN-OCC-CH-LIQUIDITY-2023-c161",
+       "FIN-OCC-CH-LIQUIDITY-2023-c162",
+       "FIN-OCC-CH-LIQUIDITY-2023-c163"
+      ],
+      "why": "BM25 returns an OFAC examination chunk, payment-system risk text and capital exam procedures (first liquidity hit #4); vector search ranks the OCC Liquidity 'Contingency Funding Plans' section #1."
+     },
+     {
+      "id": "FIN-S02-04",
+      "label": "a small lender that wants one simple ratio instead of all the risk weighting math",
+      "hint": "One simple capital ratio",
+      "query": "a small lender that wants one simple ratio instead of all the risk weighting math",
+      "relevant": [
+       "FIN-FDIC-RMS-2-1-l014",
+       "FIN-FDIC-RMS-2-1-l015",
+       "FIN-FDIC-RMS-2-1-l027",
+       "FIN-FDIC-RMS-2-1-l036",
+       "FIN-FDIC-RMS-2-1-l037",
+       "FIN-FDIC-RMS-2-1-l038",
+       "FIN-FDIC-RMS-2-1-l039",
+       "FIN-FDIC-RMS-2-1-l040",
+       "FIN-FDIC-RMS-2-1-l041",
+       "FIN-FDIC-RMS-2-1-l042",
+       "FIN-FDIC-RMS-2-1-l050"
+      ],
+      "why": "BM25 matches 'risk weighting' literally and returns risk-weight table rows and the FDIC equity risk-weight section; vector search understands 'one simple ratio for a small lender' and ranks the FDIC community bank leverage ratio (CBLR) background #1."
+     }
+    ],
+    "S03": [
+     {
+      "id": "FIN-S03-01",
+      "label": "wire stuck with an intermediary bank",
+      "hint": "Wire stuck at an intermediary bank",
+      "query": "wire stuck with an intermediary bank",
+      "relevant": [
+       "FIN-CFPB-8965762",
+       "FIN-CFPB-20676670",
+       "FIN-CFPB-20037469",
+       "FIN-CFPB-6104953",
+       "FIN-CFPB-20289997",
+       "FIN-CFPB-20194760"
+      ],
+      "why": "Keyword-only ranks six FDIC wire-transfer rule chunks (recordkeeping, wire activities, ML risks) that repeat 'wire' and 'intermediary'; vector-only returns other wire complaints (a phone wire, spoofed payment instructions, an account-takeover wire); hybrid's #1/#2 are the complaints where a wire went through an intermediary bank and never arrived or its return could not be traced."
+     },
+     {
+      "id": "FIN-S03-02",
+      "label": "ACH transfer failure triggered an account suspension",
+      "hint": "ACH failure freezes the account",
+      "query": "ACH transfer failure triggered an account suspension",
+      "relevant": [
+       "FIN-CFPB-5720599",
+       "FIN-CFPB-6019327",
+       "FIN-CFPB-8954156"
+      ],
+      "why": "Keyword-only returns three OCC ACH examination/third-party-sender sections; vector-only's #1 is a complaint about a confirmed wire the bank later rescinded; hybrid fuses both signals and ranks the complaint whose outbound ACH transfer got the account frozen #1."
+     },
+     {
+      "id": "FIN-S03-03",
+      "label": "Fedwire reference shows the wire was returned but the sender's account was never credited",
+      "hint": "Returned wire never credited back",
+      "query": "Fedwire reference shows the wire was returned but the sender's account was never credited",
+      "relevant": [
+       "FIN-CFPB-4960577",
+       "FIN-CFPB-20676670",
+       "FIN-CFPB-5008261",
+       "FIN-CFPB-9175859",
+       "FIN-CFPB-8726358"
+      ],
+      "why": "Keyword-only latches onto 'Fedwire'/'wire' and returns OCC payment-system credit-risk and Fedwire sections plus FDIC wire guidance; vector-only finds one returned-wire complaint among unrelated wire complaints (1 of 3 relevant); hybrid's top 3 are all returned wires the sender never got credited for (brokerage wire returned but not credited, domestic return discrepancy, fintech with no record of the return)."
+     }
+    ],
+    "S04": [
+     {
+      "id": "FIN-S04-01",
+      "label": "What should a bank do when an incoming wire matches a name on the SDN list?",
+      "hint": "Incoming wire hits the SDN list",
+      "query": "What should a bank do when an incoming wire matches a name on the SDN list?",
+      "relevant": [
+       "FIN-FDIC-RMS-8-1-c177",
+       "FIN-FDIC-RMS-8-1-c178",
+       "FIN-FDIC-RMS-8-1-c180"
+      ],
+      "why": "The 10 hybrid candidates are all FDIC 8.1 OFAC/wire chunks, but hybrid leads with 'Issuance of OFAC Lists', the 314(a) 'Reporting of Matches' chunk and exam considerations; the semantic reranker promotes 'OFAC Reporting Requirements' (contact OFAC to verify an SDN match, report blocked or rejected items within 10 days) from #5 to #1."
+     },
+     {
+      "id": "FIN-S04-02",
+      "label": "Why did the bank ask for my passport when I opened an account as a foreign student?",
+      "hint": "Passport for a foreign student account",
+      "query": "Why did the bank ask for my passport when I opened an account as a foreign student?",
+      "relevant": [
+       "FIN-FDIC-RMS-8-1-c038",
+       "FIN-FDIC-RMS-8-1-c029",
+       "FIN-FDIC-RMS-8-1-c205"
+      ],
+      "why": "Hybrid ranks seven account-opening complaints first; the semantic reranker lifts the FDIC 8.1 deposit-records section (nonresident aliens must give a passport number) from #9 to #1 and the CIP identifying-information section (passport number and country of issuance for non-U.S. persons) from #8 to #2."
+     },
+     {
+      "id": "FIN-S04-03",
+      "label": "What risk weight does a bank assign to a state government's general obligation bonds?",
+      "hint": "Risk weight for state GO bonds",
+      "query": "What risk weight does a bank assign to a state government's general obligation bonds?",
+      "relevant": [
+       "FIN-OCC-CH-CAPITAL-2018-t11r08"
+      ],
+      "why": "Hybrid leads with the foreign-sovereign risk-weight row, FDIC equity risk weights and past-due risk weights; the semantic reranker recognizes a state as a U.S. public sector entity and promotes the OCC row '20% for general obligations, 50% for revenue obligations' from #4 to #1."
+     },
+     {
+      "id": "FIN-S04-04",
+      "label": "What risk weight applies to a loan on an apartment building?",
+      "hint": "Risk weight for an apartment loan",
+      "query": "What risk weight applies to a loan on an apartment building?",
+      "relevant": [
+       "FIN-OCC-CH-CAPITAL-2018-t11r14"
+      ],
+      "why": "Hybrid ranks the one-to-four-family and presold-builder rows first; the semantic reranker understands 'apartment building' = multifamily and promotes the OCC 'Loans on multifamily properties' row (50% if criteria met, otherwise 100%) from #5 to #1."
+     }
+    ],
+    "S05": [
+     {
+      "id": "FIN-S05-01",
+      "label": "Zelle scam complaints from Texas",
+      "hint": "Texas Zelle scam complaints",
+      "query": "Zelle scam complaints from Texas",
+      "filter": "docType eq 'consumer-complaint' and regions/any(r: r eq 'TX')",
+      "facets": [
+       "category,count:10",
+       "tags,count:10",
+       "subcategory,count:10"
+      ],
+      "relevant": [
+       "FIN-CFPB-5902910",
+       "FIN-CFPB-5371453",
+       "FIN-CFPB-6128140",
+       "FIN-CFPB-6047836"
+      ],
+      "why": "Keyword-only treats 'Texas' as just another word and its #3 is a California Zelle complaint; the region facet filter (regions = TX) plus hybrid ranking returns three Texas complaints about Zelle scams or theft, with category/tag facet counts."
+     },
+     {
+      "id": "FIN-S05-02",
+      "label": "international transfer blocked for sanctions screening",
+      "hint": "2026 sanctions-blocked transfers",
+      "query": "international transfer blocked for sanctions screening",
+      "filter": "docType eq 'consumer-complaint' and publishedDate ge 2026-01-01T00:00:00Z",
+      "facets": [
+       "category,count:10",
+       "subcategory,count:10",
+       "tags,count:10"
+      ],
+      "relevant": [
+       "FIN-CFPB-20037469",
+       "FIN-CFPB-20120075",
+       "FIN-CFPB-20194760"
+      ],
+      "why": "Keyword-only mixes one 2026 complaint with two FDIC OFAC manual chunks; filtering to 2026 consumer complaints returns exactly the three sanctions-blocked international transfer complaints, with the category facet showing where 2026 complaints cluster."
+     },
+     {
+      "id": "FIN-S05-03",
+      "label": "wire fraud after an impersonation or email compromise scam",
+      "hint": "2026 BEC and impersonation wire fraud",
+      "query": "wire fraud after an impersonation or email compromise scam",
+      "filter": "docType eq 'consumer-complaint' and category eq 'Wires and SWIFT' and publishedDate ge 2026-01-01T00:00:00Z",
+      "facets": [
+       "tags,count:10",
+       "subcategory,count:10",
+       "regions,count:10"
+      ],
+      "relevant": [
+       "FIN-CFPB-20078880",
+       "FIN-CFPB-20289997",
+       "FIN-CFPB-20350060",
+       "FIN-CFPB-20258484"
+      ],
+      "why": "Keyword-only's top 3 are 2024/2021 impersonation and wire-fraud complaints plus one 2026 complaint; filtering to 2026 'Wires and SWIFT' complaints returns three current impersonation/business-email-compromise wire frauds."
+     },
+     {
+      "id": "FIN-S05-04",
+      "label": "crypto exchange locked my account and won't release my funds",
+      "hint": "Crypto platform freezes",
+      "query": "crypto exchange locked my account and won't release my funds",
+      "filter": "docType eq 'consumer-complaint' and category eq 'Virtual currency'",
+      "facets": [
+       "subcategory,count:10",
+       "tags,count:10",
+       "publishedDate,interval:year"
+      ],
+      "relevant": [
+       "FIN-CFPB-5297086",
+       "FIN-CFPB-8945215",
+       "FIN-CFPB-20164056",
+       "FIN-CFPB-4969024"
+      ],
+      "why": "Keyword-only's #2 is a non-crypto account restriction complaint (an adult coded as a minor); filtering to the 'Virtual currency' category returns three crypto-platform complaints (an account locked after an income/statement request, a closed brokerage account holding crypto, a blocked stablecoin withdrawal), with a year facet."
+     }
+    ],
+    "S06": [
+     {
+      "id": "FIN-S06-01",
+      "label": "funds transfer system risks examiners should review for wire transfers",
+      "hint": "Current wire transfer exam guidance",
+      "query": "funds transfer system risks examiners should review for wire transfers",
+      "boostSubtype": "freshness",
+      "relevant": [
+       "FIN-FDIC-RMS-8-1-c107",
+       "FIN-FDIC-RMS-8-1-c108",
+       "FIN-FDIC-RMS-8-1-c109",
+       "FIN-FDIC-RMS-8-1-c110",
+       "FIN-FDIC-RMS-8-1-c111",
+       "FIN-FDIC-RMS-8-1-c112",
+       "FIN-FDIC-RMS-8-1-c113",
+       "FIN-OCC-CH-PAYSYS-2021-c025",
+       "FIN-OCC-CH-PAYSYS-2021-c026",
+       "FIN-OCC-CH-PAYSYS-2021-c027",
+       "FIN-OCC-CH-PAYSYS-2021-c028"
+      ],
+      "why": "Hybrid's top 5 are all chunks of the superseded March 1990 OCC 'Payment Systems and Funds Transfer Activities' booklet; the freshness profile surfaces the FDIC RMS 8.1 (2026) wire-transfer sections (activities, ML risks, due diligence on wire customers) as #1–3."
+     },
+     {
+      "id": "FIN-S06-02",
+      "label": "which banks are required to use the advanced approaches capital rules",
+      "hint": "Who uses the advanced approaches today",
+      "query": "which banks are required to use the advanced approaches capital rules",
+      "boostSubtype": "freshness",
+      "relevant": [
+       "FIN-FDIC-RMS-2-1-t05r01",
+       "FIN-FDIC-RMS-2-1-t05r02",
+       "FIN-FDIC-RMS-2-1-t05r03",
+       "FIN-FDIC-RMS-2-1-l051",
+       "FIN-FDIC-RMS-2-1-l005"
+      ],
+      "why": "Hybrid's top 3 are July 2018 OCC 'Advanced Approaches Banks' chunks that predate the 2019 tailoring rule; the freshness profile ranks the 2026 FDIC tailoring table ('Categories I and II are known as advanced approaches banks') #1 and the Category I (GSIB) row #3."
+     },
+     {
+      "id": "FIN-S06-03",
+      "label": "fraudsters impersonating a bank's fraud department to get customers to send money",
+      "hint": "Bank-impersonation fraud guidance",
+      "query": "fraudsters impersonating a bank's fraud department to get customers to send money",
+      "boostSubtype": "authority",
+      "relevant": [
+       "FIN-OCC-CH-PAYSYS-2021-c095",
+       "FIN-OCC-CH-PAYSYS-2021-c097",
+       "FIN-OCC-CH-PAYSYS-2021-c098",
+       "FIN-OCC-CH-PAYSYS-2021-c040"
+      ],
+      "why": "Hybrid's top 3 are consumer scam complaints (a fraud-department impersonator, a spoofed customer-service line, a fraudster's receiving account); the authority profile ranks the OCC Payment Systems 'Fraud Risk Management' section (social engineering, elder abuse, account takeover) #1."
+     },
+     {
+      "id": "FIN-S06-04",
+      "label": "instant payment sent to the wrong person and it cannot be pulled back",
+      "hint": "Misdirected instant payments",
+      "query": "instant payment sent to the wrong person and it cannot be pulled back",
+      "boostSubtype": "authority",
+      "relevant": [
+       "FIN-OCC-CH-PAYSYS-2021-c039",
+       "FIN-OCC-CH-PAYSYS-2021-c040",
+       "FIN-OCC-CH-PAYSYS-2021-c041",
+       "FIN-OCC-CH-PAYSYS-2021-c087"
+      ],
+      "why": "Hybrid's top 3 are consumer complaints about money sent to the wrong person; the authority profile ranks the OCC Payment Systems 'Real-Time Payments' sections (irrevocable, misdirected payments; payee identification) #1–2."
+     }
+    ],
+    "S07": [
+     {
+      "id": "FIN-S07-01",
+      "label": "How should a bank handle a wire that matches the SDN list, and what have customers experienced when their transfers were blocked for sanctions?",
+      "hint": "SDN hits and blocked transfers",
+      "query": "How should a bank handle a wire that matches the SDN list, and what have customers experienced when their transfers were blocked for sanctions?",
+      "relevant": [
+       "FIN-FDIC-RMS-8-1-c176",
+       "FIN-FDIC-RMS-8-1-c177",
+       "FIN-FDIC-RMS-8-1-c178",
+       "FIN-FDIC-RMS-8-1-c180",
+       "FIN-FDIC-RMS-8-1-c183",
+       "FIN-CFPB-20037469",
+       "FIN-CFPB-20194760",
+       "FIN-CFPB-20120075",
+       "FIN-CFPB-9292402",
+       "FIN-CFPB-8901832",
+       "FIN-CFPB-6100480"
+      ],
+      "relevantGroups": [
+       [
+        "FIN-FDIC-RMS-8-1-c176",
+        "FIN-FDIC-RMS-8-1-c177",
+        "FIN-FDIC-RMS-8-1-c178",
+        "FIN-FDIC-RMS-8-1-c180",
+        "FIN-FDIC-RMS-8-1-c183"
+       ],
+       [
+        "FIN-CFPB-20037469",
+        "FIN-CFPB-20194760",
+        "FIN-CFPB-20120075",
+        "FIN-CFPB-9292402",
+        "FIN-CFPB-8901832",
+        "FIN-CFPB-6100480"
+       ]
+      ],
+      "why": "Hybrid's top 3 are all FDIC OFAC/wire guidance; agentic retrieval splits the question and returns OFAC blocking and program guidance at #1–2 plus a consumer's request for a license to release a sanctions-blocked payment at #3."
+     },
+     {
+      "id": "FIN-S07-02",
+      "label": "What customer due diligence does the FDIC expect for higher-risk customers, and what do consumers say when their accounts are frozen during KYC reviews?",
+      "hint": "CDD rules and KYC account freezes",
+      "query": "What customer due diligence does the FDIC expect for higher-risk customers, and what do consumers say when their accounts are frozen during KYC reviews?",
+      "relevant": [
+       "FIN-FDIC-RMS-8-1-c066",
+       "FIN-FDIC-RMS-8-1-c067",
+       "FIN-FDIC-RMS-8-1-c068",
+       "FIN-FDIC-RMS-8-1-c069",
+       "FIN-FDIC-RMS-8-1-c070",
+       "FIN-FDIC-RMS-8-1-c071",
+       "FIN-CFPB-19903307",
+       "FIN-CFPB-20765340",
+       "FIN-CFPB-8917989",
+       "FIN-CFPB-9262988",
+       "FIN-CFPB-5154460",
+       "FIN-CFPB-8911851"
+      ],
+      "relevantGroups": [
+       [
+        "FIN-FDIC-RMS-8-1-c066",
+        "FIN-FDIC-RMS-8-1-c067",
+        "FIN-FDIC-RMS-8-1-c068",
+        "FIN-FDIC-RMS-8-1-c069",
+        "FIN-FDIC-RMS-8-1-c070",
+        "FIN-FDIC-RMS-8-1-c071"
+       ],
+       [
+        "FIN-CFPB-19903307",
+        "FIN-CFPB-20765340",
+        "FIN-CFPB-8917989",
+        "FIN-CFPB-9262988",
+        "FIN-CFPB-5154460",
+        "FIN-CFPB-8911851"
+       ]
+      ],
+      "why": "Hybrid's top 3 are all FDIC CDD guidance; agentic retrieval interleaves a complaint about a wallet blocked even after KYC documents were submitted (#1), the FDIC higher-risk customer due diligence section (#2) and a complaint about an account limited without explanation whose owner offers KYC documents (#3)."
+     },
+     {
+      "id": "FIN-S07-03",
+      "label": "What does the OCC expect banks to monitor in ACH activity, and what problems do consumers report when ACH payments are returned or blocked?",
+      "hint": "ACH oversight and returned payments",
+      "query": "What does the OCC expect banks to monitor in ACH activity, and what problems do consumers report when ACH payments are returned or blocked?",
+      "relevant": [
+       "FIN-OCC-CH-PAYSYS-2021-c021",
+       "FIN-OCC-CH-PAYSYS-2021-c022",
+       "FIN-OCC-CH-PAYSYS-2021-c023",
+       "FIN-OCC-CH-PAYSYS-2021-c128",
+       "FIN-OCC-CH-PAYSYS-2021-c129",
+       "FIN-OCC-CH-PAYSYS-2021-c130",
+       "FIN-OCC-CH-PAYSYS-2021-c131",
+       "FIN-OCC-CH-PAYSYS-2021-c132",
+       "FIN-OCC-CH-PAYSYS-2021-c133",
+       "FIN-OCC-CH-PAYSYS-2021-c134",
+       "FIN-OCC-CH-PAYSYS-2021-c135",
+       "FIN-OCC-CH-PAYSYS-2021-c136",
+       "FIN-OCC-CH-PAYSYS-2021-c137",
+       "FIN-OCC-CH-PAYSYS-2021-c138",
+       "FIN-OCC-CH-PAYSYS-2021-c139",
+       "FIN-FDIC-RMS-8-1-c116",
+       "FIN-FDIC-RMS-8-1-c117",
+       "FIN-CFPB-9596528",
+       "FIN-CFPB-20328910",
+       "FIN-CFPB-6019327",
+       "FIN-CFPB-5720599"
+      ],
+      "relevantGroups": [
+       [
+        "FIN-OCC-CH-PAYSYS-2021-c021",
+        "FIN-OCC-CH-PAYSYS-2021-c022",
+        "FIN-OCC-CH-PAYSYS-2021-c023",
+        "FIN-OCC-CH-PAYSYS-2021-c128",
+        "FIN-OCC-CH-PAYSYS-2021-c129",
+        "FIN-OCC-CH-PAYSYS-2021-c130",
+        "FIN-OCC-CH-PAYSYS-2021-c131",
+        "FIN-OCC-CH-PAYSYS-2021-c132",
+        "FIN-OCC-CH-PAYSYS-2021-c133",
+        "FIN-OCC-CH-PAYSYS-2021-c134",
+        "FIN-OCC-CH-PAYSYS-2021-c135",
+        "FIN-OCC-CH-PAYSYS-2021-c136",
+        "FIN-OCC-CH-PAYSYS-2021-c137",
+        "FIN-OCC-CH-PAYSYS-2021-c138",
+        "FIN-OCC-CH-PAYSYS-2021-c139",
+        "FIN-FDIC-RMS-8-1-c116",
+        "FIN-FDIC-RMS-8-1-c117"
+       ],
+       [
+        "FIN-CFPB-9596528",
+        "FIN-CFPB-20328910",
+        "FIN-CFPB-6019327",
+        "FIN-CFPB-5720599"
+       ]
+      ],
+      "why": "Hybrid's top 3 are all OCC ACH handbook sections; agentic retrieval covers both parts: the ACH mortgage payment returned despite sufficient funds (#1), OCC ACH examination procedures (#2) and a second consumer ACH complaint (blocked ACH pulls or a failed ACH transfer that froze the account, depending on the run) at #3."
+     },
+     {
+      "id": "FIN-S07-04",
+      "label": "What fraud risk management does the OCC expect for payment systems, and what do consumers report about impostors posing as their bank's fraud department?",
+      "hint": "Fraud controls and impostor scams",
+      "query": "What fraud risk management does the OCC expect for payment systems, and what do consumers report about impostors posing as their bank's fraud department?",
+      "relevant": [
+       "FIN-OCC-CH-PAYSYS-2021-c095",
+       "FIN-OCC-CH-PAYSYS-2021-c097",
+       "FIN-OCC-CH-PAYSYS-2021-c098",
+       "FIN-OCC-CH-PAYSYS-2021-c040",
+       "FIN-CFPB-8984934",
+       "FIN-CFPB-9584060",
+       "FIN-CFPB-8723551",
+       "FIN-CFPB-5032563",
+       "FIN-CFPB-5068136",
+       "FIN-CFPB-20078880",
+       "FIN-CFPB-4757861",
+       "FIN-CFPB-5205009",
+       "FIN-CFPB-5448564"
+      ],
+      "relevantGroups": [
+       [
+        "FIN-OCC-CH-PAYSYS-2021-c095",
+        "FIN-OCC-CH-PAYSYS-2021-c097",
+        "FIN-OCC-CH-PAYSYS-2021-c098",
+        "FIN-OCC-CH-PAYSYS-2021-c040"
+       ],
+       [
+        "FIN-CFPB-8984934",
+        "FIN-CFPB-9584060",
+        "FIN-CFPB-8723551",
+        "FIN-CFPB-5032563",
+        "FIN-CFPB-5068136",
+        "FIN-CFPB-20078880",
+        "FIN-CFPB-4757861",
+        "FIN-CFPB-5205009",
+        "FIN-CFPB-5448564"
+       ]
+      ],
+      "why": "Hybrid's top 3 are all OCC 'Fraud Risk Management' chunks; agentic retrieval returns a fraud-department impersonation complaint (#1), the OCC fraud risk management section (#2) and a second impersonation complaint (#3)."
+     }
+    ],
+    "S10": [
+     {
+      "id": "FIN-S10-01",
+      "label": "PCA thresholds for an adequately capitalized bank",
+      "hint": "PCA: adequately capitalized",
+      "query": "PCA thresholds for an adequately capitalized bank",
+      "sourceHash": "1f89b420ae3375c0ba00c53600d3c2e9a4d29bdc89634b121a10b9911cdfaef9",
+      "relevant": [
+       "FIN-FDIC-RMS-2-1-t04r02"
+      ],
+      "page": 11,
+      "why": "Read gives the right page (p. 11) only as flattened page text; Content Understanding layout returns the exact 'Adequately Capitalized' PCA table row (total RBC ≥8%, tier 1 ≥6%, CET1 ≥4.5%, leverage ≥4%) with its page and row."
+     },
+     {
+      "id": "FIN-S10-02",
+      "label": "which FDIC rule covers brokered deposits and interest rate restrictions",
+      "hint": "PCA-linked brokered deposit rule",
+      "query": "which FDIC rule covers brokered deposits and interest rate restrictions",
+      "sourceHash": "1f89b420ae3375c0ba00c53600d3c2e9a4d29bdc89634b121a10b9911cdfaef9",
+      "relevant": [
+       "FIN-FDIC-RMS-2-1-t07r02"
+      ],
+      "page": 13,
+      "why": "Read returns page 13 as one block of flattened text; Content Understanding layout returns Table 7 row 2 'Brokered Deposits and Interest Rate Restrictions → Sections 337.6 and 337.7 of the FDIC Rules and Regulations' with its page and row."
+     },
+     {
+      "id": "FIN-S10-03",
+      "label": "unsettled transactions risk weight",
+      "hint": "Unsettled transactions risk weight",
+      "query": "unsettled transactions risk weight",
+      "sourceHash": "634ed78136cd36d8eddefd9af2531e95ed7e4463304ca43b4f890d83919682a9",
+      "relevant": [
+       "FIN-OCC-CH-CAPITAL-2018-t13r02"
+      ],
+      "page": 89,
+      "why": "Read returns page 89 as flattened text; layout returns Table 13 row 2 'Unsettled transactions' with its 100%/625%/937.5%/1,250% risk weights and page/row coordinates."
+     },
+     {
+      "id": "FIN-S10-04",
+      "label": "loans to builders secured by one to four family residential property risk weight",
+      "hint": "Presold construction loans",
+      "query": "loans to builders secured by one to four family residential property risk weight",
+      "sourceHash": "634ed78136cd36d8eddefd9af2531e95ed7e4463304ca43b4f890d83919682a9",
+      "relevant": [
+       "FIN-OCC-CH-CAPITAL-2018-t11r13"
+      ],
+      "page": 87,
+      "why": "Read returns page 87 as flattened text; layout returns Table 11 row 13 'Loans to builders secured by one- to four-family properties presold under firm contracts' with its 50%/100% risk weight and page/row."
+     }
+    ]
+   }
+  },
+  {
+   "id": "healthcare",
+   "label": "Healthcare",
+   "short": "Healthcare",
+   "group": "Industries",
+   "blurb": "FDA prescription drug labels (openFDA and DailyMed PDFs) and CDC/NCHS ICD-10-CM official coding guidelines.",
+   "sources": [
+    {
+     "agency": "FDA",
+     "name": "openFDA drug labels",
+     "url": "https://open.fda.gov/apis/drug/label/",
+     "license": "CC0 1.0 Universal public-domain dedication (openFDA Terms of Service)"
+    },
+    {
+     "agency": "NLM",
+     "name": "DailyMed label PDFs",
+     "url": "https://dailymed.nlm.nih.gov/dailymed/",
+     "license": "FDA-submitted labeling; DailyMed rendering courtesy of the National Library of Medicine"
+    },
+    {
+     "agency": "CDC/NCHS",
+     "name": "ICD-10-CM Official Guidelines for Coding and Reporting",
+     "url": "https://www.cdc.gov/nchs/icd/icd-10-cm/",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    }
+   ],
+   "languages": [
+    "en"
+   ],
+   "status": "draft",
+   "evaluatedAt": "2026-11-25T13:25:07Z",
+   "scenarios": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07",
+    "S10"
+   ],
+   "boostSubtypes": [
+    "freshness",
+    "authority"
+   ],
+   "sourceHosts": [
+    "dailymed.nlm.nih.gov",
+    "ftp.cdc.gov"
+   ],
+   "defaults": {
+    "S05": {
+     "facets": [
+      "subcategory,count:5",
+      "tags,count:10"
+     ]
+    },
+    "S10": {
+     "sourceHash": "7c691b6b161a2daa944adc57e5cd3d00efd92cec6cbf2b8511bc73857423c890"
+    }
+   },
+   "presets": {
+    "S01": [
+     {
+      "id": "HC-S01-01",
+      "label": "AFib DOAC dose when CrCl 15 to 50",
+      "hint": "AFib DOAC renal dose reduction",
+      "query": "AFib DOAC dose when CrCl 15 to 50",
+      "relevant": [
+       "HC-SPL-RIVAROXABAN-10DB92F9-V65-c003",
+       "HC-SPL-RIVAROXABAN-38B11F5D-V1-c003",
+       "HC-SPL-EDOXABAN-E77D3400-V28-l004",
+       "HC-SPL-EDOXABAN-E77D3400-V28-l008",
+       "HC-SPL-EDOXABAN-E77D3400-V28-l018",
+       "HC-SPL-EDOXABAN-E77D3400-V28-l019",
+       "HC-SPL-EDOXABAN-E77D3400-V28-l075",
+       "HC-SPL-EDOXABAN-E77D3400-V28-l117",
+       "HC-SPL-EDOXABAN-E77D3400-V28-l143",
+       "HC-SPL-EDOXABAN-E77D3400-V28-l149",
+       "HC-SPL-EDOXABAN-E77D3400-V28-l187",
+       "HC-SPL-EDOXABAN-E77D3400-V28-l198"
+      ],
+      "why": "Plain keyword requires every literal term (no stemming, no synonyms) and returns 0 hits; AFTER's synonym map expands AFib to atrial fibrillation and CrCl to creatinine clearance, so its #1 is SAVAYSA 2.1 Nonvalvular Atrial Fibrillation ('Reduce SAVAYSA dose to 30 mg once daily in patients with CrCL 15 to 50 mL/min')."
+     },
+     {
+      "id": "HC-S01-02",
+      "label": "latent TB testing before starting a JAK inhibitor",
+      "hint": "Latent TB screening before JAK inhibitors",
+      "query": "latent TB testing before starting a JAK inhibitor",
+      "relevant": [
+       "HC-SPL-TOFACITINIB-CF74BA2F-V56-c001",
+       "HC-SPL-TOFACITINIB-CF74BA2F-V56-c002",
+       "HC-SPL-TOFACITINIB-CF74BA2F-V56-c003",
+       "HC-SPL-TOFACITINIB-68E3D6B2-V19-c001",
+       "HC-SPL-TOFACITINIB-68E3D6B2-V19-c002",
+       "HC-SPL-TOFACITINIB-68E3D6B2-V19-c003",
+       "HC-SPL-TOFACITINIB-0FD4F3CC-V11-c001",
+       "HC-SPL-TOFACITINIB-0FD4F3CC-V11-c002",
+       "HC-SPL-TOFACITINIB-0FD4F3CC-V11-c003",
+       "HC-SPL-BARICITINIB-866E9F35-V32-c001",
+       "HC-SPL-BARICITINIB-866E9F35-V32-c002",
+       "HC-SPL-UPADACITINIB-2966AEC7-V101-c001",
+       "HC-SPL-UPADACITINIB-2966AEC7-V101-c002",
+       "HC-SPL-ABROCITINIB-16C12A56-V7-c001",
+       "HC-SPL-ABROCITINIB-16C12A56-V7-c002",
+       "HC-SPL-ABROCITINIB-3F6D6FCD-V9-c001",
+       "HC-SPL-ABROCITINIB-3F6D6FCD-V9-c002",
+       "HC-SPL-RITLECITINIB-1882F799-V3-c001",
+       "HC-SPL-RITLECITINIB-1882F799-V3-c002",
+       "HC-SPL-RITLECITINIB-6B2F9446-V6-c001",
+       "HC-SPL-RITLECITINIB-6B2F9446-V6-c002",
+       "HC-SPL-DEUCRAVACITINIB-FF4D7258-V3-c001"
+      ],
+      "why": "Plain keyword requires every literal word and returns 0 hits; AFTER's stemming (testing/test) and TB/JAK synonyms put the CIBINQO and LITFULO boxed warnings ('Test for latent TB before and during therapy') in its top 3."
+     },
+     {
+      "id": "HC-S01-03",
+      "label": "SGLT2 DKA risk in T2DM",
+      "hint": "SGLT2 inhibitors and DKA in T2DM",
+      "query": "SGLT2 DKA risk in T2DM",
+      "relevant": [
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l002",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l004",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l009",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l012",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l023",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l024",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l030",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l067",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l083",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l383",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l391",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l393",
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l395",
+       "HC-SPL-EMPAGLIFLOZIN-1782B947-V1-c001",
+       "HC-SPL-EMPAGLIFLOZIN-1782B947-V1-c002",
+       "HC-SPL-EMPAGLIFLOZIN-1782B947-V1-c003",
+       "HC-SPL-DAPAGLIFLOZIN-72AD22AE-V49-c003",
+       "HC-SPL-DAPAGLIFLOZIN-5DC0E9DF-V2-c003",
+       "HC-SPL-DAPAGLIFLOZIN-BD9766C5-V2-c003",
+       "HC-SPL-CANAGLIFLOZIN-B9057D3B-V32-c003",
+       "HC-SPL-CANAGLIFLOZIN-B9057D3B-V32-c004",
+       "HC-SPL-ERTUGLIFLOZIN-E6F3E718-V17-c002",
+       "HC-SPL-ERTUGLIFLOZIN-E6F3E718-V17-c003"
+      ],
+      "why": "No label chunk contains 'DKA', so the all-terms keyword query returns 0 hits; AFTER expands DKA, T2DM and SGLT2 to the spelled-out terms and ranks JARDIANCE 5.1 Diabetic Ketoacidosis #1."
+     },
+     {
+      "id": "HC-S01-04",
+      "label": "irAE management: systemic corticosteroid dose and taper",
+      "hint": "irAE steroid management",
+      "query": "irAE management: systemic corticosteroid dose and taper",
+      "relevant": [
+       "HC-SPL-NIVOLUMAB-B22C9D83-V3-c002",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l023",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l052",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l053",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l054",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l055",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l057",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l058",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l060",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l061",
+       "HC-SPL-DOSTARLIMAB-095EAB9F-V15-c003",
+       "HC-SPL-AVELUMAB-5CD725A1-V25-c003",
+       "HC-SPL-TORIPALIMAB-82E7921A-V9-c002",
+       "HC-SPL-RETIFANLIMAB-109648D0-V18-c002",
+       "HC-SPL-RETIFANLIMAB-109648D0-V18-c003"
+      ],
+      "why": "No label uses 'irAE', so plain keyword returns 0 hits; the synonym map maps irAE to immune-mediated adverse reactions and AFTER's #1 is LIBTAYO 5.1 ('1 to 2 mg/kg/day prednisone ... taper over at least 1 month')."
+     }
+    ],
+    "S02": [
+     {
+      "id": "HC-S02-01",
+      "label": "my cholesterol pill makes my muscles ache and my urine looks dark like cola",
+      "hint": "Statin muscle pain and dark urine",
+      "query": "my cholesterol pill makes my muscles ache and my urine looks dark like cola",
+      "relevant": [
+       "HC-SPL-ATORVASTATIN-A60CC18B-V8-c003",
+       "HC-SPL-ATORVASTATIN-A60CC18B-V8-c004",
+       "HC-SPL-ATORVASTATIN-4E06B20D-V14-c003",
+       "HC-SPL-ATORVASTATIN-4E06B20D-V14-c004",
+       "HC-SPL-ATORVASTATIN-F2D8B5E9-V20-c003",
+       "HC-SPL-ATORVASTATIN-F2D8B5E9-V20-c004",
+       "HC-SPL-ATORVASTATIN-536B5E0D-V3-c003",
+       "HC-SPL-ATORVASTATIN-536B5E0D-V3-c004",
+       "HC-SPL-ROSUVASTATIN-02797697-V7-c003",
+       "HC-SPL-ROSUVASTATIN-02797697-V7-c004",
+       "HC-SPL-ROSUVASTATIN-568A782B-V2-c003",
+       "HC-SPL-ROSUVASTATIN-568A782B-V2-c004",
+       "HC-SPL-ROSUVASTATIN-9333C674-V2-c004",
+       "HC-SPL-SIMVASTATIN-8F55D5DE-V11-c004",
+       "HC-SPL-SIMVASTATIN-8F55D5DE-V11-c005",
+       "HC-SPL-SIMVASTATIN-4724DBB4-V29-c003",
+       "HC-SPL-SIMVASTATIN-2B4255A7-V6-c003",
+       "HC-SPL-PRAVASTATIN-897AD8B7-V14-c003",
+       "HC-SPL-PRAVASTATIN-897AD8B7-V14-c004",
+       "HC-SPL-PRAVASTATIN-CE15AD07-V6-c003",
+       "HC-SPL-PRAVASTATIN-CE15AD07-V6-c004",
+       "HC-SPL-PRAVASTATIN-F87016FB-V2-c003",
+       "HC-SPL-PRAVASTATIN-F87016FB-V2-c004"
+      ],
+      "why": "BM25 latches onto 'urine'/'dark' in JARDIANCE and LIBTAYO patient-guide text (first statin hit at #7); the vector query ranks the ZOCOR, LIPITOR and pravastatin 'Myopathy and Rhabdomyolysis' warnings #1-#3."
+     },
+     {
+      "id": "HC-S02-02",
+      "label": "weekly diabetes injection and severe belly pain that spreads to the back",
+      "hint": "Weekly GLP-1 and pancreatitis symptoms",
+      "query": "weekly diabetes injection and severe belly pain that spreads to the back",
+      "relevant": [
+       "HC-SPL-SEMAGLUTIDE-EE06186F-V19-c004",
+       "HC-SPL-SEMAGLUTIDE-ADEC4FD2-V20-c003",
+       "HC-SPL-SEMAGLUTIDE-E6DA837C-V6-c001",
+       "HC-SPL-SEMAGLUTIDE-E6DA837C-V6-c003",
+       "HC-SPL-TIRZEPATIDE-487CD7E7-V40-c004",
+       "HC-SPL-TIRZEPATIDE-D2D7DA5D-V40-c004",
+       "HC-SPL-DULAGLUTIDE-463050BD-V62-c003",
+       "HC-SPL-EXENATIDE-2D18CFC4-V39-c003",
+       "HC-SPL-EXENATIDE-71FE88BE-V34-c003"
+      ],
+      "why": "BM25 matches 'weekly'/'injection' to MOUNJARO dosing and LIBTAYO patient text and finds no pancreatitis warning in its top 10; the vector query's #1 is the BYDUREON BCISE 'Acute Pancreatitis' warning."
+     },
+     {
+      "id": "HC-S02-03",
+      "label": "patient stopped taking his blood pressure pills because he could not afford them, how do I code it",
+      "hint": "Coding underdosing for cost reasons",
+      "query": "patient stopped taking his blood pressure pills because he could not afford them, how do I code it",
+      "relevant": [
+       "HC-ICD10CM-FY2027-I-C-19-c006",
+       "HC-ICD10CM-FY2027-I-C-21-c014"
+      ],
+      "why": "BM25 returns JARDIANCE and SAVAYSA medication-guide passages about taking pills; the vector query's #1 is the FY 2027 ICD-10-CM I.C.19 underdosing rule (code the underdosing plus noncompliance Z91.12-)."
+     },
+     {
+      "id": "HC-S02-04",
+      "label": "my immunotherapy made my thyroid stop working, do I have to stop treatment",
+      "hint": "Checkpoint inhibitor thyroid toxicity",
+      "query": "my immunotherapy made my thyroid stop working, do I have to stop treatment",
+      "relevant": [
+       "HC-SPL-PEMBROLIZUMAB-097D166F-V19-c004",
+       "HC-SPL-PEMBROLIZUMAB-9333C79B-V229-c003",
+       "HC-SPL-NIVOLUMAB-7F8C38FA-V9-c003",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l058",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l059",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-t06r06",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-t08r34",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l166",
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l352",
+       "HC-SPL-IPILIMUMAB-2265EF30-V47-c004",
+       "HC-SPL-AVELUMAB-5CD725A1-V25-c004",
+       "HC-SPL-TORIPALIMAB-82E7921A-V9-c004",
+       "HC-SPL-RETIFANLIMAB-109648D0-V18-c004"
+      ],
+      "why": "BM25 returns JARDIANCE/SAVAYSA patient text and an ICD-10-CM chemotherapy-encounter rule; the vector query ranks LIBTAYO 'Thyroid Disorders' (hormone replacement; withhold or discontinue by severity) #1 and #2."
+     }
+    ],
+    "S03": [
+     {
+      "id": "HC-S03-01",
+      "label": "Claim line NDC 0003-0894: rectal bleeding on the blood thinner taken as prescribed - ICD-10-CM adverse effect coding?",
+      "hint": "DOAC GI bleed: adverse-effect coding rule",
+      "query": "Claim line NDC 0003-0894: rectal bleeding on the blood thinner taken as prescribed - ICD-10-CM adverse effect coding?",
+      "filter": "labelStatus eq 'current'",
+      "relevant": [
+       "HC-ICD10CM-FY2027-I-C-19-c006",
+       "HC-ICD10CM-FY2027-I-C-19-c004"
+      ],
+      "why": "With the current-documents filter on all three arms, keyword-only returns the ICD-10-CM Introduction, I.A conventions and Appendix I (adverse-effect rule only at #8), vector-only ranks the I.C.19 toxic-effects rule first (adverse-effect rule #2), and hybrid ranks the FY 2027 I.C.19 adverse-effect rule #1."
+     },
+     {
+      "id": "HC-S03-02",
+      "label": "NDC 0006-3026 (Keytruda): ICD-10-CM rule when a patient admitted for the infusion develops dehydration",
+      "hint": "Immunotherapy infusion admission with dehydration",
+      "query": "NDC 0006-3026 (Keytruda): ICD-10-CM rule when a patient admitted for the infusion develops dehydration",
+      "filter": "labelStatus eq 'current'",
+      "relevant": [
+       "HC-ICD10CM-FY2027-I-C-2-c003"
+      ],
+      "why": "Keyword-only matches 'ICD-10-CM'/'rule' to the Introduction, Appendix I and Section IV (the answer is #5); vector-only returns I.C.19 adverse effects, I.C.21 and I.C.2 anemia but not the answer; hybrid's #1 is I.C.2 'admitted for ... immunotherapy and develops complications such as ... dehydration: Z51.12 first'."
+     },
+     {
+      "id": "HC-S03-03",
+      "label": "NDC 0003-3772 (Opdivo): ICD-10-CM rule when the admission is only to treat anemia caused by the immunotherapy",
+      "hint": "Anemia from immunotherapy: sequencing",
+      "query": "NDC 0003-3772 (Opdivo): ICD-10-CM rule when the admission is only to treat anemia caused by the immunotherapy",
+      "filter": "labelStatus eq 'current'",
+      "relevant": [
+       "HC-ICD10CM-FY2027-I-C-2-c002"
+      ],
+      "why": "Keyword-only's top 3 are Appendix I chunks (answer at #4); vector-only's top 2 are OPDIVO label chunks (answer at #3); hybrid ranks I.C.2 'Anemia associated with chemotherapy, immunotherapy' (anemia first, then neoplasm and T45.1X5-) #1."
+     },
+     {
+      "id": "HC-S03-04",
+      "label": "NDC 44087-3535 (Bavencio): ICD-10-CM rule for colitis as an adverse effect of a correctly administered drug",
+      "hint": "Checkpoint-inhibitor colitis: adverse-effect coding",
+      "query": "NDC 44087-3535 (Bavencio): ICD-10-CM rule for colitis as an adverse effect of a correctly administered drug",
+      "filter": "labelStatus eq 'current'",
+      "relevant": [
+       "HC-ICD10CM-FY2027-I-C-19-c006",
+       "HC-ICD10CM-FY2027-I-C-19-c004"
+      ],
+      "why": "Keyword-only returns I.A conventions, a BAVENCIO label chunk and I.C.19 toxic effects (answer at #5); vector-only returns LIBTAYO colitis rows and an IDACIO chunk (answer at #4); hybrid ranks the FY 2027 I.C.19 adverse-effect rule #1."
+     }
+    ],
+    "S04": [
+     {
+      "id": "HC-S04-01",
+      "label": "In FINEARTS-HF, what share of patients had an eGFR below 60 at baseline?",
+      "hint": "FINEARTS-HF baseline kidney function",
+      "query": "In FINEARTS-HF, what share of patients had an eGFR below 60 at baseline?",
+      "relevant": [
+       "HC-SPL-FINERENONE-FC726765-V15-l083"
+      ],
+      "why": "Hybrid's top 3 are FINEARTS-HF endpoint table rows; semantic reranking of the same candidates lifts the Kerendia 14.3 population paragraph ('48% of patients having an eGFR <60') from #5 to #1."
+     },
+     {
+      "id": "HC-S04-02",
+      "label": "What share of EMPA-KIDNEY participants had type 2 diabetes?",
+      "hint": "EMPA-KIDNEY population with T2DM",
+      "query": "What share of EMPA-KIDNEY participants had type 2 diabetes?",
+      "relevant": [
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-l334"
+      ],
+      "why": "Hybrid's top 4 are EMPA-KIDNEY subgroup-figure rows (diabetic vs non-diabetic event counts); the reranker promotes the 14.5 population paragraph ('Approximately 44% of the patients had type 2 diabetes mellitus') from #5 to #1."
+     },
+     {
+      "id": "HC-S04-03",
+      "label": "In the first-line NSCLC trial of Libtayo monotherapy, what was the median duration of exposure?",
+      "hint": "Libtayo NSCLC monotherapy exposure",
+      "query": "In the first-line NSCLC trial of Libtayo monotherapy, what was the median duration of exposure?",
+      "relevant": [
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-l221"
+      ],
+      "why": "Hybrid leads with NSCLC design and efficacy chunks; the reranker promotes the Study 1624 safety paragraph ('The median duration of exposure was 27.3 weeks') from #6 to #1."
+     },
+     {
+      "id": "HC-S04-04",
+      "label": "In ENGAGE AF-TIMI 48, what share of patients had a CHADS2 score of 3 or higher?",
+      "hint": "ENGAGE AF-TIMI 48 stroke-risk mix",
+      "query": "In ENGAGE AF-TIMI 48, what share of patients had a CHADS2 score of 3 or higher?",
+      "relevant": [
+       "HC-SPL-EDOXABAN-E77D3400-V28-l150",
+       "HC-SPL-EDOXABAN-E77D3400-V28-l060"
+      ],
+      "why": "Hybrid's top results are ENGAGE AF-TIMI 48 outcome table rows (stroke, GI bleeding); the reranker lifts the Figure 14.2 subgroup text ('CHADS2 score 2 (47%) ... >=3 (53%)') from #10 to #1."
+     }
+    ],
+    "S05": [
+     {
+      "id": "HC-S05-01",
+      "label": "how to code underdosing of a medication",
+      "hint": "Current ICD-10-CM underdosing guidance",
+      "query": "how to code underdosing of a medication",
+      "filter": "docType eq 'coding-guideline' and labelStatus eq 'current'",
+      "facets": [
+       "subcategory,count:5",
+       "tags,count:10"
+      ],
+      "relevant": [
+       "HC-ICD10CM-FY2027-I-A-c001",
+       "HC-ICD10CM-FY2027-I-C-4-c002",
+       "HC-ICD10CM-FY2027-I-C-15-c005",
+       "HC-ICD10CM-FY2027-I-C-19-c004",
+       "HC-ICD10CM-FY2027-I-C-19-c005",
+       "HC-ICD10CM-FY2027-I-C-19-c006"
+      ],
+      "why": "Keyword-only puts the superseded FY 2026 I.C.19 section and an unrelated Section IV rule in its top 3; filtering to current coding guidelines returns FY 2027 I.C.19 underdosing, I.C.4 insulin underdose and I.C.19 multiple-drug rules."
+     },
+     {
+      "id": "HC-S05-02",
+      "label": "generic apixaban tablets for DVT prophylaxis after hip or knee replacement surgery",
+      "hint": "Generic (ANDA) apixaban for hip/knee VTE prophylaxis",
+      "query": "generic apixaban tablets for DVT prophylaxis after hip or knee replacement surgery",
+      "filter": "genericName eq 'apixaban' and subcategory eq 'ANDA generic'",
+      "facets": [
+       "organizations,count:10",
+       "subcategory,count:5"
+      ],
+      "relevant": [
+       "HC-SPL-APIXABAN-19A60552-V16-c001",
+       "HC-SPL-APIXABAN-19A60552-V16-c002",
+       "HC-SPL-APIXABAN-095A08AC-V7-c001",
+       "HC-SPL-APIXABAN-095A08AC-V7-c002"
+      ],
+      "why": "Keyword-only ranks the A-S Medication ELIQUIS repackager label (NDA, not a generic) #2; filtering genericName=apixaban and ANDA generic leaves only Amneal and Indoco generic chunks with the hip/knee DVT prophylaxis indication and 2.5 mg dose."
+     },
+     {
+      "id": "HC-S05-03",
+      "label": "Humira biosimilars: recommended dosage for Crohn's disease",
+      "hint": "Humira biosimilars: Crohn's dosing",
+      "query": "Humira biosimilars: recommended dosage for Crohn's disease",
+      "filter": "subcategory eq 'BLA biosimilar' and search.in(genericName, 'adalimumab-adaz,adalimumab-aacf,adalimumab-adbm,adalimumab-afzb,adalimumab-aqvh,adalimumab-atto,adalimumab-ryvk', ',')",
+      "facets": [
+       "brandName,count:10",
+       "organizations,count:10"
+      ],
+      "relevant": [
+       "HC-SPL-ADALIMUMAB-12F609C9-V28-c001",
+       "HC-SPL-ADALIMUMAB-12F609C9-V28-c002",
+       "HC-SPL-ADALIMUMAB-12F609C9-V28-c004",
+       "HC-SPL-ADALIMUMAB-B7178E36-V18-c001",
+       "HC-SPL-ADALIMUMAB-B7178E36-V18-c002",
+       "HC-SPL-ADALIMUMAB-B7178E36-V18-c004",
+       "HC-SPL-ADALIMUMAB-4CAB600D-V16-c001",
+       "HC-SPL-ADALIMUMAB-4CAB600D-V16-c002",
+       "HC-SPL-ADALIMUMAB-4CAB600D-V16-c004",
+       "HC-SPL-ADALIMUMAB-115EA79B-V18-c001",
+       "HC-SPL-ADALIMUMAB-115EA79B-V18-c002",
+       "HC-SPL-ADALIMUMAB-115EA79B-V18-c004",
+       "HC-SPL-ADALIMUMAB-5EF1C7CF-V8-c001",
+       "HC-SPL-ADALIMUMAB-5EF1C7CF-V8-c002",
+       "HC-SPL-ADALIMUMAB-5EF1C7CF-V8-c004",
+       "HC-SPL-ADALIMUMAB-3468792F-V15-c001",
+       "HC-SPL-ADALIMUMAB-3468792F-V15-c002",
+       "HC-SPL-ADALIMUMAB-3468792F-V15-c004",
+       "HC-SPL-ADALIMUMAB-3E303A4A-V7-c001",
+       "HC-SPL-ADALIMUMAB-3E303A4A-V7-c002",
+       "HC-SPL-ADALIMUMAB-3E303A4A-V7-c004",
+       "HC-SPL-ADALIMUMAB-08DBAFFE-V1-c001",
+       "HC-SPL-ADALIMUMAB-08DBAFFE-V1-c002",
+       "HC-SPL-ADALIMUMAB-08DBAFFE-V1-c004"
+      ],
+      "why": "Keyword-only's top 5 are all Humira (innovator) chunks; filtering to BLA biosimilar adalimumab returns Sandoz, YUSIMRY and IDACIO dosing sections (Crohn's: 160 mg Day 1, 80 mg Day 15, then 40 mg every other week), with brand/labeler facets."
+     },
+     {
+      "id": "HC-S05-04",
+      "label": "subcutaneous checkpoint inhibitor formulations with hyaluronidase: strengths and recommended dosage",
+      "hint": "Subcutaneous checkpoint inhibitor formulations",
+      "query": "subcutaneous checkpoint inhibitor formulations with hyaluronidase: strengths and recommended dosage",
+      "filter": "category eq 'Oncology immunotherapy' and routes/any(r: r eq 'SUBCUTANEOUS')",
+      "facets": [
+       "brandName,count:10",
+       "routes,count:5"
+      ],
+      "relevant": [
+       "HC-SPL-PEMBROLIZUMAB-097D166F-V19-c002",
+       "HC-SPL-PEMBROLIZUMAB-097D166F-V19-c003",
+       "HC-SPL-NIVOLUMAB-7F8C38FA-V9-c002",
+       "HC-SPL-NIVOLUMAB-7F8C38FA-V9-c003",
+       "HC-SPL-ATEZOLIZUMAB-A617B089-V9-c002",
+       "HC-SPL-ATEZOLIZUMAB-A617B089-V9-c003"
+      ],
+      "why": "Keyword-only ranks HERCEPTIN HYLECTA (trastuzumab, not a checkpoint inhibitor) #2; filtering Oncology immunotherapy + SUBCUTANEOUS route returns OPDIVO QVANTIG and TECENTRIQ HYBREZA dosing/strength sections, with facets KEYTRUDA QLEX, OPDIVO QVANTIG, Tecentriq Hybreza."
+     }
+    ],
+    "S06": [
+     {
+      "id": "HC-S06-01",
+      "label": "extended-release opioid indication: pain severe enough to require daily, around-the-clock, long-term opioid treatment",
+      "hint": "Current ER opioid indication wording",
+      "query": "extended-release opioid indication: pain severe enough to require daily, around-the-clock, long-term opioid treatment",
+      "boostSubtype": "freshness",
+      "relevant": [
+       "HC-SPL-OXYCODONE-BFDFE235-V44-c001",
+       "HC-SPL-HYDROCODONE-B7D23AC2-V17-c001",
+       "HC-SPL-HYDROCODONE-A7B8EA07-V10-c001",
+       "HC-SPL-MORPHINE-C354B3BF-V18-c001",
+       "HC-SPL-MORPHINE-533034FD-V39-c001",
+       "HC-SPL-FENTANYL-73897C38-V2-c001",
+       "HC-SPL-FENTANYL-2A2238E9-V27-c001",
+       "HC-SPL-BUPRENORPHINE-794AA355-V32-c001",
+       "HC-SPL-BUPRENORPHINE-BC2B7A3D-V18-c001",
+       "HC-SPL-METHADONE-1A536622-V3-c001",
+       "HC-SPL-TAPENTADOL-C3D04D70-V8-c001",
+       "HC-SPL-TRAMADOL-A65B4D05-V14-c001"
+      ],
+      "why": "Hybrid's top 3 still use the pre-2023 ER opioid wording (DURAGESIC 2022, superseded OxyContin 2016, DOLOPHINE 2022); the freshness profile ranks the 2026 morphine sulfate ER label ('severe and persistent pain that requires an extended treatment period') #1."
+     },
+     {
+      "id": "HC-S06-02",
+      "label": "discuss the availability of naloxone with the patient and caregiver and consider prescribing naloxone when starting an opioid",
+      "hint": "Naloxone counseling: current opioid labeling",
+      "query": "discuss the availability of naloxone with the patient and caregiver and consider prescribing naloxone when starting an opioid",
+      "boostSubtype": "freshness",
+      "relevant": [
+       "HC-SPL-OXYCODONE-BFDFE235-V44-c002",
+       "HC-SPL-OXYCODONE-5A8157D3-V30-c002",
+       "HC-SPL-OXYCODONE-72398542-V11-c002",
+       "HC-SPL-OXYCODONE-CFF0C64A-V21-c002",
+       "HC-SPL-OXYCODONE-5451BCAA-V24-c002",
+       "HC-SPL-OXYCODONE-73B063B5-V14-c002",
+       "HC-SPL-HYDROCODONE-B7D23AC2-V17-c002",
+       "HC-SPL-HYDROCODONE-A7B8EA07-V10-c002",
+       "HC-SPL-MORPHINE-C354B3BF-V18-c002",
+       "HC-SPL-MORPHINE-533034FD-V39-c002",
+       "HC-SPL-FENTANYL-73897C38-V2-c002",
+       "HC-SPL-FENTANYL-2A2238E9-V27-c002",
+       "HC-SPL-BUPRENORPHINE-794AA355-V32-c002",
+       "HC-SPL-BUPRENORPHINE-BC2B7A3D-V18-c002",
+       "HC-SPL-METHADONE-808A9D0B-V41-c002",
+       "HC-SPL-METHADONE-544483E6-V36-c002",
+       "HC-SPL-TAPENTADOL-80938C30-V7-c002",
+       "HC-SPL-TAPENTADOL-C3D04D70-V8-c002",
+       "HC-SPL-TRAMADOL-A65B4D05-V14-c002",
+       "HC-SPL-TRAMADOL-B5852B90-V5-c002",
+       "HC-SPL-HYDROMORPHONE-D6B40E39-V12-c002",
+       "HC-SPL-HYDROMORPHONE-4C5C1CC8-V29-c002"
+      ],
+      "why": "Hybrid's top 3 are 2022-2023 labels with the older 'Discuss the availability of naloxone' text (DURAGESIC x2, FENTORA); freshness puts 2026 METHADOSE, oxycodone and METHADOSE labels ('opioid overdose reversal agent (e.g., naloxone, nalmefene)') #1-#3."
+     },
+     {
+      "id": "HC-S06-03",
+      "label": "trastuzumab cardiomyopathy left ventricular dysfunction monitoring",
+      "hint": "Trastuzumab cardiomyopathy: reference product",
+      "query": "trastuzumab cardiomyopathy left ventricular dysfunction monitoring",
+      "boostSubtype": "authority",
+      "relevant": [
+       "HC-SPL-TRASTUZUMAB-EBF30894-V12-c001",
+       "HC-SPL-TRASTUZUMAB-EBF30894-V12-c004",
+       "HC-SPL-TRASTUZUMAB-492DBDB2-V27-c001",
+       "HC-SPL-TRASTUZUMAB-492DBDB2-V27-c003",
+       "HC-SPL-TRASTUZUMAB-492DBDB2-V27-c004"
+      ],
+      "why": "Hybrid's top 4 are biosimilar copies (Ontruzant, HERZUMA, Trazimera, HERCESSI); the authority profile ranks the reference-product HERCEPTIN HYLECTA and HERCEPTIN cardiomyopathy/LVEF sections #1-#4."
+     },
+     {
+      "id": "HC-S06-04",
+      "label": "infliximab hepatosplenic T-cell lymphoma warning",
+      "hint": "Infliximab HSTCL warning: reference product",
+      "query": "infliximab hepatosplenic T-cell lymphoma warning",
+      "boostSubtype": "authority",
+      "relevant": [
+       "HC-SPL-INFLIXIMAB-A0A046C1-V37-c001"
+      ],
+      "why": "Hybrid's top 3 are ZYMFENTRA, Renflexis and INFLECTRA chunks; the authority profile ranks the innovator REMICADE boxed warning (hepatosplenic T-cell lymphoma) #1, up from #4."
+     }
+    ],
+    "S07": [
+     {
+      "id": "HC-S07-01",
+      "label": "Keytruda patient admitted only for anemia from immunotherapy: how is it sequenced, and when should Keytruda be withheld for immune-mediated adverse reactions?",
+      "hint": "Immunotherapy anemia: coding + label",
+      "query": "Keytruda patient admitted only for anemia from immunotherapy: how is it sequenced, and when should Keytruda be withheld for immune-mediated adverse reactions?",
+      "relevant": [
+       "HC-ICD10CM-FY2027-I-C-2-c002",
+       "HC-SPL-PEMBROLIZUMAB-097D166F-V19-c004",
+       "HC-SPL-PEMBROLIZUMAB-9333C79B-V229-c003"
+      ],
+      "relevantGroups": [
+       [
+        "HC-ICD10CM-FY2027-I-C-2-c002"
+       ],
+       [
+        "HC-SPL-PEMBROLIZUMAB-097D166F-V19-c004",
+        "HC-SPL-PEMBROLIZUMAB-9333C79B-V229-c003"
+       ]
+      ],
+      "why": "Hybrid's top 3 are only pembrolizumab label chunks (one superseded); agentic retrieval keeps the KEYTRUDA/KEYTRUDA QLEX 'withhold or permanently discontinue' guidance and adds ICD-10-CM FY 2027 I.C.2 (anemia from immunotherapy sequenced first, then T45.1X5-) at #3."
+     },
+     {
+      "id": "HC-S07-02",
+      "label": "For a patient admitted for pain control of bone metastases, can the pain code be principal, and what does the OxyContin label say about using it for severe persistent pain?",
+      "hint": "Cancer pain admission: coding + ER opioid label",
+      "query": "For a patient admitted for pain control of bone metastases, can the pain code be principal, and what does the OxyContin label say about using it for severe persistent pain?",
+      "relevant": [
+       "HC-ICD10CM-FY2027-I-C-6-c003",
+       "HC-SPL-OXYCODONE-BFDFE235-V44-c001"
+      ],
+      "relevantGroups": [
+       [
+        "HC-ICD10CM-FY2027-I-C-6-c003"
+       ],
+       [
+        "HC-SPL-OXYCODONE-BFDFE235-V44-c001"
+       ]
+      ],
+      "why": "Hybrid's top 3 are OxyContin label chunks (2026 and superseded 2016); agentic adds ICD-10-CM I.C.6 (G89.3 may be principal when the admission is for pain control) at #2 next to the current OxyContin indication at #3."
+     },
+     {
+      "id": "HC-S07-03",
+      "label": "Under FY 2027 ICD-10-CM, how is an adverse effect of a correctly prescribed GLP-1 drug coded, and what does the Ozempic label say about acute pancreatitis?",
+      "hint": "GLP-1 pancreatitis: label + adverse-effect coding",
+      "query": "Under FY 2027 ICD-10-CM, how is an adverse effect of a correctly prescribed GLP-1 drug coded, and what does the Ozempic label say about acute pancreatitis?",
+      "relevant": [
+       "HC-ICD10CM-FY2027-I-C-19-c006",
+       "HC-SPL-SEMAGLUTIDE-ADEC4FD2-V20-c003",
+       "HC-SPL-SEMAGLUTIDE-27F15FAC-V14-c004",
+       "HC-SPL-SEMAGLUTIDE-E6DA837C-V6-c001",
+       "HC-SPL-SEMAGLUTIDE-E6DA837C-V6-c003"
+      ],
+      "relevantGroups": [
+       [
+        "HC-ICD10CM-FY2027-I-C-19-c006"
+       ],
+       [
+        "HC-SPL-SEMAGLUTIDE-ADEC4FD2-V20-c003",
+        "HC-SPL-SEMAGLUTIDE-27F15FAC-V14-c004",
+        "HC-SPL-SEMAGLUTIDE-E6DA837C-V6-c001",
+        "HC-SPL-SEMAGLUTIDE-E6DA837C-V6-c003"
+       ]
+      ],
+      "why": "Hybrid's top 3 are Ozempic label chunks (including the superseded 2017 version); agentic returns the current OZEMPIC pancreatitis section #1 and the FY 2027 ICD-10-CM I.C.19 adverse-effect rule #2."
+     },
+     {
+      "id": "HC-S07-04",
+      "label": "Under FY 2027 ICD-10-CM, how is an adverse effect of a correctly prescribed JAK inhibitor coded, and what does the Xeljanz label say about thrombosis?",
+      "hint": "JAK thrombosis: label + adverse-effect coding",
+      "query": "Under FY 2027 ICD-10-CM, how is an adverse effect of a correctly prescribed JAK inhibitor coded, and what does the Xeljanz label say about thrombosis?",
+      "relevant": [
+       "HC-ICD10CM-FY2027-I-C-19-c006",
+       "HC-SPL-TOFACITINIB-CF74BA2F-V56-c001",
+       "HC-SPL-TOFACITINIB-CF74BA2F-V56-c004",
+       "HC-SPL-TOFACITINIB-68E3D6B2-V19-c001",
+       "HC-SPL-TOFACITINIB-68E3D6B2-V19-c004",
+       "HC-SPL-TOFACITINIB-0FD4F3CC-V11-c001",
+       "HC-SPL-TOFACITINIB-0FD4F3CC-V11-c004"
+      ],
+      "relevantGroups": [
+       [
+        "HC-ICD10CM-FY2027-I-C-19-c006"
+       ],
+       [
+        "HC-SPL-TOFACITINIB-CF74BA2F-V56-c001",
+        "HC-SPL-TOFACITINIB-CF74BA2F-V56-c004",
+        "HC-SPL-TOFACITINIB-68E3D6B2-V19-c001",
+        "HC-SPL-TOFACITINIB-68E3D6B2-V19-c004",
+        "HC-SPL-TOFACITINIB-0FD4F3CC-V11-c001",
+        "HC-SPL-TOFACITINIB-0FD4F3CC-V11-c004"
+       ]
+      ],
+      "why": "Hybrid's top 3 are XELJANZ/XELJANZ XR label chunks only; agentic keeps both boxed warnings (thrombosis) and adds the FY 2027 ICD-10-CM I.C.19 adverse-effect rule at #3."
+     }
+    ],
+    "S10": [
+     {
+      "id": "HC-S10-01",
+      "label": "Upper GI bleeding rate with SAVAYSA versus warfarin",
+      "hint": "Savaysa upper GI bleeding (ENGAGE AF)",
+      "query": "Upper GI bleeding rate with SAVAYSA versus warfarin",
+      "sourceHash": "7c691b6b161a2daa944adc57e5cd3d00efd92cec6cbf2b8511bc73857423c890",
+      "relevant": [
+       "HC-SPL-EDOXABAN-E77D3400-V28-t04r02"
+      ],
+      "page": 11,
+      "why": "Read returns flattened pages 11/10/9; Layout's #1 is the Table 6.2 'Upper GI' row: SAVAYSA 123 (1.06 %/yr) vs warfarin 88 (0.74 %/yr), page 11."
+     },
+     {
+      "id": "HC-S10-02",
+      "label": "Female genital mycotic infections percentage with JARDIANCE 25 mg vs placebo",
+      "hint": "Jardiance genital mycotic infections",
+      "query": "Female genital mycotic infections percentage with JARDIANCE 25 mg vs placebo",
+      "sourceHash": "eb595963e1b668411939fe5c01029c58edaded3ca9c86940fc7ffc7173d00c5d",
+      "relevant": [
+       "HC-SPL-EMPAGLIFLOZIN-FAF3DD6A-V32-t02r02"
+      ],
+      "page": 7,
+      "why": "Read returns whole pages 8/9/7; Layout's #1 is the Table 2 row 'Female genital mycotic infections': placebo 1.5%, JARDIANCE 10 mg 5.4%, 25 mg 6.4% (page 7)."
+     },
+     {
+      "id": "HC-S10-03",
+      "label": "Kerendia starting dose for eGFR 25 to less than 60",
+      "hint": "Kerendia starting dose by eGFR",
+      "query": "Kerendia starting dose for eGFR 25 to less than 60",
+      "sourceHash": "70883f44859d219d6e860c0bbd1b1ce9bda0c9edecf6bf237d49a0461d9e7179",
+      "relevant": [
+       "HC-SPL-FINERENONE-FC726765-V15-t02r02"
+      ],
+      "page": 3,
+      "why": "Read returns pages 14/3/4; Layout's #1 is the Table 1 (Recommended Starting Dosage) row 'eGFR >= 25 to < 60: 10 mg orally once daily' (page 3)."
+     },
+     {
+      "id": "HC-S10-04",
+      "label": "Libtayo dose modification for hepatitis when AST or ALT is more than 8 times ULN",
+      "hint": "Libtayo immune-mediated hepatitis threshold",
+      "query": "Libtayo dose modification for hepatitis when AST or ALT is more than 8 times ULN",
+      "sourceHash": "8cea9fdc6dca299cb23bc578e796bb9ca4297b10b924d13869c8f650f179647a",
+      "relevant": [
+       "HC-SPL-CEMIPLIMAB-4347AE1F-V24-t03r07"
+      ],
+      "page": 5,
+      "why": "Read returns pages 5/6/7; Layout's #1 is the Table 2 row 'AST or ALT increases to more than 8 times the ULN ... Permanently discontinue' (page 5)."
+     }
+    ]
+   }
+  },
+  {
+   "id": "manufacturing",
+   "label": "Manufacturing",
+   "short": "Manufacturing",
+   "group": "Industries",
+   "blurb": "OSHA severe injury reports, guidance and 29 CFR 1910 standards, plus NIST industrial control system security guidance.",
+   "sources": [
+    {
+     "agency": "OSHA",
+     "name": "Severe Injury Reports, guidance and 29 CFR 1910",
+     "url": "https://www.osha.gov/severeinjury",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "NIST",
+     "name": "SP 800-82 and NIST interagency reports",
+     "url": "https://csrc.nist.gov/pubs/sp/800/82/r3/final",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    }
+   ],
+   "languages": [
+    "en"
+   ],
+   "status": "draft",
+   "evaluatedAt": "2026-11-25T11:58:30Z",
+   "scenarios": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07",
+    "S10"
+   ],
+   "boostSubtypes": [
+    "freshness",
+    "authority"
+   ],
+   "sourceHosts": [
+    "nvlpubs.nist.gov",
+    "www.ecfr.gov",
+    "www.osha.gov"
+   ],
+   "defaults": {
+    "S05": {
+     "facets": [
+      "category,count:10",
+      "industryGroup,count:10",
+      "tags,count:10"
+     ]
+    },
+    "S10": {
+     "sourceHash": "fab230fb8ab519771715af0cac111dc8f446c350b80800da20483823d431dcb7"
+    }
+   },
+   "presets": {
+    "S01": [
+     {
+      "id": "MFG-S01-01",
+      "label": "LOTO verification of energy isolation before servicing",
+      "hint": "LOTO isolation verification",
+      "query": "LOTO verification of energy isolation before servicing",
+      "relevant": [
+       "MFG-ECFR-29CFR1910-147-c007",
+       "MFG-ECFR-29CFR1910-147-c010",
+       "MFG-ECFR-29CFR1910-147-c004",
+       "MFG-OSHA-3120-BACKGROUND",
+       "MFG-OSHA-3120-REQUIREMENTS-c002",
+       "MFG-OSHA-3120-REQUIREMENTS-c007"
+      ],
+      "why": "Plain keyword (all terms, standard analyzer) returns 0 hits because no document pairs 'LOTO' with these words; the synonym map expands LOTO to lockout/tagout and AFTER's #1 is 29 CFR 1910.147(d), which contains (d)(6) 'Verification of isolation', with OSHA 3120's background on verifying isolation at #3."
+     },
+     {
+      "id": "MFG-S01-02",
+      "label": "forklift operator refresher training",
+      "hint": "Forklift refresher training",
+      "query": "forklift operator refresher training",
+      "relevant": [
+       "MFG-ECFR-29CFR1910-178-c008"
+      ],
+      "why": "29 CFR 1910.178 never says 'forklift', so plain keyword returns 0 hits; forklift -> 'powered industrial truck' expansion makes 1910.178(l)(4) 'Refresher training and evaluation' AFTER's #1."
+     },
+     {
+      "id": "MFG-S01-03",
+      "label": "E-stop pull cords on conveyors",
+      "hint": "E-stop pull cords on conveyors",
+      "query": "E-stop pull cords on conveyors",
+      "relevant": [
+       "MFG-OSHA-3170-l209",
+       "MFG-OSHA-3170-l208",
+       "MFG-OSHA-3170-l156"
+      ],
+      "why": "No document contains 'E-stop', so plain keyword returns 0 hits; E-stop -> 'emergency stop' puts OSHA 3170 'Other Controls for Conveyors' (emergency stop buttons, pull cords and cables along the conveyor) at #1 and #3 and 'Emergency Stop Devices' at #2."
+     },
+     {
+      "id": "MFG-S01-04",
+      "label": "PdM telemetry sent to the cloud",
+      "hint": "PdM telemetry to the cloud",
+      "query": "PdM telemetry sent to the cloud",
+      "relevant": [
+       "MFG-NIST-SP800-82R4IPD-SEC2-c011",
+       "MFG-NIST-IR8183R2IPD-SEC5-2-c002",
+       "MFG-NIST-SP800-82R4IPD-SEC2-c012"
+      ],
+      "why": "In this corpus 'PDM' only appears as product data management, and plain keyword returns 0 hits; PdM -> 'predictive maintenance' makes SP 800-82 Rev. 4 draft 2.4.6 'Cloud and IoT/IIoT Convergence' (telemetry-to-cloud for predictive maintenance) AFTER's #1."
+     }
+    ],
+    "S02": [
+     {
+      "id": "MFG-S02-01",
+      "label": "how do I stop hackers on the office network from reaching the machines on the plant floor",
+      "hint": "Keep hackers off the plant floor",
+      "query": "how do I stop hackers on the office network from reaching the machines on the plant floor",
+      "relevant": [
+       "MFG-NIST-SP800-82R3-SEC5-c007",
+       "MFG-NIST-SP800-82R3-SEC5-c008",
+       "MFG-NIST-SP800-82R3-SEC5-c018",
+       "MFG-NIST-SP800-82R3-SEC6-c013",
+       "MFG-NIST-SP800-82R3-SEC6-c014",
+       "MFG-NIST-IR8183R1-t19r02",
+       "MFG-NIST-IR8183R1-t19r04",
+       "MFG-NIST-SP800-82R4IPD-SEC5-c005",
+       "MFG-NIST-SP800-82R4IPD-SEC5-c007",
+       "MFG-NIST-SP800-82R4IPD-SEC5-c008",
+       "MFG-NIST-SP800-82R4IPD-SEC5-c009",
+       "MFG-NIST-SP800-82R3-ES-c002"
+      ],
+      "why": "BM25 latches onto 'machines'/'floor'/'stop' and returns OSHA 3120 lockout FAQs and OSHA 3170 guarding pages for all 10 results; vector search returns SP 800-82 Rev. 3 5.4.1 (DCS defense-in-depth zones and DMZ), 5.2.3.1 Network Architecture and 6.2.1.3 Network Segmentation and Isolation as #1-3."
+     },
+     {
+      "id": "MFG-S02-02",
+      "label": "software that predicts when equipment is about to break so we can fix it ahead of time",
+      "hint": "Predict failures before they happen",
+      "query": "software that predicts when equipment is about to break so we can fix it ahead of time",
+      "relevant": [
+       "MFG-NIST-IR8012-SEC1",
+       "MFG-NIST-IR8012-SEC2",
+       "MFG-NIST-IR8012-SEC3",
+       "MFG-NIST-IR8012-SEC4"
+      ],
+      "why": "BM25 matches 'break'/'fix' in a shear case history, an SP 800-82 sector section and injury narratives, with no PHM text in its top 10; vector search maps the lay wording to NISTIR 8012 (Prognostics and Health Management): 2.4.2 Prognostics #1 and 2.4.1 Diagnostics #3."
+     },
+     {
+      "id": "MFG-S02-03",
+      "label": "has hacking ever actually broken real machinery at a factory",
+      "hint": "Has hacking broken machinery?",
+      "query": "has hacking ever actually broken real machinery at a factory",
+      "relevant": [
+       "MFG-NIST-SP800-82R3-APPC-c014",
+       "MFG-NIST-SP800-82R4IPD-APPC-c016"
+      ],
+      "why": "BM25 keys on 'factory'/'real' and returns NISTIR 7911 real-time factory KPI sections as #1-6; vector search returns the SP 800-82 Appendix C adversarial-events chunks naming Stuxnet (Iranian centrifuges) and the German steel mill attack that left a blast furnace unable to shut down (#1 Rev. 4 draft, #2 Rev. 3)."
+     },
+     {
+      "id": "MFG-S02-04",
+      "label": "straps on the operator's wrists that yank the hands back before the press comes down",
+      "hint": "Wrist straps that pull hands back",
+      "query": "straps on the operator's wrists that yank the hands back before the press comes down",
+      "relevant": [
+       "MFG-OSHA-3170-t05r02",
+       "MFG-ECFR-29CFR1910-217-c006"
+      ],
+      "why": "BM25 keys on 'wrists'/'hands'/'press': an injury report, OSHA 3170 Case History #1 and 1910.217 guard-construction text fill the top 3, and the 1910.217 pull-out device paragraph is only #6; vector search ranks the OSHA 3170 Table 2 'Pullback Devices' row #1."
+     }
+    ],
+    "S03": [
+     {
+      "id": "MFG-S03-01",
+      "label": "SP 800-82 Rev. 3 guidance for vendors who need to log in from offsite to fix our controllers",
+      "hint": "SP 800-82r3 vendor remote access",
+      "query": "SP 800-82 Rev. 3 guidance for vendors who need to log in from offsite to fix our controllers",
+      "relevant": [
+       "MFG-NIST-SP800-82R3-SEC6-c034",
+       "MFG-NIST-SP800-82R3-SEC6-c035",
+       "MFG-NIST-SP800-82R3-APPE-c005",
+       "MFG-NIST-SP800-82R3-APPC-c008",
+       "MFG-NIST-SP800-82R3-APPF-c014"
+      ],
+      "why": "Keyword latches onto the 'SP 800-82 Rev. 3' tokens and returns the change log, Appendix F intro and SP 800 series list (no remote-access text in its top 10); vector-only ranks NISTIR 8183 Rev. 1 remote-maintenance rows #1-2 (a different publication) and Rev. 3 6.2.10 only #3; hybrid puts SP 800-82 Rev. 3 6.2.10 Remote Access #1."
+     },
+     {
+      "id": "MFG-S03-02",
+      "label": "What does SP 800-82 Rev. 3 say about thumb drives spreading malware to plant PCs?",
+      "hint": "SP 800-82r3 USB malware",
+      "query": "What does SP 800-82 Rev. 3 say about thumb drives spreading malware to plant PCs?",
+      "relevant": [
+       "MFG-NIST-SP800-82R3-SEC6-c031",
+       "MFG-NIST-SP800-82R3-SEC6-c043",
+       "MFG-NIST-SP800-82R3-SEC6-c011",
+       "MFG-NIST-SP800-82R3-APPC-c010",
+       "MFG-NIST-SP800-82R3-APPC-c009",
+       "MFG-NIST-SP800-82R3-SEC6-c010"
+      ],
+      "why": "Keyword returns Rev. 3 boilerplate first (first relevant at #8); vector-only returns NISTIR 8183 portable-storage rows and the Rev. 4 draft media-protection section (first Rev. 3 hit #4); hybrid ranks Rev. 3 6.3.2.3 Malicious Code Detection #1 and has 6.2.7 Media Protection (USB memory sticks) at #5."
+     },
+     {
+      "id": "MFG-S03-03",
+      "label": "SP 800-82 Rev. 3 advice on turning off unused ports and services on controllers",
+      "hint": "SP 800-82r3 least functionality",
+      "query": "SP 800-82 Rev. 3 advice on turning off unused ports and services on controllers",
+      "relevant": [
+       "MFG-NIST-SP800-82R3-SEC6-c022",
+       "MFG-NIST-SP800-82R3-APPF-c024"
+      ],
+      "why": "Keyword finds only Rev. 3 boilerplate (no relevant hit in its top 10); vector-only puts the NISTIR 8183 Rev. 1 'Disable defined functions, ports, protocols' row #1 (not the cited publication) and Rev. 3 6.2.4.1 #2; hybrid ranks SP 800-82 Rev. 3 6.2.4.1 Least Functionality (PR.IP-1) #1."
+     },
+     {
+      "id": "MFG-S03-04",
+      "label": "SP 800-82 Rev. 3 guidance for the first hours after malware hits the control network",
+      "hint": "SP 800-82r3 malware response",
+      "query": "SP 800-82 Rev. 3 guidance for the first hours after malware hits the control network",
+      "relevant": [
+       "MFG-NIST-SP800-82R3-SEC6-c026",
+       "MFG-NIST-SP800-82R3-SEC6-c027",
+       "MFG-NIST-SP800-82R3-SEC6-c028",
+       "MFG-NIST-SP800-82R3-SEC6-c045",
+       "MFG-NIST-SP800-82R3-SEC6-c046",
+       "MFG-NIST-SP800-82R3-SEC6-c047"
+      ],
+      "why": "Keyword returns Rev. 3 appendices first (first relevant #8); vector-only ranks Malicious Code Detection and two Rev. 4 draft detection sections above Rev. 3 response planning (#5); hybrid puts Rev. 3 6.2.4.5 Response and Recovery Plans #1."
+     }
+    ],
+    "S04": [
+     {
+      "id": "MFG-S04-01",
+      "label": "Do light curtains have to be rechecked after every die change?",
+      "hint": "Light curtains after a die change",
+      "query": "Do light curtains have to be rechecked after every die change?",
+      "relevant": [
+       "MFG-ECFR-29CFR1910-217-c016",
+       "MFG-ECFR-29CFR1910-217-c019",
+       "MFG-ECFR-29CFR1910-217-c026"
+      ],
+      "why": "Same 10 hybrid candidates: hybrid ranks the PSDI light-curtain alternatives paragraph and design certification first, with the first answer at #5 (recertification excludes die changes) and 'set at each tool change and set-up' at #6; the semantic reranker moves 1910.217(h)(9)(vi) to #1."
+     },
+     {
+      "id": "MFG-S04-02",
+      "label": "Can you fill a forklift's fuel tank while the engine is still running?",
+      "hint": "Refueling a running forklift",
+      "query": "Can you fill a forklift's fuel tank while the engine is still running?",
+      "relevant": [
+       "MFG-ECFR-29CFR1910-178-c010"
+      ],
+      "why": "Hybrid ranks 1910.178 chunks on fuel-spill clean-up (c011, which does not state the rule) and LP-gas conversion first; the chunk with '(2) Fuel tanks shall not be filled while the engine is running' is #3 until the reranker lifts it to #1."
+     },
+     {
+      "id": "MFG-S04-03",
+      "label": "Was anyone hurt wiping off excess lubricant near a running conveyor chain?",
+      "hint": "Wiping lubricant near a running chain",
+      "query": "Was anyone hurt wiping off excess lubricant near a running conveyor chain?",
+      "relevant": [
+       "MFG-OSHA-SIR-2025-043658"
+      ],
+      "why": "Hybrid's #1 is a 2015 report where the worker lubricated a running chain but was hurt retrieving a dropped bolt, then an OSHA 3170 chain-conveyor page; the 2025 Wisconsin report (rag caught while wiping lubricant overspray beside a running chain drive) is #3 until the reranker moves it to #1."
+     },
+     {
+      "id": "MFG-S04-04",
+      "label": "Has a worker been caught when a coworker restarted a machine during a jam clearing?",
+      "hint": "Coworker restarted the machine",
+      "query": "Has a worker been caught when a coworker restarted a machine during a jam clearing?",
+      "relevant": [
+       "MFG-OSHA-SIR-2017-1010072"
+      ],
+      "why": "Hybrid ranks self-inflicted jam-clearing injuries first (an operator jogging a syringe machine, a palletizer jam) and the 2017 Wisconsin report where 'another employee inadvertently restarted the machine' only #4; the reranker puts it #1."
+     }
+    ],
+    "S05": [
+     {
+      "id": "MFG-S05-01",
+      "label": "conveyor amputations in Ohio since 2021",
+      "hint": "Ohio conveyor amputations 2021+",
+      "query": "conveyor amputations in Ohio since 2021",
+      "filter": "docType eq 'severe-injury-report' and equipment eq 'conveyor' and amputation eq true and regions/any(r: r eq 'Ohio') and publishedDate ge 2021-01-01T00:00:00Z",
+      "facets": [
+       "category,count:10",
+       "industryGroup,count:10",
+       "tags,count:10"
+      ],
+      "relevant": [
+       "MFG-OSHA-SIR-2021-021153",
+       "MFG-OSHA-SIR-2022-010568",
+       "MFG-OSHA-SIR-2023-021690",
+       "MFG-OSHA-SIR-2023-087993",
+       "MFG-OSHA-SIR-2024-087500",
+       "MFG-OSHA-SIR-2024-098200",
+       "MFG-OSHA-SIR-2025-043875",
+       "MFG-OSHA-SIR-2024-076570"
+      ],
+      "why": "Keyword-only (no filter) puts Louisiana and West Virginia conveyor amputations at #2-3; with docType, equipment, amputation, state and date filters the hybrid returns only the 7 eligible Ohio 2021+ conveyor amputations, and the category facet shows 6 'Caught in conveyor' + 1 'Lockout/tagout'."
+     },
+     {
+      "id": "MFG-S05-02",
+      "label": "forklift injuries at food processing plants",
+      "hint": "Forklift injuries in food processing",
+      "query": "forklift injuries at food processing plants",
+      "filter": "docType eq 'severe-injury-report' and equipment eq 'powered-industrial-truck' and industryGroup eq 'food-processing'",
+      "facets": [
+       "regions,count:10",
+       "tags,count:10"
+      ],
+      "relevant": [
+       "MFG-OSHA-SIR-2017-021049",
+       "MFG-OSHA-SIR-2020-021966",
+       "MFG-OSHA-SIR-2024-043738",
+       "MFG-OSHA-SIR-2024-098129"
+      ],
+      "why": "Keyword returns 29 CFR 1910.178 text for its whole top 3 (first injury report at #8); filtering equipment = powered-industrial-truck and industryGroup = food-processing yields exactly 4 forklift injury reports (RI, ME, PA, GA in the regions facet)."
+     },
+     {
+      "id": "MFG-S05-03",
+      "label": "robot cell injuries where the worker was hospitalized",
+      "hint": "Robot-cell hospitalizations",
+      "query": "robot cell injuries where the worker was hospitalized",
+      "filter": "docType eq 'severe-injury-report' and equipment eq 'industrial-robot' and hospitalized ge 1",
+      "facets": [
+       "industryGroup,count:10",
+       "regions,count:10"
+      ],
+      "relevant": [
+       "MFG-OSHA-SIR-2015-118882",
+       "MFG-OSHA-SIR-2016-010111",
+       "MFG-OSHA-SIR-2016-1110325",
+       "MFG-OSHA-SIR-2017-065535",
+       "MFG-OSHA-SIR-2018-066216",
+       "MFG-OSHA-SIR-2020-098366",
+       "MFG-OSHA-SIR-2025-032584"
+      ],
+      "why": "Keyword's top 3 are robot-cell injuries with hospitalized = 0 (ND, PA, OH); the equipment = industrial-robot and hospitalized ge 1 filters return the 7 hospitalized robot-cell reports, led by the Texas worker pinned between a robot and a conveyor (six broken ribs)."
+     },
+     {
+      "id": "MFG-S05-04",
+      "label": "press brake finger amputations at metal fabrication shops since 2020",
+      "hint": "Press brake amputations, metal fab 2020+",
+      "query": "press brake finger amputations at metal fabrication shops since 2020",
+      "filter": "docType eq 'severe-injury-report' and equipment eq 'press-brake' and industryGroup eq 'metal-fabrication' and amputation eq true and publishedDate ge 2020-01-01T00:00:00Z",
+      "facets": [
+       "regions,count:10",
+       "tags,count:10"
+      ],
+      "relevant": [
+       "MFG-OSHA-SIR-2021-086802",
+       "MFG-OSHA-SIR-2022-064711",
+       "MFG-OSHA-SIR-2023-098693",
+       "MFG-OSHA-SIR-2024-032153",
+       "MFG-OSHA-SIR-2025-032593",
+       "MFG-OSHA-SIR-2025-088086"
+      ],
+      "why": "Keyword returns 2018-2020 press brake amputations outside the date range at #1-3; filters on equipment, industryGroup = metal-fabrication, amputation and publishedDate >= 2020 return the 5 eligible reports (AR, MO, WI, PA, KS)."
+     }
+    ],
+    "S06": [
+     {
+      "id": "MFG-S06-01",
+      "label": "energy control procedure requirements",
+      "hint": "Energy control procedures: the standard",
+      "query": "energy control procedure requirements",
+      "boostSubtype": "authority",
+      "relevant": [
+       "MFG-ECFR-29CFR1910-147-c003",
+       "MFG-ECFR-29CFR1910-147-c004",
+       "MFG-ECFR-29CFR1910-147-c005",
+       "MFG-ECFR-29CFR1910-147-c006",
+       "MFG-ECFR-29CFR1910-147-c007",
+       "MFG-ECFR-29CFR1910-147-c008",
+       "MFG-ECFR-29CFR1910-147-c009",
+       "MFG-ECFR-29CFR1910-147-c010"
+      ],
+      "why": "Plain hybrid ranks three OSHA 3120 booklet answers (guidance, authority 4) above the binding text (first 1910.147 chunk #4); the authority profile (OSHA standard = 5) makes 29 CFR 1910.147 chunks #1-3, starting with (c)(4) Energy control procedure."
+     },
+     {
+      "id": "MFG-S06-02",
+      "label": "minor servicing exception to lockout during normal production operations",
+      "hint": "Minor servicing exception: the standard",
+      "query": "minor servicing exception to lockout during normal production operations",
+      "boostSubtype": "authority",
+      "relevant": [
+       "MFG-ECFR-29CFR1910-147-c001"
+      ],
+      "why": "Plain hybrid's top 5 are OSHA 3170 'Minor Servicing' guidance pages and the standard first appears at #8; the authority profile puts 29 CFR 1910.147(a)(2), with the Note on minor tool changes and minor servicing during normal production, at #1."
+     },
+     {
+      "id": "MFG-S06-03",
+      "label": "when a tagout device may be used instead of a lock",
+      "hint": "Tagout instead of lockout: the standard",
+      "query": "when a tagout device may be used instead of a lock",
+      "boostSubtype": "authority",
+      "relevant": [
+       "MFG-ECFR-29CFR1910-147-c003",
+       "MFG-ECFR-29CFR1910-147-c004",
+       "MFG-ECFR-29CFR1910-147-c009"
+      ],
+      "why": "Plain hybrid's top 3 are OSHA 3120 booklet Q&As; the authority profile puts 1910.147 (c)(2) 'If an energy isolating device is not capable of being locked out ... utilize a tagout system' at #1 and the (c)(3) full-employee-protection chunk at #3."
+     },
+     {
+      "id": "MFG-S06-04",
+      "label": "latest conveyor amputation reports",
+      "hint": "Latest conveyor amputations",
+      "query": "latest conveyor amputation reports",
+      "boostSubtype": "freshness",
+      "relevant": [
+       "MFG-OSHA-SIR-2025-043426",
+       "MFG-OSHA-SIR-2025-043658",
+       "MFG-OSHA-SIR-2025-043875",
+       "MFG-OSHA-SIR-2025-054273",
+       "MFG-OSHA-SIR-2025-1010332",
+       "MFG-OSHA-SIR-2025-010905"
+      ],
+      "why": "Plain hybrid surfaces conveyor amputations from 2022, 2023 and 2020; the freshness profile (3-year quadratic boost on publishedDate) returns 2025 reports at #1-3 (Kansas Oct 2025, Kansas May 2025, Missouri Apr 2025)."
+     }
+    ],
+    "S07": [
+     {
+      "id": "MFG-S07-01",
+      "label": "What does OSHA require for lockout/tagout during conveyor jam clearing, and what injuries have happened when it was skipped?",
+      "hint": "LOTO for conveyor jams + incidents",
+      "query": "What does OSHA require for lockout/tagout during conveyor jam clearing, and what injuries have happened when it was skipped?",
+      "relevant": [
+       "MFG-OSHA-3170-l164",
+       "MFG-OSHA-3170-l208",
+       "MFG-OSHA-3170-l209",
+       "MFG-OSHA-3170-l187",
+       "MFG-OSHA-3170-l210",
+       "MFG-OSHA-3170-l218",
+       "MFG-OSHA-3170-l258",
+       "MFG-OSHA-3170-l266",
+       "MFG-ECFR-29CFR1910-147",
+       "MFG-OSHA-3120-REQUIREMENTS",
+       "MFG-OSHA-3120-COVERAGE",
+       "MFG-OSHA-3120-TERMS",
+       "MFG-OSHA-SIR-2015-031458",
+       "MFG-OSHA-SIR-2016-042808",
+       "MFG-OSHA-SIR-2017-032675",
+       "MFG-OSHA-SIR-2017-077088",
+       "MFG-OSHA-SIR-2017-087300",
+       "MFG-OSHA-SIR-2018-010804",
+       "MFG-OSHA-SIR-2018-011046",
+       "MFG-OSHA-SIR-2018-1112330",
+       "MFG-OSHA-SIR-2019-010235",
+       "MFG-OSHA-SIR-2021-021153",
+       "MFG-OSHA-SIR-2022-1210723",
+       "MFG-OSHA-SIR-2024-010704",
+       "MFG-OSHA-SIR-2024-076570",
+       "MFG-OSHA-SIR-2024-098200",
+       "MFG-OSHA-SIR-2024-098356",
+       "MFG-OSHA-SIR-2025-010905",
+       "MFG-OSHA-SIR-2025-043875"
+      ],
+      "relevantGroups": [
+       [
+        "MFG-OSHA-3170-l164",
+        "MFG-OSHA-3170-l208",
+        "MFG-OSHA-3170-l209",
+        "MFG-OSHA-3170-l187",
+        "MFG-OSHA-3170-l210",
+        "MFG-OSHA-3170-l218",
+        "MFG-OSHA-3170-l258",
+        "MFG-OSHA-3170-l266",
+        "MFG-ECFR-29CFR1910-147",
+        "MFG-OSHA-3120-REQUIREMENTS",
+        "MFG-OSHA-3120-COVERAGE",
+        "MFG-OSHA-3120-TERMS"
+       ],
+       [
+        "MFG-OSHA-SIR-2015-031458",
+        "MFG-OSHA-SIR-2016-042808",
+        "MFG-OSHA-SIR-2017-032675",
+        "MFG-OSHA-SIR-2017-077088",
+        "MFG-OSHA-SIR-2017-087300",
+        "MFG-OSHA-SIR-2018-010804",
+        "MFG-OSHA-SIR-2018-011046",
+        "MFG-OSHA-SIR-2018-1112330",
+        "MFG-OSHA-SIR-2019-010235",
+        "MFG-OSHA-SIR-2021-021153",
+        "MFG-OSHA-SIR-2022-1210723",
+        "MFG-OSHA-SIR-2024-010704",
+        "MFG-OSHA-SIR-2024-076570",
+        "MFG-OSHA-SIR-2024-098200",
+        "MFG-OSHA-SIR-2024-098356",
+        "MFG-OSHA-SIR-2025-010905",
+        "MFG-OSHA-SIR-2025-043875"
+       ]
+      ],
+      "why": "Hybrid's top 3 are all OSHA 3120 lockout/tagout requirements (requirements only); agentic retrieval returns the 2024 Ohio auger-feeder jam amputation 'not locked out/tagged out' at #1 plus OSHA 3120 and 3170 Minor Servicing guidance, covering both parts of the question."
+     },
+     {
+      "id": "MFG-S07-02",
+      "label": "What point-of-operation safeguards does OSHA require on press brakes, and what amputations have press brake operators suffered?",
+      "hint": "Press brake safeguards + amputations",
+      "query": "What point-of-operation safeguards does OSHA require on press brakes, and what amputations have press brake operators suffered?",
+      "relevant": [
+       "MFG-OSHA-3170-l192",
+       "MFG-OSHA-3170-l193",
+       "MFG-OSHA-3170-l196",
+       "MFG-OSHA-3170-l197",
+       "MFG-ECFR-29CFR1910-212",
+       "MFG-OSHA-3170-l194",
+       "MFG-OSHA-3170-l195",
+       "MFG-OSHA-SIR-2015-052936",
+       "MFG-OSHA-SIR-2016-021528",
+       "MFG-OSHA-SIR-2017-1211759",
+       "MFG-OSHA-SIR-2018-1011076",
+       "MFG-OSHA-SIR-2019-010570",
+       "MFG-OSHA-SIR-2020-087318",
+       "MFG-OSHA-SIR-2020-088212",
+       "MFG-OSHA-SIR-2021-032232",
+       "MFG-OSHA-SIR-2021-086802",
+       "MFG-OSHA-SIR-2022-064711",
+       "MFG-OSHA-SIR-2023-098693",
+       "MFG-OSHA-SIR-2024-032153",
+       "MFG-OSHA-SIR-2024-1211196",
+       "MFG-OSHA-SIR-2025-032593",
+       "MFG-OSHA-SIR-2025-043365",
+       "MFG-OSHA-SIR-2025-088086"
+      ],
+      "relevantGroups": [
+       [
+        "MFG-OSHA-3170-l192",
+        "MFG-OSHA-3170-l193",
+        "MFG-OSHA-3170-l196",
+        "MFG-OSHA-3170-l197",
+        "MFG-ECFR-29CFR1910-212"
+       ],
+       [
+        "MFG-OSHA-3170-l194",
+        "MFG-OSHA-3170-l195",
+        "MFG-OSHA-SIR-2015-052936",
+        "MFG-OSHA-SIR-2016-021528",
+        "MFG-OSHA-SIR-2017-1211759",
+        "MFG-OSHA-SIR-2018-1011076",
+        "MFG-OSHA-SIR-2019-010570",
+        "MFG-OSHA-SIR-2020-087318",
+        "MFG-OSHA-SIR-2020-088212",
+        "MFG-OSHA-SIR-2021-032232",
+        "MFG-OSHA-SIR-2021-086802",
+        "MFG-OSHA-SIR-2022-064711",
+        "MFG-OSHA-SIR-2023-098693",
+        "MFG-OSHA-SIR-2024-032153",
+        "MFG-OSHA-SIR-2024-1211196",
+        "MFG-OSHA-SIR-2025-032593",
+        "MFG-OSHA-SIR-2025-043365",
+        "MFG-OSHA-SIR-2025-088086"
+       ]
+      ],
+      "why": "Hybrid's top 3 are OSHA 3170 press brake pages and an OSHA instructions list (no injuries); agentic retrieval returns OSHA 3170 Case Histories #5 and #4 (press brake amputations) around the 'Hazards of Power Press Brakes' safeguarding page, covering both parts."
+     },
+     {
+      "id": "MFG-S07-03",
+      "label": "Which standards cover prognostics and health management for predictive maintenance, and how does NIST define the OEE metric?",
+      "hint": "PHM standards + OEE definition",
+      "query": "Which standards cover prognostics and health management for predictive maintenance, and how does NIST define the OEE metric?",
+      "relevant": [
+       "MFG-NIST-IR8012-SEC1",
+       "MFG-NIST-IR8012-SEC2",
+       "MFG-NIST-IR8012-SEC3",
+       "MFG-NIST-IR8012-SEC4",
+       "MFG-NIST-IR8012-SEC3-c003",
+       "MFG-NIST-IR8107-t03r02"
+      ],
+      "relevantGroups": [
+       [
+        "MFG-NIST-IR8012-SEC1",
+        "MFG-NIST-IR8012-SEC2",
+        "MFG-NIST-IR8012-SEC3",
+        "MFG-NIST-IR8012-SEC4"
+       ],
+       [
+        "MFG-NIST-IR8012-SEC3-c003",
+        "MFG-NIST-IR8107-t03r02"
+       ]
+      ],
+      "why": "Hybrid's top 3 are NISTIR 8012 PHM sections with no OEE definition; agentic issued an OEE sub-query and its #1 is NISTIR 8012 3.3, which ties ISO 22400 KPIs to PHM and defines 'OEE Index = Availability x Effectiveness x Quality ratio'."
+     },
+     {
+      "id": "MFG-S07-04",
+      "label": "How should vendor remote access to plant control systems be secured, and what real incidents began with an attacker gaining remote access?",
+      "hint": "Vendor remote access + incidents",
+      "query": "How should vendor remote access to plant control systems be secured, and what real incidents began with an attacker gaining remote access?",
+      "relevant": [
+       "MFG-NIST-SP800-82R3-SEC6-c034",
+       "MFG-NIST-SP800-82R3-SEC6-c035",
+       "MFG-NIST-SP800-82R3-APPE-c005",
+       "MFG-NIST-SP800-82R3-APPC-c008",
+       "MFG-NIST-SP800-82R3-APPF-c014",
+       "MFG-NIST-SP800-82R4IPD-SEC4-c018",
+       "MFG-NIST-SP800-82R4IPD-APPC-c010",
+       "MFG-NIST-IR8183R1-t18r02",
+       "MFG-NIST-IR8183R1-t18r04",
+       "MFG-NIST-SP800-82R4IPD-SEC2-c019",
+       "MFG-NIST-SP800-82R3-APPC-c014",
+       "MFG-NIST-SP800-82R3-APPC-c015",
+       "MFG-NIST-SP800-82R3-APPC-c016",
+       "MFG-NIST-SP800-82R4IPD-APPC-c016",
+       "MFG-NIST-SP800-82R4IPD-APPC-c017",
+       "MFG-NIST-SP800-82R4IPD-APPC-c018",
+       "MFG-NIST-SP800-82R4IPD-APPC-c020"
+      ],
+      "relevantGroups": [
+       [
+        "MFG-NIST-SP800-82R3-SEC6-c034",
+        "MFG-NIST-SP800-82R3-SEC6-c035",
+        "MFG-NIST-SP800-82R3-APPE-c005",
+        "MFG-NIST-SP800-82R3-APPC-c008",
+        "MFG-NIST-SP800-82R3-APPF-c014",
+        "MFG-NIST-SP800-82R4IPD-SEC4-c018",
+        "MFG-NIST-SP800-82R4IPD-APPC-c010",
+        "MFG-NIST-IR8183R1-t18r02",
+        "MFG-NIST-IR8183R1-t18r04",
+        "MFG-NIST-SP800-82R4IPD-SEC2-c019"
+       ],
+       [
+        "MFG-NIST-SP800-82R3-APPC-c014",
+        "MFG-NIST-SP800-82R3-APPC-c015",
+        "MFG-NIST-SP800-82R3-APPC-c016",
+        "MFG-NIST-SP800-82R4IPD-APPC-c016",
+        "MFG-NIST-SP800-82R4IPD-APPC-c017",
+        "MFG-NIST-SP800-82R4IPD-APPC-c018",
+        "MFG-NIST-SP800-82R4IPD-APPC-c020"
+       ]
+      ],
+      "why": "Hybrid's top 3 are remote-access guidance only (Rev. 3 6.2.10, Rev. 4 draft 4.2.1.8, Appendix C 'Poor remote access controls'); agentic retrieval adds the Rev. 4 Appendix C adversarial-events chunk (New York dam remote access, Havex remote access Trojan) at #3, covering guidance and incidents."
+     }
+    ],
+    "S10": [
+     {
+      "id": "MFG-S10-01",
+      "label": "What is the limitation of a two-hand control as a safeguarding device?",
+      "hint": "OSHA 3170 two-hand control limitations",
+      "query": "What is the limitation of a two-hand control as a safeguarding device?",
+      "sourceHash": "fab230fb8ab519771715af0cac111dc8f446c350b80800da20483823d431dcb7",
+      "relevant": [
+       "MFG-OSHA-3170-t07r02"
+      ],
+      "page": 17,
+      "why": "CU Read returns whole pages 15, 17 and 28; page 17 interleaves Table 2's Advantages and Limitations columns ('...safety distance. Requires a partial cycle machine... Operator's hands are free...'); CU Layout's #1 is the 'Two-Hand Control' row (page 17, row 2) with its limitations kept together."
+     },
+     {
+      "id": "MFG-S10-02",
+      "label": "Which industries are examples of moderate impact manufacturing systems?",
+      "hint": "NISTIR 8183r1 moderate-impact industries",
+      "query": "Which industries are examples of moderate impact manufacturing systems?",
+      "sourceHash": "ed32a2662e064012174d0b2dfe021aa25fe29c6997909b2dcec641b37425fef3",
+      "relevant": [
+       "MFG-NIST-IR8183R1-t09r02"
+      ],
+      "page": 22,
+      "why": "CU Read returns pages 26, 22 and 49; page 22 flattens Table 8 into 'Automotive metal stamping Pulp and paper Semiconductors Automotive production Utilities Petrochemical...', which reads as if automotive production were High impact; CU Layout's #1 is the 'Industry Examples' row (page 22) placing it under Moderate."
+     },
+     {
+      "id": "MFG-S10-03",
+      "label": "When was PackML adopted into the ISA88 standard?",
+      "hint": "NISTIR 8107 PackML adoption",
+      "query": "When was PackML adopted into the ISA88 standard?",
+      "sourceHash": "54a760fa71e1de52b7c5c50456b8eccbf508203459a7c747ec5cc2b2d965a569",
+      "relevant": [
+       "MFG-NIST-IR8107-t15r03"
+      ],
+      "page": 25,
+      "why": "CU Read's #1 is all of page 25, where the PackML sentence sits among OPC UA, MTConnect and fieldbus prose; CU Layout's #1 is the Table 15 'PackML' row (page 25, row 3) from the image-only table: adopted as part of ISA88 in August 2008."
+     },
+     {
+      "id": "MFG-S10-04",
+      "label": "Which standard defines KPIs for manufacturing operations management?",
+      "hint": "NISTIR 8107 KPI standard for MOM",
+      "query": "Which standard defines KPIs for manufacturing operations management?",
+      "sourceHash": "54a760fa71e1de52b7c5c50456b8eccbf508203459a7c747ec5cc2b2d965a569",
+      "relevant": [
+       "MFG-NIST-IR8107-t14r04"
+      ],
+      "page": 24,
+      "why": "CU Read's #1 is all of page 24 (enterprise and MOM-level prose plus Table 13 captions); CU Layout's #1 is the Table 14 'ISO 22400' row (page 24, row 4): KPIs for manufacturing operations management as defined in IEC 62264-1."
+     }
+    ]
+   }
+  },
+  {
+   "id": "energy",
+   "label": "Energy",
+   "short": "Energy",
+   "group": "Industries",
+   "blurb": "DOE OE-417 grid incident reports, FERC orders, EIA analysis and DOE reports (public-domain sources only).",
+   "sources": [
+    {
+     "agency": "DOE CESER",
+     "name": "OE-417 electric emergency incident reports",
+     "url": "https://doe417.pnnl.gov/",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "FERC",
+     "name": "FERC orders (Federal Register)",
+     "url": "https://www.federalregister.gov/agencies/federal-energy-regulatory-commission",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "EIA",
+     "name": "Today in Energy",
+     "url": "https://www.eia.gov/todayinenergy/",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "DOE OE",
+     "name": "Office of Electricity reports",
+     "url": "https://www.energy.gov/oe/office-electricity",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    }
+   ],
+   "languages": [
+    "en"
+   ],
+   "status": "draft",
+   "evaluatedAt": null,
+   "scenarios": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07"
+   ],
+   "boostSubtypes": [
+    "freshness",
+    "authority",
+    "impact"
+   ],
+   "sourceHosts": [
+    "doe417.pnnl.gov",
+    "www.eia.gov",
+    "www.energy.gov",
+    "www.federalregister.gov"
+   ],
+   "defaults": {
+    "S05": {
+     "facets": [
+      "docType,count:5",
+      "agency,count:5"
+     ]
+    }
+   },
+   "presets": {}
+  }
+ ]
+}

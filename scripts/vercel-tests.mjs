@@ -2,8 +2,9 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { createVercelApp } from '../lib/vercel-app.mjs';
-import { liveStatus, searchOnlyFetch, attemptBudget, attestedMetadata, disabledScenarios, LIVE_SCENARIOS } from '../lib/search-adapter.mjs';
-import { transformBindings, reduceAttestations } from './build-vercel.mjs';
+import { liveStatus, searchOnlyFetch, attemptBudget, attestedMetadata, disabledScenarios, disabledIndustries, LIVE_SCENARIOS } from '../lib/search-adapter.mjs';
+import { transformBindings, reduceAttestations, industryBindingsFrom, checkIndustryCatalog, aboutWithDataSources, industryRecordingProblems, pageWithIndustries } from './build-vercel.mjs';
+import { industryCatalog, industryById, filterFields, isFacet, BASE_FILTER } from '../lib/industry.mjs';
 import { SEARCH_API_VERSION, AGENTIC_SEARCH_API_VERSION } from '../config/studio-live.mjs';
 import { illustrationPng } from './generate-studio.mjs';
 import { retryAfterSeconds } from '../lib/studio.mjs';
@@ -42,10 +43,10 @@ const attestations = (schema = productsSchema(), etag = '"e1"', extra = []) => (
 const searchResponse = () => new Response(JSON.stringify({ '@odata.count': 1, value: [{ id: 'DRILL-1001', title: 'Compact hammer drill',
   content: 'Light hammer drill for brick.', url: '/samples/zava-catalog.csv', scope: 'public', '@search.score': 2.5 }] }),
 { status: 200, headers: { 'content-type': 'application/json', 'request-id': 'svc-request-1' } });
-function harness({ handler = async () => searchResponse(), schema, etag, limits, config = liveConfig, extra = [] } = {}) {
+function harness({ handler = async () => searchResponse(), schema, etag, limits, config = liveConfig, extra = [], industries, recorded } = {}) {
   const calls = [];
   const logs = [];
-  const app = createVercelApp({ liveConfig: config, attestations: attestations(schema, etag, extra), limits, log: event => logs.push(event),
+  const app = createVercelApp({ liveConfig: config, attestations: attestations(schema, etag, extra), limits, log: event => logs.push(event), industries, recorded,
     fetchUpstream: async (url, init) => { calls.push({ url, init }); return handler(url, init); } });
   return { app, calls, logs };
 }
@@ -526,7 +527,7 @@ test('visible copy says Foundry IQ; "Azure AI Search" appears only in title, met
   assert.ok(about.includes('Foundry IQ (Azure AI Search)'));
   // Client strings, server messages and score labels (comments excluded).
   const literal = /(['`])[^'`\n]*Azure AI Search[^'`\n]*\1/;
-  for (const file of ['assets/client.mjs', 'assets/header.mjs', 'assets/about.mjs', 'lib/studio.mjs', 'lib/vercel-app.mjs', 'lib/search-adapter.mjs', 'config/studio-scenarios.mjs']) {
+  for (const file of ['assets/client.mjs', 'assets/header.mjs', 'assets/about.mjs', 'lib/studio.mjs', 'lib/vercel-app.mjs', 'lib/search-adapter.mjs', 'lib/industry.mjs', 'config/studio-scenarios.mjs']) {
     const code = read(file).split(/\r?\n/).filter(line => !/^\s*(\/\/|\*|\/\*)/.test(line)).join('\n');
     assert.doesNotMatch(code, literal, file);
   }
@@ -760,4 +761,255 @@ test('every showcase preset is recorded with a curated note, and AFTER clearly b
   }
   assert.equal(checked, 220);
   assert.equal(Object.keys(notesFile.entries).length, 220);
+});
+
+// Industry demos: public U.S. government corpora compiled in by build configuration; English only; filters, facets,
+// scoring profiles and S10 documents come only from the server-side preset allowlist in config/studio-industries.json.
+const facetFields = id => [...new Set([...Object.values(industryById(id).presets).flat().flatMap(preset => preset.facets || []),
+  ...(industryById(id).defaults?.S05?.facets || [])].map(facet => facet.split(',')[0]))];
+// Facet and preset-filter fields are filterable (and facetable) in the test schema, as in the real indexes.
+const shapedFields = id => [...new Set([...facetFields(id), ...Object.values(industryById(id).presets).flat().flatMap(preset => filterFields(preset.filter))])]
+  .filter(name => !['publishedDate', 'scope', 'variant', 'sourceHash', 'extractionAnalyzer'].includes(name));
+const industrySchema = id => ({ name: `foundry-iq-${id}`, fields: [
+  { name: 'id', type: 'Edm.String', key: true, searchable: true, filterable: true, analyzer: 'keyword' }, stringField('sourceId', { filterable: true }),
+  ...['title', 'content'].map(name => ({ name, type: 'Edm.String', searchable: true, analyzer: 'en.lucene', synonymMaps: ['zava-studio-synonyms'] })),
+  ...['titlePlain', 'contentPlain'].map(name => ({ name, type: 'Edm.String', searchable: true, retrievable: false, analyzer: 'standard.lucene' })),
+  stringField('url'), ...['scope', 'variant', 'sourceHash', 'extractionAnalyzer'].map(name => stringField(name, { filterable: true })),
+  ...['agency', 'publisher', 'license', 'docType', 'chunkType', 'coordinates'].filter(name => !shapedFields(id).includes(name)).map(name => stringField(name)),
+  ...shapedFields(id).map(name => stringField(name, { filterable: true, facetable: true })),
+  { name: 'publishedDate', type: 'Edm.DateTimeOffset', retrievable: true, filterable: true, facetable: true },
+  ...['page', 'row'].map(name => ({ name, type: 'Edm.Int32', retrievable: true })),
+  { name: 'contentVector', type: 'Collection(Edm.Single)', searchable: true, retrievable: false, dimensions: 1536, vectorSearchProfile: `${id}-profile` }],
+  semantic: { configurations: [{ name: `${id}-semantic` }] }, scoringProfiles: industryById(id).boostSubtypes.map(boost => ({ name: `${id}-${boost}` })),
+  vectorSearch: { profiles: [{ name: `${id}-profile`, algorithm: 'hnsw', vectorizer: `${id}-text-vectorizer` }], algorithms: [{ name: 'hnsw', kind: 'hnsw' }],
+    vectorizers: [{ name: `${id}-text-vectorizer`, kind: 'azureOpenAI', azureOpenAIParameters: { resourceUri: 'https://embed-account.openai.azure.com',
+      deploymentId: 'embed', modelName: 'text-embedding-3-small', apiKey: null, authIdentity: null } }] } });
+const industryEntries = ids => ids.map(id => ({ index: `foundry-iq-${id}`, etag: `"${id}-1"`, schema: industrySchema(id) }));
+const privateIndustryBinding = ids => ({ industries: Object.fromEntries(ids.map(id => [id, { index: `foundry-iq-${id}`, semanticConfiguration: `${id}-semantic`,
+  vectorField: 'contentVector', scoringProfiles: Object.fromEntries(industryById(id).boostSubtypes.map(boost => [boost, `${id}-${boost}`])) }])) });
+const industryDoc = (id, extra = {}) => ({ id, sourceId: id.split('#')[0], title: `Title ${id}`, content: `Evidence ${id}`, scope: 'public',
+  url: 'https://dailymed.nlm.nih.gov/dailymed/fda/label.pdf', agency: 'FDA', publishedDate: '2025-03-01T00:00:00Z', license: 'CC0 1.0', '@search.score': 1.2, ...extra });
+// Responds like Search for each request shape the industry arms send.
+const industryHandler = async (url, init) => {
+  const body = JSON.parse(init.body);
+  const analyzer = /extractionAnalyzer eq '([^']+)'/.exec(body.filter || '')?.[1];
+  if (analyzer) return json({ value: [industryDoc('PDF-1#p2', { extractionAnalyzer: analyzer, page: 2, chunkType: 'text' })] });
+  if (body.semanticQuery) return json({ value: ['DOC-2', 'DOC-1'].map(id => industryDoc(id, { '@search.rerankerScore': id === 'DOC-2' ? 3.2 : 2.1 })) });
+  if (body.queryType === 'agentic') return json({ value: [industryDoc('DOC-2')], '@search.debug': { agentic: { terminationReason: 'modelStopped',
+    subQueries: [{ iteration: 1, search: 'renal dosing adjustment' }], usage: { agenticPlanningTokens: 9 } } } });
+  return json({ value: [industryDoc('DOC-1'), industryDoc('DOC-2', { url: 'https://evil.example/phish' })], ...(body.facets ? { '@search.facets': { agency: [{ value: 'FDA', count: 2 }] } } : {}) });
+};
+function industryHarness({ enabled = ['healthcare', 'retail'], handler = industryHandler, recorded } = {}) {
+  const bindings = industryBindingsFrom(privateIndustryBinding(enabled), attestations(undefined, undefined, industryEntries(enabled)), enabled);
+  return harness({ extra: industryEntries(enabled), industries: { enabled, bindings }, handler, recorded });
+}
+const catalogFor = async (app, query = '', patch = {}) => app.handle('scenarios', new Request(`${ORIGIN}/api/scenarios${query}`), env(patch));
+const industryBody = (scenarioId, patch = {}) => ({ industry: 'healthcare', scenarioId, mode: 'live', query: 'kidney dosing for metformin', ...patch });
+
+test('industries are off by default; when built in, each lists only its applicable English scenarios and Zava is unchanged', async () => {
+  const off = harness().app;
+  assert.equal((await (await catalogFor(off)).json()).industries, undefined);
+  assert.equal((await catalogFor(off, '?industry=healthcare')).status, 400);
+  const { app, calls } = industryHarness();
+  const zava = await (await catalogFor(app)).json();
+  assert.deepEqual(zava.industries.map(item => item.id), ['zava', 'healthcare', 'retail']);
+  assert.equal(zava.industry.id, 'zava');
+  assert.equal(zava.scenarios.length, 11);
+  assert.ok(zava.industry.languages.includes('ja'));
+  const healthcare = await (await catalogFor(app, '?industry=healthcare')).json();
+  const item = industryById('healthcare');
+  assert.deepEqual(healthcare.scenarios.map(scenario => scenario.id), item.scenarios);
+  assert.ok(!healthcare.scenarios.some(scenario => ['S08', 'S09', 'S11'].includes(scenario.id)), 'graph and image search use the Zava store');
+  assert.equal(healthcare.industry.englishOnly, true);
+  assert.deepEqual(healthcare.industry.sourceHosts, item.sourceHosts);
+  assert.equal(healthcare.defaultMode, 'live');
+  assert.ok(healthcare.scenarios.every(scenario => scenario.liveAvailable && !scenario.sample.available && scenario.language === 'en'));
+  const s06 = healthcare.scenarios.find(scenario => scenario.id === 'S06');
+  assert.deepEqual(s06.boostSubtypes, item.boostSubtypes);
+  const s03 = healthcare.scenarios.find(scenario => scenario.id === 'S03');
+  assert.deepEqual(s03.demoPresets.map(preset => preset.query), item.presets.S03.map(preset => preset.query));
+  assert.equal(s03.demoPresets[0].note, item.presets.S03[0].why);
+  assert.ok(!JSON.stringify(healthcare).includes(item.presets.S03.find(preset => preset.filter).filter), 'preset filters stay on the server');
+  const retail = await (await catalogFor(app, '?industry=retail')).json();
+  assert.deepEqual(retail.scenarios.map(scenario => scenario.id), industryById('retail').scenarios);
+  assert.ok(!retail.scenarios.some(scenario => scenario.id === 'S10'), 'the recall corpus has no PDFs');
+  for (const query of ['?industry=healthcare&language=fr', '?industry=energy', '?industry=..%2Fzava']) assert.equal((await catalogFor(app, query)).status, 400, query);
+  for (const scenario of [...healthcare.scenarios, ...retail.scenarios]) {
+    for (const copy of [scenario.title, scenario.description, scenario.limits, scenario.sample.label, scenario.live.reason]) assert.deepEqual(staleIn(copy), [], copy);
+    assert.ok(!/Azure AI Search/.test(JSON.stringify(scenario)));
+  }
+  assert.equal(calls.length, 0);
+});
+
+test('industry requests reject client filters, other languages, inapplicable scenarios and unknown boosts before Azure', async () => {
+  const { app, calls } = industryHarness();
+  for (const [patch, code] of [[{ filter: "scope eq 'private'" }, 'invalid_studio_request'], [{ options: { filter: 'x' } }, 'invalid_studio_request'],
+    [{ language: 'fr' }, 'invalid_studio_request'], [{ scenarioId: 'S11' }, 'invalid_studio_request'], [{ scenarioId: 'S08' }, 'invalid_studio_request'],
+    [{ scenarioId: 'S06', options: { boostSubtype: 'availability' } }, 'invalid_studio_request'], [{ industry: 'energy' }, 'invalid_industry'],
+    [{ industry: 'zava ' }, 'invalid_industry'], [{ topK: 7 }, 'invalid_studio_request'], [{ mode: 'sample' }, 'invalid_studio_request']]) {
+    const response = await app.handle('run', post('run', industryBody(patch.scenarioId || 'S03', patch)), env());
+    assert.equal(response.status, 400, JSON.stringify(patch));
+    assert.equal((await response.json()).errorCode, code, JSON.stringify(patch));
+  }
+  assert.equal(calls.length, 0);
+});
+
+test('industry arms send the evaluated request shapes as docs/search POSTs with the query key only', async () => {
+  const { app, calls } = industryHarness();
+  const item = industryById('healthcare');
+  const bodies = async (scenarioId, query) => {
+    calls.length = 0;
+    const result = await (await app.handle('run', post('run', industryBody(scenarioId, query ? { query } : {})), env())).json();
+    assert.ok(['success', 'partial_success'].includes(result.executionStatus), `${scenarioId}: ${JSON.stringify(result).slice(0, 400)}`);
+    for (const call of calls) {
+      assert.equal(call.init.method, 'POST');
+      assert.match(new URL(call.url).pathname, /^\/indexes\/foundry-iq-healthcare\/docs\/search$/);
+      assert.equal(call.init.headers['api-key'], KEY);
+    }
+    return { result, sent: calls.map(call => JSON.parse(call.init.body)) };
+  };
+  let { sent, result } = await bodies('S01');
+  assert.deepEqual(sent.map(body => [body.searchFields, body.searchMode, body.filter]).sort(),
+    [['title,content', 'any', BASE_FILTER], ['titlePlain,contentPlain', 'all', BASE_FILTER]]);
+  assert.deepEqual(result.enhanced.hits.map(hit => hit.url), ['https://dailymed.nlm.nih.gov/dailymed/fda/label.pdf', undefined], 'off-allowlist links are dropped');
+  assert.equal(result.enhanced.hits[0].document.agency, 'FDA');
+  ({ sent } = await bodies('S02'));
+  const vectorArm = sent.find(body => !body.search);
+  assert.deepEqual(vectorArm.vectorQueries, [{ kind: 'text', text: 'kidney dosing for metformin', fields: 'contentVector', k: 50 }]);
+  assert.equal(vectorArm.vectorFilterMode, 'preFilter');
+  const filtered = item.presets.S03.find(preset => preset.filter);
+  ({ sent, result } = await bodies('S03', filtered.query));
+  assert.ok(sent.every(body => body.filter === `${BASE_FILTER} and (${filtered.filter})`));
+  assert.ok(sent.some(body => body.vectorQueries) && sent.some(body => !body.vectorQueries));
+  assert.deepEqual(result.enhanced.applied, [{ label: 'Filter (both arms)', value: filtered.filter }]);
+  assert.equal(result.note.text, filtered.why);
+  assert.match(result.note.source, /verified Live evaluation/);
+  ({ sent, result } = await bodies('S03', 'free text with no preset'));
+  assert.ok(sent.every(body => body.filter === BASE_FILTER));
+  assert.equal(result.note, undefined, 'free text gets no curated note');
+  ({ sent, result } = await bodies('S04'));
+  assert.equal(sent.length, 2, 'one shared candidate call plus one semantic L2 call');
+  assert.ok(sent[0].vectorQueries && !sent[0].semanticQuery);
+  assert.equal(sent[1].semanticQuery, 'kidney dosing for metformin');
+  assert.equal(sent[1].semanticConfiguration, 'healthcare-semantic');
+  assert.deepEqual(result.enhanced.hits.map(hit => hit.id), ['DOC-2', 'DOC-1']);
+  const faceted = item.presets.S05[0];
+  ({ sent, result } = await bodies('S05', faceted.query));
+  const [plain, after] = [sent.find(body => !body.vectorQueries), sent.find(body => body.vectorQueries)];
+  assert.equal(plain.filter, BASE_FILTER);
+  assert.equal(plain.facets, undefined);
+  assert.deepEqual(after.facets, faceted.facets);
+  assert.equal(after.filter, faceted.filter ? `${BASE_FILTER} and (${faceted.filter})` : BASE_FILTER);
+  assert.deepEqual(result.enhanced.facets, { agency: [{ value: 'FDA', count: 2 }] });
+  const boosted = item.presets.S06[0];
+  ({ sent } = await bodies('S06', boosted.query));
+  assert.deepEqual(sent.map(body => body.scoringProfile).filter(Boolean), [`healthcare-${boosted.boostSubtype || item.boostSubtypes[0]}`]);
+  ({ sent, result } = await bodies('S07'));
+  const agenticCall = calls.find(call => JSON.parse(call.init.body).queryType === 'agentic');
+  assert.equal(searchVersion(agenticCall.url), AGENTIC_SEARCH_API_VERSION);
+  assert.equal(JSON.parse(agenticCall.init.body).agenticOptions.maxRuntimeInSeconds, 10);
+  assert.equal(result.enhanced.trace.configuration.agenticSearch.subQueryCount, 1);
+  const pdf = item.presets.S10[0];
+  ({ sent, result } = await bodies('S10', pdf.query));
+  assert.deepEqual(sent.map(body => body.filter).sort(), ['prebuilt-layout', 'prebuilt-read'].map(analyzer =>
+    `scope eq 'public' and extractionAnalyzer eq '${analyzer}' and sourceHash eq '${pdf.sourceHash}'`));
+  assert.equal(result.baseline.hits[0].page, 2);
+  assert.match(result.enhanced.apiLog[0].url, /^https:\/\/<your-search-service>\.search\.windows\.net\/indexes\/foundry-iq-healthcare\//);
+  assert.ok(!JSON.stringify(result).includes(KEY));
+});
+
+test('LIVE_DISABLED_INDUSTRIES pauses chosen industries (zava included) and invalid values pause them all', async () => {
+  assert.deepEqual([...disabledIndustries(' Healthcare ', ['healthcare']).set], ['healthcare']);
+  assert.equal(disabledIndustries('nope', ['healthcare']).ok, false);
+  const { app, calls } = industryHarness();
+  const paused = await (await catalogFor(app, '?industry=healthcare', { LIVE_DISABLED_INDUSTRIES: 'healthcare' })).json();
+  assert.ok(paused.scenarios.every(scenario => !scenario.liveAvailable && /LIVE_DISABLED_INDUSTRIES/.test(scenario.live.reason)));
+  const run = await app.handle('run', post('run', industryBody('S03')), env({ LIVE_DISABLED_INDUSTRIES: 'healthcare' }));
+  assert.equal(run.status, 503);
+  assert.equal((await run.json()).errorCode, 'studio_live_unavailable');
+  assert.ok((await (await catalogFor(app, '?industry=retail', { LIVE_DISABLED_INDUSTRIES: 'healthcare' })).json()).scenarios.every(scenario => scenario.liveAvailable));
+  assert.ok((await (await catalogFor(app, '', { LIVE_DISABLED_INDUSTRIES: 'zava' })).json()).scenarios.every(scenario => !scenario.liveAvailable));
+  for (const query of ['', '?industry=retail']) {
+    assert.ok((await (await catalogFor(app, query, { LIVE_DISABLED_INDUSTRIES: 'typo' })).json()).scenarios.every(scenario => !scenario.liveAvailable), query);
+  }
+  const s01 = await (await catalogFor(app, '?industry=healthcare', { LIVE_DISABLED_SCENARIOS: 'S01' })).json();
+  assert.equal(s01.scenarios.find(scenario => scenario.id === 'S01').liveAvailable, false);
+  assert.equal(calls.length, 0);
+});
+
+test('industry recorded Sample replays only its own curated keys, and an explicit zava industry is the unchanged default demo', async () => {
+  const query = industryById('healthcare').presets.S03[0].query;
+  const arm = kind => ({ status: 'success', kind, hits: [{ id: 'DOC-1', sourceId: 'DOC-1', rank: 1 }], citations: [{ id: 'DOC-1', sourceId: 'DOC-1' }], trace: { steps: [] } });
+  const recorded = { recordedAt: '2026-11-26', entries: { [`healthcare|en|S03|${query}`]: { industry: 'healthcare', language: 'en', scenarioId: 'S03', query, topK: 10,
+    result: { mode: 'live', industry: 'healthcare', scenarioId: 'S03', query, executionStatus: 'success', baseline: arm('lexical'), enhanced: arm('hybrid'), comparison: {} } } } };
+  const { app, calls } = industryHarness({ recorded });
+  const catalog = await (await catalogFor(app, '?industry=healthcare')).json();
+  assert.deepEqual(catalog.scenarios.find(scenario => scenario.id === 'S03').sample.curatedQueries, [query]);
+  assert.equal((await (await catalogFor(app, '?industry=retail')).json()).scenarios.find(scenario => scenario.id === 'S03').sample.available, false);
+  const replay = await (await app.handle('run', post('run', industryBody('S03', { mode: 'sample', query })), env())).json();
+  assert.equal(replay.recorded.recordedAt, '2026-11-26');
+  assert.equal(replay.runId, 'recorded-healthcare-en-S03');
+  assert.equal(replay.note.text, industryById('healthcare').presets.S03[0].why);
+  const zavaKey = await app.handle('run', post('run', { scenarioId: 'S03', mode: 'sample', query, language: 'en', industry: 'zava' }), env());
+  assert.notEqual((await zavaKey.json()).runId, 'recorded-healthcare-en-S03', 'industry recordings never answer the Zava demo');
+  assert.equal(calls.length, 0);
+  const zava = await (await app.handle('run', post('run', liveBody('S02', { industry: 'zava' })), env())).json();
+  assert.equal(zava.executionStatus, 'success');
+  assert.ok(calls.length && calls.every(call => new URL(call.url).pathname === '/indexes/zava-studio-products/docs/search'));
+});
+
+test('build pins industry bindings to attested ETags, checks the public catalog and renders data sources', () => {
+  const ids = ['healthcare', 'retail'];
+  const full = attestations(undefined, undefined, industryEntries(ids));
+  const used = new Set();
+  const bindings = industryBindingsFrom(privateIndustryBinding(ids), full, ids, used);
+  assert.equal(bindings.industries.healthcare.indexETag, '"healthcare-1"');
+  assert.equal(bindings.agentic.maxRuntimeInSeconds, 10);
+  assert.deepEqual([...used], ['foundry-iq-healthcare', 'foundry-iq-retail']);
+  assert.deepEqual(industryBindingsFrom({}, full, []).industries, {}, 'no industries unless the build enables them');
+  assert.throws(() => industryBindingsFrom({ industries: {} }, full, ['healthcare']), /STUDIO_PRIVATE_INDUSTRIES/);
+  assert.throws(() => industryBindingsFrom(privateIndustryBinding(['energy']), full, ['energy']), /No schema attestation/);
+  assert.deepEqual(checkIndustryCatalog(industryCatalog, ids, full, bindings, { notesOptional: true }), []);
+  const tampered = structuredClone(industryCatalog);
+  const healthcare = tampered.industries.find(item => item.id === 'healthcare');
+  healthcare.presets.S01[0].filter = "scope eq 'private'";
+  healthcare.presets.S05[0].facets = ['titlePlain'];
+  healthcare.presets.S10[0].sourceHash = 'nope';
+  healthcare.presets.S03[0].filter = "secretField eq 'x' and search.ismatch('x')";
+  healthcare.presets.S11 = [{ id: 'x', query: 'hat' }];
+  const problems = checkIndustryCatalog(tampered, ids, full, bindings);
+  assert.ok(['agency', 'docType,count:5', 'publishedDate,interval:year', 'agency,sort:-count,count:10'].every(isFacet));
+  assert.ok(!['agency,interval:fortnight', 'agency,count:5;x', "agency,values:'a'", ''].some(isFacet));
+  assert.deepEqual(filterFields("category eq 'A and b eq c' and retailers/any(r: r eq 'Temu') and search.in(genericName, 'x,y', ',') and hospitalized ge 1"),
+    ['category', 'retailers', 'hospitalized', 'genericName']);
+  for (const expected of [/S01.*filter/, /facet titlePlain/, /S10 source hash/, /inapplicable S11/, /S03-01: filter$/, /filter field secretField/]) assert.ok(problems.some(problem => expected.test(problem)), `${expected}: ${problems}`);
+  // S07 planning varies between runs: a note may claim sub-queries only if the shipped recording shows them.
+  const s07 = structuredClone(industryCatalog);
+  const planned = s07.industries.find(item => item.id === 'healthcare').presets.S07[0];
+  planned.why = 'Agentic retrieval split the question into two sub-queries.';
+  const recording = (count, status = 'success') => ({ entries: { [`healthcare|en|S07|${planned.query}`]: { result: { executionStatus: status,
+    baseline: { status: 'success' }, enhanced: { status: 'success', trace: { configuration: { agenticSearch: { subQueryCount: count } } } } } } } });
+  assert.deepEqual(industryRecordingProblems(s07, ['healthcare'], recording(2)), []);
+  assert.match(industryRecordingProblems(s07, ['healthcare'], recording(0))[0], /claims agentic planning.*0 sub-queries/);
+  assert.match(industryRecordingProblems(s07, ['healthcare'], recording(2, 'partial_success'))[0], /not a successful comparison/);
+  assert.deepEqual(industryRecordingProblems(s07, ['retail'], recording(0)), [], 'only enabled industries are checked');
+  const page = readFileSync(new URL('../page.html', import.meta.url), 'utf8');
+  assert.match(pageWithIndustries(page, ids), /<meta name="studio-industries" content="healthcare,retail">/);
+  assert.match(pageWithIndustries(page, []), /<meta name="studio-industries" content="">/);
+  assert.throws(() => pageWithIndustries(page, ['"><script>']), /lowercase/);
+  const about = readFileSync(new URL('../about.html', import.meta.url), 'utf8');
+  const withSources = aboutWithDataSources(about, industryCatalog, ['healthcare']);
+  assert.match(withSources, /Public and synthetic demo data/);
+  assert.match(withSources, /href="https:\/\/open\.fda\.gov\/apis\/drug\/label\/"/);
+  assert.match(withSources, /<span class="license">CC0 1\.0/);
+  assert.match(withSources, /<footer><span>Public and synthetic demo data · <a href="#data-sources">Data sources<\/a>/);
+  assert.ok(!withSources.includes('All content is synthetic (Zava Retail)'));
+  const zavaOnly = aboutWithDataSources(about, industryCatalog, []);
+  assert.match(zavaOnly, /Synthetic demo data: the Zava store/);
+  assert.ok(!zavaOnly.includes('open.fda.gov'));
+  assert.throws(() => aboutWithDataSources('<main></main>', industryCatalog, []), /data-sources markers/);
+  for (const item of industryCatalog.industries) {
+    for (const source of item.sources) assert.match(source.url, /^https:\/\//, `${item.id} ${source.agency}`);
+    assert.deepEqual(staleIn(item.blurb), [], item.id);
+  }
 });

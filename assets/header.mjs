@@ -1,6 +1,20 @@
 // Shared top bar for the demo and About pages: Share, avatar menu (Settings, Help, About),
 // and the settings panel (document language, theme). Language is persisted for the demo.
 const SHARE_URL = 'https://aka.ms/foundryiq-demo';
+// On the demo page, a non-default industry or scenario is shared as a link to that exact view.
+const shareUrl = () => {
+  if (location.pathname !== '/') return SHARE_URL;
+  const current = new URLSearchParams(location.search);
+  const params = new URLSearchParams();
+  for (const name of ['industry', 'scenario']) if (/^[a-zA-Z0-9-]{1,32}$/.test(current.get(name) || '')) params.set(name, current.get(name));
+  return params.size ? `${location.origin}/?${params}` : SHARE_URL;
+};
+/** Industry demos are English-only: the document language applies to the Zava store demo only. */
+export function setLanguageLocked(locked) {
+  for (const input of languageInputs()) input.disabled = locked;
+  const note = element('language-note');
+  if (note) note.hidden = !locked;
+}
 const element = id => document.getElementById(id);
 export const languageInputs = () => [...document.querySelectorAll('input[name="document-language"]')];
 export const currentLanguage = () => languageInputs().find(input => input.checked)?.value || 'en';
@@ -42,19 +56,20 @@ export function initHeader({ onLanguageChange } = {}) {
     closeMenu();
     for (const input of document.querySelectorAll('input[name="theme"]')) input.checked = input.value === (window.fiqTheme?.get() || 'system');
     settingsPanel.hidden = false;
-    (languageInputs().find(input => input.checked) || languageInputs()[0]).focus();
+    (languageInputs().find(input => input.checked && !input.disabled) || [...settingsPanel.querySelectorAll('input')].find(input => !input.disabled))?.focus();
   };
 
   element('share').addEventListener('click', async () => {
-    const data = { title: 'Foundry IQ Demo Studio', text: 'Compare Foundry IQ retrieval patterns side by side with real queries and citations.', url: SHARE_URL };
+    const link = shareUrl();
+    const data = { title: 'Foundry IQ Demo Studio', text: 'Compare Foundry IQ retrieval patterns side by side with real queries and citations.', url: link };
     if (navigator.share && (!navigator.canShare || navigator.canShare(data))) {
       try { await navigator.share(data); return; } catch (error) { if (error?.name === 'AbortError') return; }
     }
     try {
-      await navigator.clipboard.writeText(SHARE_URL);
-      toast(`Link copied: ${SHARE_URL}`);
+      await navigator.clipboard.writeText(link);
+      toast(`Link copied: ${link}`);
     } catch {
-      toast(`Copy this link: ${SHARE_URL}`);
+      toast(`Copy this link: ${link}`);
     }
   });
   profileButton.addEventListener('click', () => (profileMenu.hidden ? openMenu(0) : closeMenu()));

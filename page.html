@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="studio-industries" content="">
   <title>Foundry IQ Demo Studio</title>
   <meta name="description" content="Compare Foundry IQ (Azure AI Search) retrieval patterns side by side with real queries and citations.">
   <meta property="og:title" content="Foundry IQ Demo Studio">
@@ -57,6 +58,7 @@
               <label class="choice"><input type="radio" name="document-language" value="ja"> 日本語</label>
               <label class="choice"><input type="radio" name="document-language" value="de"> Deutsch</label>
             </div>
+            <p class="language-note" id="language-note" hidden>This industry demo is English-only. Document language applies to the Zava store demo.</p>
           </fieldset>
           <fieldset>
             <legend>Theme</legend>
@@ -76,10 +78,17 @@
         <div class="heading">
           <h1 id="demo-title">Keyword search</h1>
           <p class="description" id="demo-description">Compare simple app search with full-text retrieval on synthetic Zava products.</p>
+          <p class="industry-blurb" id="industry-blurb" hidden></p>
         </div>
-        <div class="selector">
-          <img src="/assets/foundry.svg" alt="" width="25" height="25">
-          <div><label for="scenario">Foundry IQ Demos</label><select id="scenario" aria-describedby="demo-description"></select></div>
+        <div class="selectors">
+          <div class="selector industry-selector" id="industry-selector" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V8l5 3V8l5 3V4h4v17"/><path d="M8 15h1M12 15h1M16 15h1"/></svg>
+            <div><label for="industry" class="selector-caption">Industry</label><span class="selector-value" id="industry-current" aria-hidden="true"></span><select id="industry" aria-describedby="industry-blurb"></select></div>
+          </div>
+          <div class="selector" id="scenario-selector">
+            <img src="/assets/foundry.svg" alt="" width="25" height="25">
+            <div><label for="scenario">Foundry IQ Demos</label><select id="scenario" aria-describedby="demo-description"></select></div>
+          </div>
         </div>
       </div>
       <form id="search-form" class="search-card">
@@ -124,7 +133,7 @@
         <div class="metrics" id="metrics"></div>
       </section>
     </section>
-    <footer><span>Synthetic demo content · Zava Retail · S01–S11</span><span><a href="/about">About</a> · <a href="https://learn.microsoft.com/en-us/azure/search/" target="_blank" rel="noopener noreferrer">Foundry IQ docs</a> · <a href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer">GitHub</a></span></footer>
+    <footer><span id="footer-data">Synthetic demo content · Zava Retail · S01–S11</span><span><a href="/about">About</a> · <a href="https://learn.microsoft.com/en-us/azure/search/" target="_blank" rel="noopener noreferrer">Foundry IQ docs</a> · <a href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer">GitHub</a></span></footer>
   </main>
   <dialog class="drawer" id="drawer" role="dialog" aria-labelledby="drawer-title">
     <div class="sheet-head"><div><p class="eyebrow" id="drawer-eyebrow"></p><h2 id="drawer-title">Result details</h2></div><button class="icon-btn" id="drawer-close" type="button" aria-label="Close result details" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>

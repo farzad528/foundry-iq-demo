@@ -29,6 +29,11 @@ test runner. Match surrounding two-space JavaScript style and explicit imports.
 - `lib/native-graph.mjs`, `config/studio-graph.json`: native S08 entity-graph and S09
   topic-graph search. GQL comes only from the server-side preset allowlist; never
   accept GQL from a request. Index names stay in private bindings.
+- `lib/industry.mjs`, `config/studio-industries.json`: industry demos on public U.S.
+  government corpora (English only) for the Vercel build, compiled in only when
+  `STUDIO_INDUSTRIES` lists them. Filters, facets, scoring profiles and S10 documents
+  come only from the server-side preset allowlist; never accept them from a request.
+  Index names stay in the private industry binding.
 - `lib/search-adapter.mjs`, `lib/vercel-app.mjs`, `scripts/build-vercel.mjs`: the
   personal Vercel build. Search docs/search (plus docs/search.graph on attested graph
   indexes) is the only upstream; schema checks use

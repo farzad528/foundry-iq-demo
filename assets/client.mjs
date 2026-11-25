@@ -1,4 +1,4 @@
-import { initHeader, currentLanguage, currentLanguageLabel } from './header.mjs';
+import { initHeader, currentLanguage, currentLanguageLabel, setLanguageLocked } from './header.mjs';
 
 const element = id => document.getElementById(id);
 let scenarios = [];
@@ -10,6 +10,15 @@ let configuration;
 let activeSuggestion = -1;
 let bundledFile = false;
 let lastResult;
+// Industry and scenario live in the URL (?industry=healthcare&scenario=S04) so Share links open the same view.
+const startParams = new URLSearchParams(location.search);
+// Industries compiled into this build; an unknown industry in a link opens the Zava demo without a failed request.
+const builtIndustries = (document.querySelector('meta[name="studio-industries"]')?.content || '').split(',').filter(Boolean);
+let industry = builtIndustries.includes(startParams.get('industry')) ? startParams.get('industry') : 'zava';
+let pendingScenario = /^S(?:0[1-9]|1[01])$/.test(startParams.get('scenario') || '') ? startParams.get('scenario') : null;
+const requestLanguage = () => industry === 'zava' ? currentLanguage() : 'en';
+const BOOST_LABELS = { freshness: 'Freshness', magnitude: 'Magnitude', distance: 'Distance', tags: 'Tags', availability: 'Availability',
+  authority: 'Authority', impact: 'Impact' };
 const recordedSampleMode = () => element('mode').value === 'sample' && !!selectedScenario()?.sample?.recorded;
 
 const node = (tag, text, className) => {
@@ -27,8 +36,11 @@ const safeUrl = value => {
   if (typeof value !== 'string') return null;
   try {
     const url = new URL(value, location.origin);
-    if (url.origin !== location.origin || !url.pathname.startsWith('/samples/') || url.username || url.password) return null;
-    return url.href;
+    if (url.username || url.password) return null;
+    if (url.origin === location.origin) return url.pathname.startsWith('/samples/') ? url.href : null;
+    // Industry citations open the original public source, only on that industry's reviewed hosts.
+    const hosts = configuration?.industry?.sourceHosts || [];
+    return url.protocol === 'https:' && !url.port && hosts.includes(url.host) ? url.href : null;
   } catch { return null; }
 };
 const armLabels = {
@@ -39,6 +51,7 @@ const armLabels = {
   documents: 'Source-document retrieval', graph: 'Foundry IQ entity graph',
   topic: 'Topic-balanced retrieval + themes', basic: 'Basic text extraction', layout: 'Layout-aware extraction',
   metadata: 'Text-only product metadata', image: 'Image-vector similarity',
+  plainKeyword: 'Plain keyword: every term', filteredHybrid: 'Filtered hybrid + facets',
 };
 const label = (value, fallback) => typeof value === 'string' ? armLabels[value] || value : value?.label || fallback;
 const errorText = value => typeof value === 'string' ? value : value?.message || value?.code || 'This arm could not complete.';
@@ -58,7 +71,7 @@ function closeSuggestions() {
 let visiblePresets = [];
 function showSuggestions(filter = false) {
   const text = filter ? element('query').value.trim().toLocaleLowerCase() : '';
-  visiblePresets = presetList().filter(preset => !text || `${preset.label} ${preset.query}`.toLocaleLowerCase().includes(text));
+  visiblePresets = presetList().filter(preset => !text || `${preset.label} ${preset.query} ${preset.hint || ''}`.toLocaleLowerCase().includes(text));
   const list = element('query-suggestions');
   list.setAttribute('aria-label', `Example queries for ${selectedScenario()?.title || 'this scenario'}`);
   list.replaceChildren(...visiblePresets.map((preset, index) => {
@@ -70,7 +83,10 @@ function showSuggestions(filter = false) {
       const thumb = Object.assign(node('img'), { src: preset.image, alt: '', width: 28, height: 28 });
       option.append(thumb);
     }
-    option.append(node('span', preset.label || preset.query));
+    const text = node('span', undefined, 'suggestion-text');
+    text.append(node('span', preset.label || preset.query));
+    if (preset.hint) text.append(node('span', preset.hint, 'suggestion-hint'));
+    option.append(text);
     option.addEventListener('mousedown', event => event.preventDefault());
     option.addEventListener('click', () => choosePreset(preset));
     return option;
@@ -182,6 +198,7 @@ function modeChanged() {
 }
 
 function uploadHelp(scenario, mode) {
+  if (scenario.id === 'S10' && industry !== 'zava') return 'Both arms search the same public PDF, extracted at ingestion; each example chooses its PDF, and citations open the original document at the page. Uploading new PDFs isn’t supported in this demo.';
   if (scenario.id === 'S10') return 'Both arms search the same bundled product manual PDF, and citations open the exact page. Uploading new PDFs isn’t supported in this demo.';
   if (mode === 'live' && scenario.liveAvailable) return 'PNG, JPEG or WebP up to 40 KiB, sent once to Foundry IQ, which vectorizes it with Azure Vision. Nothing is stored or indexed. Without an image, your text is matched against the image vectors (text-to-image).';
   if (mode === 'live') return 'Live image search is currently unavailable for this scenario. Switch to Sample to try the bundled example images.';
@@ -201,7 +218,11 @@ function scenarioChanged() {
   sampleOption.disabled = !scenario.sample?.available;
   if (sampleOption.disabled && element('mode').value === 'sample') element('mode').value = 'live';
   element('boost-field').hidden = scenario.id !== 'S06';
-  if (scenario.id === 'S06') element('boost').value = scenario.defaultBoostSubtype || 'availability';
+  if (scenario.id === 'S06') {
+    const subtypes = scenario.boostSubtypes || Object.keys(BOOST_LABELS).slice(0, 5);
+    element('boost').replaceChildren(...subtypes.map(value => Object.assign(node('option', BOOST_LABELS[value] || value), { value })));
+    element('boost').value = scenario.defaultBoostSubtype || subtypes[0];
+  }
   element('weight-field').hidden = scenario.id !== 'S06';
   element('upload-area').hidden = !['S10', 'S11'].includes(scenario.id);
   element('file').accept = scenario.id === 'S10' ? 'application/pdf' : 'image/jpeg,image/png,image/webp';
@@ -210,6 +231,34 @@ function scenarioChanged() {
   element('file').closest('.field').hidden = scenario.id === 'S10';
   if (scenario.id === 'S11') element('sample-reference').src = '/samples/zava-hat-blue.svg';
   modeChanged();
+  updateUrl();
+}
+
+// Industry facets: the top three values per field, the rest behind a disclosure; long values are truncated with a tooltip.
+function facetSummary(facets) {
+  const box = node('div', undefined, 'facet-summary');
+  box.setAttribute('aria-label', 'Facets returned by this arm');
+  const label = value => typeof value.value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value.value) ? value.value.slice(0, 10) : String(value.value);
+  const chip = value => Object.assign(node('span', `${label(value)} (${value.count})`, 'facet-chip'), { title: `${label(value)} (${value.count})` });
+  for (const [field, values] of Object.entries(facets)) {
+    if (!Array.isArray(values) || !values.length) continue;
+    const row = node('div', undefined, 'facet-row');
+    row.append(node('span', field, 'facet-name'), ...values.slice(0, 3).map(chip));
+    if (values.length > 3) {
+      const more = node('details', undefined, 'facet-more');
+      more.append(node('summary', `+${values.length - 3} more`), ...values.slice(3).map(chip));
+      row.append(more);
+    }
+    box.append(row);
+  }
+  return box;
+}
+
+function updateUrl() {
+  const params = new URLSearchParams();
+  if (industry !== 'zava') params.set('industry', industry);
+  if (element('scenario').value && element('scenario').value !== scenarios[0]?.id) params.set('scenario', element('scenario').value);
+  history.replaceState(history.state, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
 }
 
 function sourceLink(hit) {
@@ -220,7 +269,8 @@ function sourceLink(hit) {
     url = pageUrl.href;
   }
   if (!url) return node('span', 'Source link unavailable', 'source-missing');
-  const name = Number.isInteger(hit.page) ? `Open source document, page ${hit.page}` : 'Open source document';
+  const external = new URL(url).origin !== location.origin;
+  const name = `Open source document${external ? ` on ${new URL(url).host}` : ''}${Number.isInteger(hit.page) ? `, page ${hit.page}` : ''}`;
   const link = Object.assign(node('a', undefined, 'source-link'), { href: url, target: '_blank', rel: 'noopener noreferrer', title: `${name} (opens in a new tab)` });
   link.setAttribute('aria-label', `${name} (opens in a new tab)`);
   link.innerHTML = OPEN_ICON;
@@ -246,7 +296,8 @@ function renderHit(hit, side, index, baselineIds) {
   open.addEventListener('click', () => openDrawer(side, index, open));
   const heading = node('h3');
   heading.append(open);
-  content.append(heading, node('p', hit.snippet || 'No passage returned.', 'snippet'));
+  // Public-document chunks can be long: cards show the first lines, and the details drawer shows the full passage.
+  content.append(heading, node('p', hit.snippet || 'No passage returned.', industry === 'zava' ? 'snippet' : 'snippet clamp-long'));
   const meta = node('div', undefined, 'meta');
   meta.append(node('span', hit.sourceId || hit.id || 'No source ID'));
   if (hit.page !== undefined) meta.append(node('span', `Page ${hit.page}`));
@@ -255,6 +306,8 @@ function renderHit(hit, side, index, baselineIds) {
     : `Source coordinates: ${JSON.stringify(hit.coordinates)}`));
   if (hit.score !== undefined) meta.append(node('span', `${hit.scoreType || 'Service score'}: ${Number.isFinite(hit.score) ? hit.score.toFixed(3) : hit.score}`));
   if (side === 'enhanced' && originalRank >= 0 && originalRank !== index) meta.append(node('span', `Rank ${originalRank + 1} → ${index + 1}`));
+  if (hit.document?.agency) meta.append(node('span', hit.document.agency));
+  if (typeof hit.document?.publishedDate === 'string') meta.append(node('span', hit.document.publishedDate.slice(0, 10)));
   if (hit.topic?.title) meta.append(node('span', `Theme: ${hit.topic.title}`, 'theme-chip'));
   if (Number.isInteger(hit.citedBy) && hit.citedBy > 0) meta.append(node('span', `Cites ${hit.citedBy} path row${hit.citedBy === 1 ? '' : 's'}`));
   content.append(meta);
@@ -290,6 +343,16 @@ function renderArm(side, arm, scenario, result) {
     return;
   }
   if (arm.error) container.append(node('p', `Partial result: ${errorText(arm.error)}`, 'error'));
+  if (arm.applied?.length) {
+    // What this arm applied from the curated example: filter, facets, scoring profile or PDF.
+    const applied = node('p', undefined, 'applied');
+    for (const item of arm.applied) {
+      const part = node('span', undefined, 'applied-item');
+      part.append(node('span', `${item.label}: `, 'applied-label'), node('code', item.value));
+      applied.append(part);
+    }
+    container.append(applied);
+  }
   if (arm.trace?.configuration?.agenticSearch) container.append(agenticPlan(arm.trace.configuration.agenticSearch));
   // "Insufficient evidence." is a refusal, not an answer: without hits the empty state says it; with hits, say so plainly.
   const noAnswer = arm.answer === 'Insufficient evidence.';
@@ -359,7 +422,8 @@ function renderArm(side, arm, scenario, result) {
       container.append(card);
     }
   }
-  if (arm.facets) {
+  if (arm.facets && industry !== 'zava') container.append(facetSummary(arm.facets));
+  else if (arm.facets) {
     const facets = node('div', undefined, 'metrics');
     Object.entries(arm.facets).forEach(([field, values]) => {
       (Array.isArray(values) ? values : []).forEach(value => facets.append(node('span', `${field}: ${value.value} (${value.count})`, 'metric')));
@@ -587,8 +651,8 @@ async function run(event) {
   element('cancel').hidden = false;
   setStatus('Running both comparison arms…');
   try {
-    const body = { scenarioId: scenario.id, query, topK: Number(element('count').value), mode: element('mode').value,
-      language: currentLanguage() };
+    const body = { ...(industry !== 'zava' ? { industry } : {}), scenarioId: scenario.id, query, topK: Number(element('count').value), mode: element('mode').value,
+      language: requestLanguage() };
     if (selectedFile && imageCompatible) {
       const bytes = new Uint8Array(await selectedFile.arrayBuffer());
       if (id !== sequence) return;
@@ -656,7 +720,14 @@ element('search-form').addEventListener('submit', run);
 element('scenario').addEventListener('change', scenarioChanged);
 const scenarioSelector = element('scenario').closest('.selector');
 element('scenario').addEventListener('pointerdown', () => { scenarioSelector.dataset.pointerFocus = 'true'; });
-document.addEventListener('keydown', () => { delete scenarioSelector.dataset.pointerFocus; }, { capture: true });
+const industrySelector = element('industry-selector');
+element('industry').addEventListener('pointerdown', () => { industrySelector.dataset.pointerFocus = 'true'; });
+document.addEventListener('keydown', () => { delete scenarioSelector.dataset.pointerFocus; delete industrySelector.dataset.pointerFocus; }, { capture: true });
+element('industry').addEventListener('change', () => {
+  industry = element('industry').value;
+  pendingScenario = element('scenario').value;
+  void loadScenarios('industry');
+});
 element('mode').addEventListener('change', modeChanged);
 element('count').addEventListener('change', () => { invalidate(); setStatus('Result count changed. Search again to apply.'); });
 element('boost').addEventListener('change', () => { invalidate(); setStatus('Boost changed. Search again to apply.'); });
@@ -754,29 +825,56 @@ element('file').addEventListener('change', async () => {
   }
 });
 
+// Industry selector, blurb, English-only language lock and footer, from the catalog's industry list.
+function renderIndustry() {
+  const list = configuration.industries || [];
+  const multiple = list.length > 1;
+  element('industry-selector').hidden = !multiple;
+  if (multiple) element('industry').replaceChildren(...list.map(item => Object.assign(node('option', item.label), { value: item.id })));
+  element('industry').value = industry;
+  const info = configuration.industry;
+  element('industry-current').textContent = info?.label || '';
+  element('industry-blurb').hidden = !multiple || !info;
+  if (info) element('industry-blurb').textContent = info.englishOnly ? `${info.blurb} Public U.S. government data · English only.` : info.blurb;
+  setLanguageLocked(industry !== 'zava');
+  if (multiple) element('footer-data').replaceChildren('Public and synthetic demo data · ', Object.assign(node('a', 'Data sources'), { href: '/about#data-sources' }));
+}
+
+// changed: false on first load, true after a language change, 'industry' after an industry change.
 async function loadScenarios(changed = false) {
   invalidate();
   clearFile();
   const epoch = sequence;
-  const previous = element('scenario').value;
-  const language = currentLanguage();
+  const previous = pendingScenario || element('scenario').value;
   element('search').disabled = true;
   const controller = new AbortController();
   active = controller;
   try {
-    const response = await fetch(`/api/scenarios${language === 'en' ? '' : `?language=${language}`}`, { signal: controller.signal });
+    const request = () => {
+      const params = new URLSearchParams();
+      if (industry !== 'zava') params.set('industry', industry);
+      if (requestLanguage() !== 'en') params.set('language', requestLanguage());
+      return fetch(`/api/scenarios${params.size ? `?${params}` : ''}`, { signal: controller.signal });
+    };
+    let response = await request();
+    // An unknown or unavailable industry in a shared link opens the default demo.
+    if (response.status === 400 && industry !== 'zava') { industry = 'zava'; response = await request(); }
     if (!response.ok) throw new Error('Scenario catalog could not be loaded.');
     const next = await response.json();
     if (epoch !== sequence) return;
     configuration = next;
     scenarios = Array.isArray(configuration) ? configuration : configuration.scenarios;
-    if (!Array.isArray(scenarios) || scenarios.length !== 11) throw new Error('The S01–S11 catalog is unavailable.');
+    if (!Array.isArray(scenarios) || !scenarios.length) throw new Error('The scenario catalog is unavailable.');
+    renderIndustry();
     element('scenario').replaceChildren(...scenarios.map(item => Object.assign(node('option', item.title), { value: item.id })));
     if (scenarios.some(item => item.id === previous)) element('scenario').value = previous;
-    if (language !== 'en' || configuration.defaultMode === 'live' && !changed) element('mode').value = 'live';
+    pendingScenario = null;
+    if (changed === 'industry') element('mode').value = configuration.defaultMode === 'sample' ? 'sample' : 'live';
+    else if (requestLanguage() !== 'en' || configuration.defaultMode === 'live' && !changed) element('mode').value = 'live';
     active = undefined;
     scenarioChanged();
-    if (changed) setStatus(`Document language changed to ${currentLanguageLabel()}. Search to compare; nothing has run.`);
+    if (changed === 'industry') setStatus(`Industry changed to ${configuration.industry?.label || 'the selected industry'}. Search to compare; nothing has run.`);
+    else if (changed) setStatus(`Document language changed to ${currentLanguageLabel()}. Search to compare; nothing has run.`);
   } catch (error) {
     if (epoch !== sequence || controller.signal.aborted) return;
     element('search').disabled = true;
@@ -884,11 +982,16 @@ function openDrawer(side, index, opener) {
   if (Number.isInteger(hit.page)) definition(overview, 'PDF location', `Page ${hit.page}${Number.isInteger(hit.row) ? `, table row ${hit.row}` : ''}`);
   const source = safeUrl(hit.url);
   if (source) {
-    const link = Object.assign(node('a', new URL(source).pathname), { href: source, target: '_blank', rel: 'noopener noreferrer' });
+    const target = new URL(source);
+    const link = Object.assign(node('a', target.origin === location.origin ? target.pathname : `${target.host}${target.pathname}`), { href: source, target: '_blank', rel: 'noopener noreferrer' });
     definition(overview, 'Source', link);
   }
+  definition(overview, 'Agency', document_.agency);
+  definition(overview, 'Publisher', document_.publisher);
+  definition(overview, 'Document type', document_.docType);
   definition(overview, 'License', document_.license || 'Synthetic demo content (MIT License, this repository)');
-  definition(overview, 'Published or updated', document_.publishedAt || document_.updatedAt || document_.lastRefreshedAt || 'Not recorded in the index');
+  definition(overview, 'Published or updated', (typeof document_.publishedDate === 'string' ? document_.publishedDate.slice(0, 10) : '')
+    || document_.publishedAt || document_.updatedAt || document_.lastRefreshedAt || 'Not recorded in the index');
 
   const ranking = node('dl', undefined, 'facts');
   const before = side === 'baseline' ? index : otherIndex;

@@ -37,7 +37,7 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
     assert.equal(await page.locator('header.topbar').count(), 1);
     assert.equal(await page.locator('aside').count(), 0);
     assert.equal(await page.locator('#mode option[value=live]').textContent(), 'Live data');
-    const selector = page.locator('.selector');
+    const selector = page.locator('#scenario-selector');
     await page.locator('#scenario').click();
     assert.equal(await selector.evaluate(el => getComputedStyle(el).outlineStyle), 'none');
     await page.waitForFunction(() => document.querySelector('#scenario').matches(':open'));

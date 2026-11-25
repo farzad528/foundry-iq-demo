@@ -47,3 +47,22 @@ export const liveLimits = {
   S10: 'Both arms search the same bundled PDF, extracted at ingestion; new PDF uploads are not supported.',
   S11: 'Live accepts one PNG, JPEG or WebP image up to 40 KiB per search. Foundry IQ vectorizes it with Azure Vision; the image is not stored or indexed.',
 };
+// Industry demos (public U.S. government data, English only): titles, descriptions and limits for the scenarios that apply.
+export const industryScenarioCopy = {
+  S01: { title: 'Keyword search', description: 'Compare a plain keyword match that needs every term with full-text analysis and synonyms.',
+    limits: 'BEFORE searches unanalyzed title and text fields and requires every term; AFTER uses language analyzers and the shared synonym map.' },
+  S02: { title: 'Vector search', description: 'Compare keyword matching with text-vector similarity for questions asked in everyday words.',
+    limits: 'Foundry IQ vectorizes the query text with the index vectorizer; the app holds no model key.' },
+  S03: { title: 'Hybrid search', description: 'Compare keyword and hybrid retrieval with the same filter.',
+    limits: 'Examples can apply a filter to both arms; free-text questions search all public documents.' },
+  S04: { title: 'Semantic reranking', description: 'Compare the same hybrid candidates before and after semantic reranking. Only the order changes.',
+    limits: 'The semantic ranker reorders the exact hybrid candidates; no new documents are retrieved.' },
+  S05: { title: 'Faceted search', description: 'Compare keyword search over everything with hybrid search narrowed by a filter, plus facets.',
+    limits: 'Examples apply their filter in AFTER only; free-text questions keep all public documents and show facets.' },
+  S06: { title: 'Document boosting', description: 'Compare hybrid results with and without a scoring profile that boosts fresher, more authoritative or higher-impact documents.',
+    limits: 'Live applies the selected scoring profile to the same hybrid query.' },
+  S07: { title: 'Agentic search', description: 'Compare single-pass hybrid retrieval with agentic retrieval on the same index. Evidence only: compare the documents and citations; neither arm generates an answer.',
+    limits: 'Live uses agentic retrieval with a bounded runtime and compares evidence only; neither arm generates an answer.' },
+  S10: { title: 'PDF layout (Azure Content Understanding)', description: 'Compare Read and Layout extraction of the same public PDF, with page and table-row citations. Extraction ran at ingestion.',
+    limits: 'Both arms search one public PDF, extracted at ingestion; examples choose the PDF, and free-text questions search the first example’s PDF.' },
+};
