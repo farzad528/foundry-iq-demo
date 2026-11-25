@@ -1,5 +1,5 @@
 import { initHeader, currentLanguage, currentLanguageLabel, setLanguageLocked } from './header.mjs';
-import { displayText, notConfigured } from './display.mjs';
+import { displayText, passageView, repairMojibake, notConfigured } from './display.mjs';
 
 const element = id => document.getElementById(id);
 let scenarios = [];
@@ -27,6 +27,12 @@ const requestLanguage = () => languageFor(industry);
 const searchBlocked = () => !!catalogLoad || notConfigured(selectedScenario());
 // Industry corpora are English-only public documents; see displayText for the extraction-artifact rule.
 const shownText = value => displayText(value, { englishOnly: industry !== 'zava' });
+// Industry graph passages may carry the source file's metadata header; cards and the drawer show the body (or "Metadata only")
+// under the header's title, and repair code-page mojibake. Raw hit JSON and the API log keep the exact retrieved text.
+const viewOf = hit => passageView(hit, { englishOnly: industry !== 'zava' });
+const shownTitle = hit => viewOf(hit).title;
+const shownPassage = hit => viewOf(hit).passage;
+const shownValue = value => industry !== 'zava' && typeof value === 'string' ? repairMojibake(value) : value;
 const BOOST_LABELS = { freshness: 'Freshness', magnitude: 'Magnitude', distance: 'Distance', tags: 'Tags', availability: 'Availability',
   authority: 'Authority', impact: 'Impact' };
 const recordedSampleMode = () => element('mode').value === 'sample' && !!selectedScenario()?.sample?.recorded;
@@ -306,17 +312,17 @@ function renderHit(hit, side, index, baselineIds) {
   head.append(node('span', `#${hit.rank || index + 1}`, 'rank'), sourceLink(hit));
   card.append(head);
   const image = safeUrl(hit.thumbnailUrl);
-  if (image) card.append(Object.assign(node('img'), { src: image, alt: shownText(hit.title) || 'Synthetic product illustration', loading: 'lazy' }));
+  if (image) card.append(Object.assign(node('img'), { src: image, alt: shownTitle(hit) || 'Synthetic product illustration', loading: 'lazy' }));
   const content = node('div', undefined, 'hit-body');
   // The title opens the result details drawer; its hit area covers the card (links and disclosures stay on top).
-  const open = node('button', shownText(hit.title) || hit.id, 'hit-open');
+  const open = node('button', shownTitle(hit) || hit.id, 'hit-open');
   open.type = 'button';
   open.setAttribute('aria-haspopup', 'dialog');
   open.addEventListener('click', () => openDrawer(side, index, open));
   const heading = node('h3');
   heading.append(open);
   // Public-document chunks can be long: cards show the first lines, and the details drawer shows the full passage.
-  content.append(heading, node('p', shownText(hit.snippet) || 'No passage returned.', industry === 'zava' ? 'snippet' : 'snippet clamp-long'));
+  content.append(heading, node('p', shownPassage(hit) || 'No passage returned.', industry === 'zava' ? 'snippet' : 'snippet clamp-long'));
   const meta = node('div', undefined, 'meta');
   meta.append(node('span', hit.sourceId || hit.id || 'No source ID'));
   if (hit.page !== undefined) meta.append(node('span', `Page ${hit.page}`));
@@ -501,12 +507,12 @@ function chains(hops) {
   return out;
 }
 function pathText(statement, row) {
-  if (!statement.hops?.length) return Object.entries(row.values).map(([key, value]) => `${key}: ${value}`).join(' · ');
-  return chains(statement.hops).map(chain => [row.values[chain[0].from], ...chain.map(hop => `—${hop.relation}→ ${row.values[hop.to]}`)].join(' ')).join('; ');
+  if (!statement.hops?.length) return Object.entries(row.values).map(([key, value]) => `${key}: ${shownValue(value)}`).join(' · ');
+  return chains(statement.hops).map(chain => [shownValue(row.values[chain[0].from]), ...chain.map(hop => `—${hop.relation}→ ${shownValue(row.values[hop.to])}`)].join(' ')).join('; ');
 }
 function entityChip(value, role) {
   const chip = node('span', undefined, 'entity');
-  chip.append(node('span', role.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(), 'entity-role'), node('span', String(value ?? '—'), 'entity-name'));
+  chip.append(node('span', role.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(), 'entity-role'), node('span', shownValue(String(value ?? '—')), 'entity-name'));
   return chip;
 }
 function renderPathRow(statement, row, side, arm) {
@@ -1035,8 +1041,11 @@ function openDrawer(side, index, opener) {
   const otherIndex = (result[otherSide]?.hits || []).findIndex(other => sameDocument(other, hit));
   const configuration = arm.trace?.configuration || {};
   const document_ = hit.document || {};
+  const header = viewOf(hit).header;
+  // Document facts: the index fields, else the passage's metadata header (industry graph passages), as display text.
+  const fact = name => shownValue(document_[name] ?? (typeof header[name] === 'string' ? header[name] : undefined));
   element('drawer-eyebrow').textContent = `${armName(side)} · #${hit.rank || index + 1} · ${arm.label || label(selectedScenario()?.[side], armName(side))}`;
-  element('drawer-title').textContent = shownText(hit.title) || hit.id;
+  element('drawer-title').textContent = shownTitle(hit) || hit.id;
   const status = node('p', undefined, 'sr-only');
   status.setAttribute('role', 'status');
 
@@ -1052,11 +1061,13 @@ function openDrawer(side, index, opener) {
     const link = Object.assign(node('a', target.origin === location.origin ? target.pathname : `${target.host}${target.pathname}`), { href: source, target: '_blank', rel: 'noopener noreferrer' });
     definition(overview, 'Source', link);
   }
-  definition(overview, 'Agency', document_.agency);
-  definition(overview, 'Publisher', document_.publisher);
-  definition(overview, 'Document type', document_.docType);
-  definition(overview, 'License', document_.license || 'Synthetic demo content (MIT License, this repository)');
-  definition(overview, 'Published or updated', (typeof document_.publishedDate === 'string' ? document_.publishedDate.slice(0, 10) : '')
+  definition(overview, 'Agency', fact('agency'));
+  definition(overview, 'Publisher', fact('publisher'));
+  definition(overview, 'Document type', fact('docType'));
+  // Industry graph passages carry no license field: use the passage header when present, never the Zava synthetic license.
+  definition(overview, 'License', fact('license') || (industry === 'zava' ? 'Synthetic demo content (MIT License, this repository)'
+    : 'Not stated in this passage; see the original source and the Data sources list on About.'));
+  definition(overview, 'Published or updated', (typeof fact('publishedDate') === 'string' ? fact('publishedDate').slice(0, 10) : '')
     || document_.publishedAt || document_.updatedAt || document_.lastRefreshedAt || 'Not recorded in the index');
 
   const ranking = node('dl', undefined, 'facts');
@@ -1108,7 +1119,7 @@ function openDrawer(side, index, opener) {
   // The passage is shown once, as readable text under Passage; Raw hit JSON keeps the exact retrieved value.
   for (const [name, value] of Object.entries(allFields)) definition(fieldsList, name, name === 'content' ? 'Shown under Passage; the exact text is in Raw hit JSON.'
     : typeof value === 'string' ? value : JSON.stringify(value));
-  const passage = section('Passage', node('p', shownText(hit.snippet) || 'No passage returned.', 'passage-text'));
+  const passage = section('Passage', node('p', shownPassage(hit) || 'No passage returned.', 'passage-text'));
   const raw = { ...(hit.search?.score !== undefined ? { '@search.score': hit.search.score } : {}),
     ...(hit.search?.rerankerScore !== undefined ? { '@search.rerankerScore': hit.search.rerankerScore } : {}),
     ...(hit.search?.captions ? { '@search.captions': hit.search.captions } : {}), ...(hit.search?.highlights ? { '@search.highlights': hit.search.highlights } : {}),

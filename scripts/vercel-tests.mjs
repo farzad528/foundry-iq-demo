@@ -9,7 +9,7 @@ import { SEARCH_API_VERSION, AGENTIC_SEARCH_API_VERSION } from '../config/studio
 import { illustrationPng } from './generate-studio.mjs';
 import { retryAfterSeconds } from '../lib/studio.mjs';
 import { imageOnlyQuery } from '../config/studio-languages.mjs';
-import { displayText, notConfigured } from '../assets/display.mjs';
+import { displayText, notConfigured, passageView, repairMojibake, frontMatter, METADATA_ONLY } from '../assets/display.mjs';
 
 const KEY = 'QueryKeyForTestsOnly0123456789abcdefABCDEF';
 const ENDPOINT = 'https://foundry-iq-demos.search.windows.net';
@@ -1105,10 +1105,51 @@ test('passages display as plain text (Markdown removed) while raw values stay un
   assert.equal(displayText('Brand 小米 power bank', { englishOnly: true }), 'Brand 小米 power bank', 'only kana mixed with Latin letters or digits');
   const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
   assert.match(client, /'hit-open'/);
-  assert.match(client, /shownText\(hit\.title\) \|\| hit\.id, 'hit-open'/);
-  assert.match(client, /shownText\(hit\.snippet\)/);
-  assert.match(client, /const shownText = value => displayText\(value, \{ englishOnly: industry !== 'zava' \}\)/);
+  assert.match(client, /shownTitle\(hit\) \|\| hit\.id, 'hit-open'/);
+  assert.match(client, /node\('p', shownPassage\(hit\) \|\| 'No passage returned\.'/);
+  assert.match(client, /const viewOf = hit => passageView\(hit, \{ englishOnly: industry !== 'zava' \}\)/);
   assert.match(client, /const allFields = \{ \.\.\.document_, content: hit\.snippet \}/, 'Raw hit JSON keeps the exact retrieved passage');
+});
+
+test('graph-service passages display without metadata headers or code-page mojibake; raw values are unchanged', () => {
+  // UTF-8 decoded as TIS-620: "—" (E2 80 94) reads "โ\uFFFD\uFFFD", "§" (C2 A7) reads "ยง", "é" (C3 A9) reads "รฉ", "™" (E2 84 A2) reads "โ\uFFFDข".
+  const dash = 'โ\uFFFD\uFFFD';
+  assert.equal(repairMojibake(`and${dash}because their output is linked${dash}reduce`), 'and—because their output is linked—reduce');
+  assert.equal(repairMojibake(`**Dehumidifiers** ${dash} Units: About 2 million`), '**Dehumidifiers** — Units: About 2 million');
+  assert.equal(repairMojibake(`Reese${dash}s Law; the dressers${dash} drawers; pages 3${dash}5`), 'Reese’s Law; the dressers’ drawers; pages 3–5');
+  assert.equal(repairMojibake(`SKU ${dash}LDQ-BR,${dash} or ${dash}LDQ-NA${dash} is printed`), 'SKU “LDQ-BR,” or “LDQ-NA” is printed');
+  assert.equal(repairMojibake('17 U.S.C. ยง105 · Sautรฉ Pans · Snugakittyโ\uFFFDข Swing · \nโ\uFFFDข Deposit'), '17 U.S.C. §105 · Sauté Pans · Snugakitty™ Swing · \n• Deposit');
+  assert.equal(repairMojibake('Clean text — “quoted” and 2019–2020'), 'Clean text — “quoted” and 2019–2020');
+  // Metadata headers: a leading block, a chunk that starts inside it, a truncated one, a JSON header; a Markdown rule is not one.
+  const header = '---\ndocId: "NRG-1"\ntitle: "Winter storms disrupted gas"\nurl: "https://www.eia.gov/x"\nlicense: "Public domain (17 U.S.C. ยง105)"\nmetadata: {"states": ["Texas"]}\n---';
+  assert.deepEqual(frontMatter(`${header}\n\nProduction fell 45%.`), { body: 'Production fell 45%.', metadataOnly: false,
+    fields: { docId: 'NRG-1', title: 'Winter storms disrupted gas', url: 'https://www.eia.gov/x', license: 'Public domain (17 U.S.C. ยง105)', metadata: { states: ['Texas'] } } });
+  assert.equal(frontMatter('Inc.)"\ndocType: "drug-label"\nretrievedAt: "2026-11-25"\nmetadata: {"brandName": "Cyltezo"}\n---\n\nIndications and usage.').body, 'Indications and usage.');
+  assert.equal(frontMatter('---\ndocId: "HC-1"\npublisher: "FDA"\nretrievedAt: "2026-11-25"').metadataOnly, true);
+  assert.equal(frontMatter('{"docId": "FIN-1", "title": "OCC handbook"}\nWire transfers must be screened.').body, 'Wire transfers must be screened.');
+  for (const plain of ['---\n\n## Section 2\nText', 'Title: Recall notice\nProduct: Heater', '# DRILL-1001 — Compact drill\n\nSource ID: DRILL-1001']) assert.equal(frontMatter(plain), null, plain);
+  const view = passageView({ title: 'Passage', snippet: header }, { englishOnly: true });
+  assert.deepEqual([view.title, view.passage, view.header.license], ['Winter storms disrupted gas', METADATA_ONLY, 'Public domain (17 U.S.C. ยง105)']);
+  assert.equal(passageView({ title: 'Zava', snippet: header }).passage, displayText(header), 'Zava text is shown as before');
+  // Regression over every recorded industry S08/S09 hit: no displayed title or passage starts with "---", shows header keys or mojibake.
+  const recorded = JSON.parse(readFileSync(new URL('../config/studio-recorded.json', import.meta.url), 'utf8'));
+  let checked = 0, headers = 0;
+  for (const entry of Object.values(recorded.entries)) {
+    if (!entry.industry || !['S08', 'S09'].includes(entry.scenarioId)) continue;
+    for (const side of ['baseline', 'enhanced']) for (const hit of entry.result[side]?.hits || []) {
+      const shown = passageView(hit, { englishOnly: true });
+      checked += 1;
+      if (/^\s*---/.test(hit.snippet)) headers += 1;
+      for (const text of [shown.title, shown.passage]) {
+        assert.ok(!/^\s*---/.test(text) && !/[\u0E01-\u0E5B\uFFFD]/.test(text) && !/(^|\s)docId:\s*"|\bmetadata:\s*\{|\blicense:\s*"|\bretrievedAt:\s*"/.test(text),
+          `${entry.industry} ${entry.scenarioId} ${hit.id}: ${text.slice(0, 120)}`);
+      }
+    }
+  }
+  assert.ok(checked >= 400 && headers >= 100, `${checked} hits, ${headers} with a leading header`);
+  const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
+  assert.match(client, /node\('span', shownValue\(String\(value \?\? '—'\)\), 'entity-name'\)/, 'graph entity names are repaired too');
+  assert.match(client, /'Synthetic demo content \(MIT License, this repository\)'\s*: 'Not stated in this passage/, 'industry passages never claim the Zava license');
 });
 
 test('S10 labels read as Read and Layout, and industry facets use the contract labels', async () => {
