@@ -238,18 +238,19 @@ change: re-run the attestation and binding step, then re-record S08/S09.
 
 An **Industry** selector beside the scenario picker adds public corpora to the
 Zava store demo. They are compiled into a build only when `STUDIO_INDUSTRIES`
-lists them; **the default build has none**. Production enables
-`retail,financial,healthcare,manufacturing`. Energy stays out until its corpus
-rebuild and presets land.
+lists them; **the default build has none**. Production enables all five:
+`retail,financial,healthcare,manufacturing,energy`. Presets, notes, facet labels,
+licenses and applicability come from the Industry datasets contract
+(`foundry-iq-industry-contract-v1`).
 
 | ID | Selector label | Index | Scenarios |
 | --- | --- | --- | --- |
 | `zava` (default) | Retail · Zava demo store | `zava-studio-*` | S01–S11, five languages |
 | `retail` | Retail · Product recalls (CPSC) | `foundry-iq-retail` | S01–S07 (S08/S09 not configured) |
 | `financial` | Financial services | `foundry-iq-financial` | S01–S07, S10 (S08/S09 not configured) |
-| `healthcare` | Healthcare | `foundry-iq-healthcare` | S01–S07, S10 (S08/S09 not configured) |
+| `healthcare` | Healthcare & life sciences | `foundry-iq-healthcare` | S01–S07, S10 (S08/S09 not configured) |
 | `manufacturing` | Manufacturing | `foundry-iq-manufacturing` | S01–S07, S10 (S08/S09 not configured) |
-| `energy` | Energy (not in production yet) | `foundry-iq-energy` | S01–S07, no presets yet |
+| `energy` | Energy & utilities | `foundry-iq-energy` | S01–S07, S10 (S08/S09 not configured) |
 
 - Industry demos are English-only: the language setting is disabled with a note.
   S11 (images) stays with the Zava store.
@@ -266,10 +267,23 @@ rebuild and presets land.
   that link. An unknown industry or inapplicable scenario opens the default.
 - Citations link to the original public source, only on each industry's reviewed
   hosts. Cards and the details drawer show agency, publisher, document type,
-  license and published date. About lists every data source and license.
-- Recorded Sample replays every curated industry example (123: Retail 28,
-  Financial 31, Healthcare 32, Manufacturing 32), recorded from Live on the
-  staged release with request IDs removed.
+  license and published date. About lists each data source in the corpus, with
+  its license (excluded and link-only references are omitted), plus the CFPB
+  narratives note for Financial services. Facet rows use the contract's labels.
+- Cards and the drawer show titles and passages as plain text: Markdown headings,
+  emphasis, bullets, tables, links and images are removed for display
+  (`assets/display.mjs`). Raw hit JSON and the API log keep the exact values.
+- Each scenario's first (default) example shows a different #1 in BEFORE and
+  AFTER whenever one exists; the build checks this against the recordings.
+- S10 is named “PDF layout extraction”; its arms read “Read: page text” and
+  “Layout: table rows”, and the provider name stays in Technical details.
+- A not-configured scenario keeps Search and the query box disabled (typing
+  doesn't re-enable them) and sends nothing; any prepare or run failure ends the
+  loading state with a visible error.
+- Recorded Sample replays every curated industry example (153: Retail 28,
+  Financial 31, Healthcare 32, Manufacturing 32, Energy 30), recorded from Live
+  on staged releases with request IDs removed. Full top-10 lists match the
+  contract evaluation for 305 of 306 arms.
 
 **Request shapes** (from the Industry datasets evaluation; every arm filters
 `scope eq 'public' and variant eq 'primary'` unless noted):
@@ -314,11 +328,10 @@ npm run build:vercel
 - `config/studio-industries.json` (public) is generated from the Industry datasets
   contract by an operator importer. It holds labels, sources, licenses, reviewed
   hosts and presets, never index names. Regenerate it when the contract changes.
-- Notes describe only what the shipped comparison shows. The importer drops the
-  evaluation's extra vector-only clause from S03 notes (the app compares keyword
-  with hybrid), and FIN-S07-01 omits a planning claim that no run recorded. The
-  build rejects S03 notes that mention a third arm.
-- Industry recordings add about 14.7 MB to `config/studio-recorded.json` (19.9 MB
+- Notes describe only what the shipped comparison shows. The build rejects S03
+  notes that mention a third (vector-only) arm, and S07 notes that claim
+  planning the shipped recording doesn't show.
+- Industry recordings add about 18 MB to `config/studio-recorded.json` (23.5 MB
   in total), because public-document passages are long. The server bundle
   imports in about 250 ms locally.
 

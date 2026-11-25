@@ -112,6 +112,7 @@ a{color:var(--link);text-underline-offset:3px}
 .facet-more summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .facet-more[open]{display:flex;flex-wrap:wrap;gap:4px 6px;width:100%}
 .facet-more[open] summary{width:100%}
+.passage-text{white-space:pre-line;font-size:14px;line-height:1.6;margin:0;overflow-wrap:anywhere}
 .clamp-long{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
 
 /* Search card */
@@ -289,6 +290,7 @@ footer a{color:var(--muted)}
 .about li{margin:4px 0}
 .sources{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:12px}
 .sources>p{grid-column:1/-1;margin:0}
+.source-card .source-note{margin:8px 0 0;font-size:12px;color:var(--muted)}
 .source-card{border:1px solid var(--line-soft);border-radius:12px;padding:14px 16px;background:var(--surface-2)}
 .source-card h3{font-size:15px;margin:0 0 4px}
 .source-card p{margin:0 0 8px;font-size:13px;color:var(--ink-2)}

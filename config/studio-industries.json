@@ -1,7 +1,8 @@
 {
- "version": 1,
+ "version": 2,
  "datasetVersion": "foundry-iq-industry-2026-11",
- "provenance": "Generated from the Industry datasets contract (presets and evaluation evidence, status final) and a read-only index discovery on 2026-11-25. Index names stay in the private binding.",
+ "contractVersion": "foundry-iq-industry-contract-v1",
+ "provenance": "Generated from the Industry datasets contract foundry-iq-industry-contract-v1 (2026-11-25T16:37:57Z) and a read-only index discovery (2026-11-25). Index names stay in the private binding.",
  "zava": {
   "id": "zava",
   "label": "Retail · Zava demo store",
@@ -27,9 +28,9 @@
    "sources": [
     {
      "agency": "CPSC",
-     "name": "Recall notices (CPSC Recalls API)",
-     "url": "https://www.cpsc.gov/Recalls",
-     "license": "Public domain (U.S. Government work, 17 U.S.C. §105). Recall notices may be freely copied and distributed; credit CPSC, no endorsement implied."
+     "name": "CPSC Recalls REST API (recall notices)",
+     "url": "https://www.cpsc.gov/Recalls/CPSC-Recalls-Application-Program-Interface-API-Information",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105); CPSC: recall notices may be freely copied and distributed (credit CPSC; no endorsement implied)"
     }
    ],
    "languages": [
@@ -53,6 +54,26 @@
     "authority",
     "impact"
    ],
+   "facetLabels": {
+    "docType": "Document type",
+    "agency": "Agency",
+    "category": "Product category",
+    "subcategory": "Primary hazard",
+    "tags": "Theme",
+    "organizations": "Company",
+    "regions": "Manufactured in",
+    "publishedDate": "Published",
+    "authority": "Authority",
+    "hazards": "Hazard",
+    "remedies": "Remedy",
+    "retailers": "Sold at",
+    "salesChannels": "Channel",
+    "priceMaxUsd": "Max price (USD)",
+    "injuriesReported": "Injuries reported",
+    "deathsReported": "Deaths reported",
+    "jointRecall": "Joint recall",
+    "magnitude": "Units recalled"
+   },
    "sourceHosts": [
     "cpsc.gov",
     "www.cpsc.gov"
@@ -60,10 +81,10 @@
    "defaults": {
     "S05": {
      "facets": [
-      "hazards,count:10",
       "retailers,count:10",
       "remedies,count:5",
-      "regions,count:10"
+      "regions,count:10",
+      "hazards,count:10"
      ]
     }
    },
@@ -238,7 +259,7 @@
       "relevant": [
        "RET-CPSC-20762"
       ],
-      "why": "Keyword matches 'bed' and 'fall' (Agrish adult bed rails, baby walkers, Murphy beds) and has the DaVinci notice at #5; hybrid ranks the M0934E recall #1."
+      "why": "Keyword matches 'bed' and 'fall' (Agrish adult bed rails, baby walkers, Murphy beds) and has the DaVinci notice at #5; hybrid ranks the July-2020 recall that lists M0934E #1."
      },
      {
       "id": "RET-S03-04",
@@ -295,6 +316,44 @@
     ],
     "S05": [
      {
+      "id": "RET-S05-02",
+      "label": "power banks under $75 sold on Amazon with burn injuries reported",
+      "hint": "Amazon power banks under $75 with injuries",
+      "query": "power banks under $75 sold on Amazon with burn injuries reported",
+      "filter": "category eq 'Batteries & chargers' and retailers/any(r: r eq 'Amazon') and priceMaxUsd le 75 and injuriesReported eq true",
+      "facets": [
+       "retailers,count:10",
+       "remedies,count:5",
+       "regions,count:10",
+       "hazards,count:10"
+      ],
+      "relevant": [
+       "RET-CPSC-23147",
+       "RET-CPSC-24287",
+       "RET-CPSC-25011"
+      ],
+      "why": "Keyword #1 is the ESR HaloLock power bank recall ('No injuries have been reported') - ineligible; filters Batteries & chargers + Amazon + priceMaxUsd <= 75 + injuriesReported leave exactly the Anker ($60), Baseus ($55) and Fantasia/Anker ($70) power-bank recalls with reported burn injuries."
+     },
+     {
+      "id": "RET-S05-04",
+      "label": "e-bikes, scooters and hoverboards sold on Amazon with injuries reported",
+      "hint": "E-mobility on Amazon with injuries",
+      "query": "e-bikes, scooters and hoverboards sold on Amazon with injuries reported",
+      "filter": "category eq 'E-bikes & e-scooters' and retailers/any(r: r eq 'Amazon') and injuriesReported eq true",
+      "facets": [
+       "retailers,count:10",
+       "remedies,count:5",
+       "regions,count:10",
+       "hazards,count:10"
+      ],
+      "relevant": [
+       "RET-CPSC-23007",
+       "RET-CPSC-23716",
+       "RET-CPSC-24065"
+      ],
+      "why": "Keyword's top 3 (VIVI e-bikes, Jetson hoverboards, FENGQS e-bikes) each fail a constraint - no injuries reported or sold only at Target; filters leave exactly Ancheer and Gyroor e-bikes and the Hover-1 Helix hoverboard, all sold on Amazon with burn or smoke-inhalation injuries."
+     },
+     {
       "id": "RET-S05-01",
       "label": "space heaters sold at Amazon with a refund",
       "hint": "Space heaters on Amazon with refund",
@@ -316,25 +375,6 @@
        "RET-CPSC-26532"
       ],
       "why": "Keyword-only #2 is the DREO space heater (Home Depot/Lowe's/Costco/Best Buy, replacement remedy - ineligible) and #5 a water immersion heater; filters category=Heating & cooling, retailers=Amazon, remedies=refund leave 9 recalls with AmazonBasics, Shop LC and Vornado SRTH heaters at #1-3, and facets show all 9 fire-burn, refund, made in China."
-     },
-     {
-      "id": "RET-S05-02",
-      "label": "power banks under $75 sold on Amazon with burn injuries reported",
-      "hint": "Amazon power banks under $75 with injuries",
-      "query": "power banks under $75 sold on Amazon with burn injuries reported",
-      "filter": "category eq 'Batteries & chargers' and retailers/any(r: r eq 'Amazon') and priceMaxUsd le 75 and injuriesReported eq true",
-      "facets": [
-       "retailers,count:10",
-       "remedies,count:5",
-       "regions,count:10",
-       "hazards,count:10"
-      ],
-      "relevant": [
-       "RET-CPSC-23147",
-       "RET-CPSC-24287",
-       "RET-CPSC-25011"
-      ],
-      "why": "Keyword #1 is the ESR HaloLock power bank recall ('No injuries have been reported') - ineligible; filters Batteries & chargers + Amazon + priceMaxUsd <= 75 + injuriesReported leave exactly the Anker ($60), Baseus ($55) and Fantasia/Anker ($70) power-bank recalls with reported burn injuries."
      },
      {
       "id": "RET-S05-03",
@@ -359,25 +399,6 @@
        "RET-CPSC-26654"
       ],
       "why": "Keyword #2 is Grizzly's children's tool kits sold on Amazon, not Temu or Shein; the retailer filter (Temu or Shein) returns SHEIN children's sleepwear and pajama sets and Temu-exclusive kids' bike helmets at #1-3, with category/retailer/hazard/remedy facets for the marketplace review."
-     },
-     {
-      "id": "RET-S05-04",
-      "label": "e-bikes, scooters and hoverboards sold on Amazon with injuries reported",
-      "hint": "E-mobility on Amazon with injuries",
-      "query": "e-bikes, scooters and hoverboards sold on Amazon with injuries reported",
-      "filter": "category eq 'E-bikes & e-scooters' and retailers/any(r: r eq 'Amazon') and injuriesReported eq true",
-      "facets": [
-       "retailers,count:10",
-       "remedies,count:5",
-       "regions,count:10",
-       "hazards,count:10"
-      ],
-      "relevant": [
-       "RET-CPSC-23007",
-       "RET-CPSC-23716",
-       "RET-CPSC-24065"
-      ],
-      "why": "Keyword's top 3 (VIVI e-bikes, Jetson hoverboards, FENGQS e-bikes) each fail a constraint - no injuries reported or sold only at Target; filters leave exactly Ancheer and Gyroor e-bikes and the Hover-1 Helix hoverboard, all sold on Amazon with burn or smoke-inhalation injuries."
      }
     ],
     "S06": [
@@ -593,25 +614,38 @@
    "label": "Financial services",
    "short": "Financial services",
    "group": "Industries",
-   "blurb": "OCC Comptroller’s Handbook, FDIC examination manual, interagency guidance and CFPB consumer complaints (company names masked).",
+   "blurb": "OCC Comptroller’s Handbook, FDIC examination manual, interagency guidance and CFPB consumer complaint narratives (company names masked).",
+   "aboutNote": "Consumer complaint narratives come from the CFPB FOIA narratives archive. CFPB stopped publishing narratives on 2026-08-14 and considers previously published narratives public domain for FOIA purposes. Narratives are unverified consumer allegations, and company names are masked as [COMPANY].",
    "sources": [
     {
+     "agency": "CFPB",
+     "name": "CFPB Consumer Complaint Database narratives archive (FOIA Reading Room)",
+     "url": "https://www.consumerfinance.gov/foia-requests/foia-electronic-reading-room/cfpb-consumer-complaint-database-narratives-archive/",
+     "license": "Public domain (CFPB: previously published narratives are in the public domain for FOIA purposes; U.S. Government data)"
+    },
+    {
      "agency": "OCC",
-     "name": "Comptroller’s Handbook",
+     "name": "OCC Comptroller's Handbook booklets (Payment Systems 2021 and 1990, Trade Finance 2018, Capital and Dividends 2018, Liquidity 2023)",
      "url": "https://www.occ.gov/publications-and-resources/publications/comptrollers-handbook/index-comptrollers-handbook.html",
-     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105; OCC publication)"
+    },
+    {
+     "agency": "OCC/FDIC/FRB/OTS",
+     "name": "Interagency Supervisory Guidance on Counterparty Credit Risk Management (OCC Bulletin 2011-30 attachment)",
+     "url": "https://www.occ.gov/news-issuances/bulletins/2011/bulletin-2011-30a.pdf",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105; OCC publication)"
     },
     {
      "agency": "FDIC",
-     "name": "RMS Manual of Examination Policies",
-     "url": "https://www.fdic.gov/risk-management-manual-examination-policies",
-     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+     "name": "FDIC Risk Management Manual of Examination Policies, Sections 2.1 and 8.1",
+     "url": "https://www.fdic.gov/resources/supervision-and-examinations/examination-policies-manual/index.html",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105; FDIC publication)"
     },
     {
-     "agency": "CFPB",
-     "name": "Consumer Complaint Database narratives",
-     "url": "https://www.consumerfinance.gov/data-research/consumer-complaints/",
-     "license": "Public domain (U.S. Government data); published narratives with company names masked"
+     "agency": "FFIEC/FinCEN",
+     "name": "FFIEC BSA/AML InfoBase and FinCEN advisories",
+     "url": "https://bsaaml.ffiec.gov/manual",
+     "license": "Public domain (U.S. Government work)"
     }
    ],
    "languages": [
@@ -635,6 +669,17 @@
     "freshness",
     "authority"
    ],
+   "facetLabels": {
+    "docType": "Document type",
+    "agency": "Agency",
+    "category": "Topic",
+    "subcategory": "Product / source type",
+    "tags": "Issue / section",
+    "organizations": "Organizations",
+    "regions": "State",
+    "publishedDate": "Published",
+    "authority": "Authority"
+   },
    "sourceHosts": [
     "www.consumerfinance.gov",
     "www.fdic.gov",
@@ -643,9 +688,9 @@
    "defaults": {
     "S05": {
      "facets": [
-      "category,count:10",
       "tags,count:10",
-      "subcategory,count:10"
+      "subcategory,count:10",
+      "regions,count:10"
      ]
     },
     "S10": {
@@ -835,7 +880,7 @@
        "FIN-CFPB-20289997",
        "FIN-CFPB-20194760"
       ],
-      "why": "Keyword-only ranks six FDIC wire-transfer rule chunks (recordkeeping, wire activities, ML risks) that repeat 'wire' and 'intermediary'; hybrid's #1/#2 are the complaints where a wire went through an intermediary bank and never arrived or its return could not be traced."
+      "why": "Keyword ranks six FDIC wire-transfer rule chunks (recordkeeping, wire activities, ML risks) that repeat 'wire' and 'intermediary'; hybrid's #1 and #2 are the complaints where a wire went through an intermediary bank and never arrived or its return could not be traced."
      },
      {
       "id": "FIN-S03-02",
@@ -847,7 +892,7 @@
        "FIN-CFPB-6019327",
        "FIN-CFPB-8954156"
       ],
-      "why": "Keyword-only returns three OCC ACH examination/third-party-sender sections; hybrid fuses both signals and ranks the complaint whose outbound ACH transfer got the account frozen #1."
+      "why": "Keyword returns three OCC ACH examination and third-party-sender sections; hybrid ranks the complaint whose outbound ACH transfer got the account frozen #1."
      },
      {
       "id": "FIN-S03-03",
@@ -861,7 +906,7 @@
        "FIN-CFPB-9175859",
        "FIN-CFPB-8726358"
       ],
-      "why": "Keyword-only latches onto 'Fedwire'/'wire' and returns OCC payment-system credit-risk and Fedwire sections plus FDIC wire guidance; hybrid's top 3 are all returned wires the sender never got credited for (brokerage wire returned but not credited, domestic return discrepancy, fintech with no record of the return)."
+      "why": "Keyword latches onto 'Fedwire'/'wire' and returns OCC payment-system credit-risk and Fedwire sections plus FDIC wire guidance; hybrid's top 3 are all returned wires the sender never got credited for (brokerage wire returned but not credited, domestic return discrepancy, fintech with no record of the return)."
      }
     ],
     "S04": [
@@ -912,43 +957,6 @@
     ],
     "S05": [
      {
-      "id": "FIN-S05-01",
-      "label": "Zelle scam complaints from Texas",
-      "hint": "Texas Zelle scam complaints",
-      "query": "Zelle scam complaints from Texas",
-      "filter": "docType eq 'consumer-complaint' and regions/any(r: r eq 'TX')",
-      "facets": [
-       "category,count:10",
-       "tags,count:10",
-       "subcategory,count:10"
-      ],
-      "relevant": [
-       "FIN-CFPB-5902910",
-       "FIN-CFPB-5371453",
-       "FIN-CFPB-6128140",
-       "FIN-CFPB-6047836"
-      ],
-      "why": "Keyword-only treats 'Texas' as just another word and its #3 is a California Zelle complaint; the region facet filter (regions = TX) plus hybrid ranking returns three Texas complaints about Zelle scams or theft, with category/tag facet counts."
-     },
-     {
-      "id": "FIN-S05-02",
-      "label": "international transfer blocked for sanctions screening",
-      "hint": "2026 sanctions-blocked transfers",
-      "query": "international transfer blocked for sanctions screening",
-      "filter": "docType eq 'consumer-complaint' and publishedDate ge 2026-01-01T00:00:00Z",
-      "facets": [
-       "category,count:10",
-       "subcategory,count:10",
-       "tags,count:10"
-      ],
-      "relevant": [
-       "FIN-CFPB-20037469",
-       "FIN-CFPB-20120075",
-       "FIN-CFPB-20194760"
-      ],
-      "why": "Keyword-only mixes one 2026 complaint with two FDIC OFAC manual chunks; filtering to 2026 consumer complaints returns exactly the three sanctions-blocked international transfer complaints, with the category facet showing where 2026 complaints cluster."
-     },
-     {
       "id": "FIN-S05-03",
       "label": "wire fraud after an impersonation or email compromise scam",
       "hint": "2026 BEC and impersonation wire fraud",
@@ -985,6 +993,43 @@
        "FIN-CFPB-4969024"
       ],
       "why": "Keyword-only's #2 is a non-crypto account restriction complaint (an adult coded as a minor); filtering to the 'Virtual currency' category returns three crypto-platform complaints (an account locked after an income/statement request, a closed brokerage account holding crypto, a blocked stablecoin withdrawal), with a year facet."
+     },
+     {
+      "id": "FIN-S05-01",
+      "label": "Zelle scam complaints from Texas",
+      "hint": "Texas Zelle scam complaints",
+      "query": "Zelle scam complaints from Texas",
+      "filter": "docType eq 'consumer-complaint' and regions/any(r: r eq 'TX')",
+      "facets": [
+       "category,count:10",
+       "tags,count:10",
+       "subcategory,count:10"
+      ],
+      "relevant": [
+       "FIN-CFPB-5902910",
+       "FIN-CFPB-5371453",
+       "FIN-CFPB-6128140",
+       "FIN-CFPB-6047836"
+      ],
+      "why": "Keyword-only treats 'Texas' as just another word and its #3 is a California Zelle complaint; the region facet filter (regions = TX) plus hybrid ranking returns three Texas complaints about Zelle scams or theft, with category/tag facet counts."
+     },
+     {
+      "id": "FIN-S05-02",
+      "label": "international transfer blocked for sanctions screening",
+      "hint": "2026 sanctions-blocked transfers",
+      "query": "international transfer blocked for sanctions screening",
+      "filter": "docType eq 'consumer-complaint' and publishedDate ge 2026-01-01T00:00:00Z",
+      "facets": [
+       "category,count:10",
+       "subcategory,count:10",
+       "tags,count:10"
+      ],
+      "relevant": [
+       "FIN-CFPB-20037469",
+       "FIN-CFPB-20120075",
+       "FIN-CFPB-20194760"
+      ],
+      "why": "Keyword-only mixes one 2026 complaint with two FDIC OFAC manual chunks; filtering to 2026 consumer complaints returns exactly the three sanctions-blocked international transfer complaints, with the category facet showing where 2026 complaints cluster."
      }
     ],
     "S06": [
@@ -1054,43 +1099,6 @@
      }
     ],
     "S07": [
-     {
-      "id": "FIN-S07-01",
-      "label": "How should a bank handle a wire that matches the SDN list, and what have customers experienced when their transfers were blocked for sanctions?",
-      "hint": "SDN hits and blocked transfers",
-      "query": "How should a bank handle a wire that matches the SDN list, and what have customers experienced when their transfers were blocked for sanctions?",
-      "relevant": [
-       "FIN-FDIC-RMS-8-1-c176",
-       "FIN-FDIC-RMS-8-1-c177",
-       "FIN-FDIC-RMS-8-1-c178",
-       "FIN-FDIC-RMS-8-1-c180",
-       "FIN-FDIC-RMS-8-1-c183",
-       "FIN-CFPB-20037469",
-       "FIN-CFPB-20194760",
-       "FIN-CFPB-20120075",
-       "FIN-CFPB-9292402",
-       "FIN-CFPB-8901832",
-       "FIN-CFPB-6100480"
-      ],
-      "relevantGroups": [
-       [
-        "FIN-FDIC-RMS-8-1-c176",
-        "FIN-FDIC-RMS-8-1-c177",
-        "FIN-FDIC-RMS-8-1-c178",
-        "FIN-FDIC-RMS-8-1-c180",
-        "FIN-FDIC-RMS-8-1-c183"
-       ],
-       [
-        "FIN-CFPB-20037469",
-        "FIN-CFPB-20194760",
-        "FIN-CFPB-20120075",
-        "FIN-CFPB-9292402",
-        "FIN-CFPB-8901832",
-        "FIN-CFPB-6100480"
-       ]
-      ],
-      "why": "Hybrid’s top 3 are all FDIC OFAC/wire guidance; agentic retrieval returns OFAC blocking and program guidance at #1–2 plus a consumer’s request for a license to release a sanctions-blocked payment at #3."
-     },
      {
       "id": "FIN-S07-02",
       "label": "What customer due diligence does the FDIC expect for higher-risk customers, and what do consumers say when their accounts are frozen during KYC reviews?",
@@ -1227,6 +1235,43 @@
        ]
       ],
       "why": "Hybrid's top 3 are all OCC 'Fraud Risk Management' chunks; agentic retrieval returns a fraud-department impersonation complaint (#1), the OCC fraud risk management section (#2) and a second impersonation complaint (#3)."
+     },
+     {
+      "id": "FIN-S07-01",
+      "label": "How should a bank handle a wire that matches the SDN list, and what have customers experienced when their transfers were blocked for sanctions?",
+      "hint": "SDN hits and blocked transfers",
+      "query": "How should a bank handle a wire that matches the SDN list, and what have customers experienced when their transfers were blocked for sanctions?",
+      "relevant": [
+       "FIN-FDIC-RMS-8-1-c176",
+       "FIN-FDIC-RMS-8-1-c177",
+       "FIN-FDIC-RMS-8-1-c178",
+       "FIN-FDIC-RMS-8-1-c180",
+       "FIN-FDIC-RMS-8-1-c183",
+       "FIN-CFPB-20037469",
+       "FIN-CFPB-20194760",
+       "FIN-CFPB-20120075",
+       "FIN-CFPB-9292402",
+       "FIN-CFPB-8901832",
+       "FIN-CFPB-6100480"
+      ],
+      "relevantGroups": [
+       [
+        "FIN-FDIC-RMS-8-1-c176",
+        "FIN-FDIC-RMS-8-1-c177",
+        "FIN-FDIC-RMS-8-1-c178",
+        "FIN-FDIC-RMS-8-1-c180",
+        "FIN-FDIC-RMS-8-1-c183"
+       ],
+       [
+        "FIN-CFPB-20037469",
+        "FIN-CFPB-20194760",
+        "FIN-CFPB-20120075",
+        "FIN-CFPB-9292402",
+        "FIN-CFPB-8901832",
+        "FIN-CFPB-6100480"
+       ]
+      ],
+      "why": "Hybrid's top 3 are all FDIC OFAC/wire guidance; agentic retrieval returns OFAC blocking and program guidance at #1-2 plus a consumer's request for a license to release a sanctions-blocked payment at #3."
      }
     ],
     "S10": [
@@ -1283,27 +1328,27 @@
   },
   {
    "id": "healthcare",
-   "label": "Healthcare",
-   "short": "Healthcare",
+   "label": "Healthcare & life sciences",
+   "short": "Healthcare & life sciences",
    "group": "Industries",
    "blurb": "FDA prescription drug labels (openFDA and DailyMed PDFs) and CDC/NCHS ICD-10-CM official coding guidelines.",
    "sources": [
     {
      "agency": "FDA",
-     "name": "openFDA drug labels",
-     "url": "https://open.fda.gov/apis/drug/label/",
+     "name": "openFDA drug label API (FDA Structured Product Labeling)",
+     "url": "https://api.fda.gov/drug/label.json",
      "license": "CC0 1.0 Universal public-domain dedication (openFDA Terms of Service)"
     },
     {
      "agency": "NLM",
-     "name": "DailyMed label PDFs",
+     "name": "NLM DailyMed (label PDFs and archived SPL versions)",
      "url": "https://dailymed.nlm.nih.gov/dailymed/",
-     "license": "FDA-submitted labeling; DailyMed rendering courtesy of the National Library of Medicine"
+     "license": "FDA-submitted SPL labeling; same content CC0 via openFDA; DailyMed rendering courtesy of the National Library of Medicine (U.S. Government website)"
     },
     {
-     "agency": "CDC/NCHS",
-     "name": "ICD-10-CM Official Guidelines for Coding and Reporting",
-     "url": "https://www.cdc.gov/nchs/icd/icd-10-cm/",
+     "agency": "CDC/NCHS + CMS",
+     "name": "ICD-10-CM Official Guidelines for Coding and Reporting (FY 2027; FY 2026 subset)",
+     "url": "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM/2027/",
      "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
     }
    ],
@@ -1328,6 +1373,23 @@
     "freshness",
     "authority"
    ],
+   "facetLabels": {
+    "docType": "Document type",
+    "agency": "Agency",
+    "category": "Therapeutic area",
+    "subcategory": "Application / labeler role",
+    "tags": "Pharmacologic class",
+    "organizations": "Manufacturer",
+    "regions": "Regions",
+    "publishedDate": "Published",
+    "authority": "Authority",
+    "genericName": "Generic name",
+    "brandName": "Brand",
+    "labelStatus": "Label status",
+    "hasBoxedWarning": "Boxed warning",
+    "remsMentioned": "REMS",
+    "routes": "Route"
+   },
    "sourceHosts": [
     "dailymed.nlm.nih.gov",
     "ftp.cdc.gov"
@@ -1335,8 +1397,8 @@
    "defaults": {
     "S05": {
      "facets": [
-      "subcategory,count:5",
-      "tags,count:10"
+      "brandName,count:10",
+      "organizations,count:10"
      ]
     },
     "S10": {
@@ -1550,7 +1612,7 @@
        "HC-ICD10CM-FY2027-I-C-19-c006",
        "HC-ICD10CM-FY2027-I-C-19-c004"
       ],
-      "why": "With the current-documents filter on both arms, keyword-only returns the ICD-10-CM Introduction, I.A conventions and Appendix I (adverse-effect rule only at #8), and hybrid ranks the FY 2027 I.C.19 adverse-effect rule #1."
+      "why": "With the current-documents filter on both arms, keyword returns the ICD-10-CM Introduction, I.A conventions and Appendix I (adverse-effect rule only at #8); hybrid ranks the FY 2027 I.C.19 adverse-effect rule #1."
      },
      {
       "id": "HC-S03-02",
@@ -1561,7 +1623,7 @@
       "relevant": [
        "HC-ICD10CM-FY2027-I-C-2-c003"
       ],
-      "why": "Keyword-only matches 'ICD-10-CM'/'rule' to the Introduction, Appendix I and Section IV (the answer is #5); hybrid's #1 is I.C.2 'admitted for ... immunotherapy and develops complications such as ... dehydration: Z51.12 first'."
+      "why": "Keyword matches 'ICD-10-CM'/'rule' to the Introduction, Appendix I and Section IV (the answer is #5); hybrid's #1 is I.C.2 'admitted for ... immunotherapy and develops complications such as ... dehydration: Z51.12 first'."
      },
      {
       "id": "HC-S03-03",
@@ -1572,7 +1634,7 @@
       "relevant": [
        "HC-ICD10CM-FY2027-I-C-2-c002"
       ],
-      "why": "Keyword-only's top 3 are Appendix I chunks (answer at #4); hybrid ranks I.C.2 'Anemia associated with chemotherapy, immunotherapy' (anemia first, then neoplasm and T45.1X5-) #1."
+      "why": "Keyword's top 3 are Appendix I chunks (answer at #4); hybrid ranks I.C.2 'Anemia associated with chemotherapy, immunotherapy' (anemia first, then neoplasm and T45.1X5-) #1."
      },
      {
       "id": "HC-S03-04",
@@ -1584,7 +1646,7 @@
        "HC-ICD10CM-FY2027-I-C-19-c006",
        "HC-ICD10CM-FY2027-I-C-19-c004"
       ],
-      "why": "Keyword-only returns I.A conventions, a BAVENCIO label chunk and I.C.19 toxic effects (answer at #5); hybrid ranks the FY 2027 I.C.19 adverse-effect rule #1."
+      "why": "Keyword returns I.A conventions, a BAVENCIO label chunk and I.C.19 toxic effects (answer at #5); hybrid ranks the FY 2027 I.C.19 adverse-effect rule #1."
      }
     ],
     "S04": [
@@ -1631,44 +1693,6 @@
      }
     ],
     "S05": [
-     {
-      "id": "HC-S05-01",
-      "label": "how to code underdosing of a medication",
-      "hint": "Current ICD-10-CM underdosing guidance",
-      "query": "how to code underdosing of a medication",
-      "filter": "docType eq 'coding-guideline' and labelStatus eq 'current'",
-      "facets": [
-       "subcategory,count:5",
-       "tags,count:10"
-      ],
-      "relevant": [
-       "HC-ICD10CM-FY2027-I-A-c001",
-       "HC-ICD10CM-FY2027-I-C-4-c002",
-       "HC-ICD10CM-FY2027-I-C-15-c005",
-       "HC-ICD10CM-FY2027-I-C-19-c004",
-       "HC-ICD10CM-FY2027-I-C-19-c005",
-       "HC-ICD10CM-FY2027-I-C-19-c006"
-      ],
-      "why": "Keyword-only puts the superseded FY 2026 I.C.19 section and an unrelated Section IV rule in its top 3; filtering to current coding guidelines returns FY 2027 I.C.19 underdosing, I.C.4 insulin underdose and I.C.19 multiple-drug rules."
-     },
-     {
-      "id": "HC-S05-02",
-      "label": "generic apixaban tablets for DVT prophylaxis after hip or knee replacement surgery",
-      "hint": "Generic (ANDA) apixaban for hip/knee VTE prophylaxis",
-      "query": "generic apixaban tablets for DVT prophylaxis after hip or knee replacement surgery",
-      "filter": "genericName eq 'apixaban' and subcategory eq 'ANDA generic'",
-      "facets": [
-       "organizations,count:10",
-       "subcategory,count:5"
-      ],
-      "relevant": [
-       "HC-SPL-APIXABAN-19A60552-V16-c001",
-       "HC-SPL-APIXABAN-19A60552-V16-c002",
-       "HC-SPL-APIXABAN-095A08AC-V7-c001",
-       "HC-SPL-APIXABAN-095A08AC-V7-c002"
-      ],
-      "why": "Keyword-only ranks the A-S Medication ELIQUIS repackager label (NDA, not a generic) #2; filtering genericName=apixaban and ANDA generic leaves only Amneal and Indoco generic chunks with the hip/knee DVT prophylaxis indication and 2.5 mg dose."
-     },
      {
       "id": "HC-S05-03",
       "label": "Humira biosimilars: recommended dosage for Crohn's disease",
@@ -1726,6 +1750,44 @@
        "HC-SPL-ATEZOLIZUMAB-A617B089-V9-c003"
       ],
       "why": "Keyword-only ranks HERCEPTIN HYLECTA (trastuzumab, not a checkpoint inhibitor) #2; filtering Oncology immunotherapy + SUBCUTANEOUS route returns OPDIVO QVANTIG and TECENTRIQ HYBREZA dosing/strength sections, with facets KEYTRUDA QLEX, OPDIVO QVANTIG, Tecentriq Hybreza."
+     },
+     {
+      "id": "HC-S05-01",
+      "label": "how to code underdosing of a medication",
+      "hint": "Current ICD-10-CM underdosing guidance",
+      "query": "how to code underdosing of a medication",
+      "filter": "docType eq 'coding-guideline' and labelStatus eq 'current'",
+      "facets": [
+       "subcategory,count:5",
+       "tags,count:10"
+      ],
+      "relevant": [
+       "HC-ICD10CM-FY2027-I-A-c001",
+       "HC-ICD10CM-FY2027-I-C-4-c002",
+       "HC-ICD10CM-FY2027-I-C-15-c005",
+       "HC-ICD10CM-FY2027-I-C-19-c004",
+       "HC-ICD10CM-FY2027-I-C-19-c005",
+       "HC-ICD10CM-FY2027-I-C-19-c006"
+      ],
+      "why": "Keyword-only puts the superseded FY 2026 I.C.19 section and an unrelated Section IV rule in its top 3; filtering to current coding guidelines returns FY 2027 I.C.19 underdosing, I.C.4 insulin underdose and I.C.19 multiple-drug rules."
+     },
+     {
+      "id": "HC-S05-02",
+      "label": "generic apixaban tablets for DVT prophylaxis after hip or knee replacement surgery",
+      "hint": "Generic (ANDA) apixaban for hip/knee VTE prophylaxis",
+      "query": "generic apixaban tablets for DVT prophylaxis after hip or knee replacement surgery",
+      "filter": "genericName eq 'apixaban' and subcategory eq 'ANDA generic'",
+      "facets": [
+       "organizations,count:10",
+       "subcategory,count:5"
+      ],
+      "relevant": [
+       "HC-SPL-APIXABAN-19A60552-V16-c001",
+       "HC-SPL-APIXABAN-19A60552-V16-c002",
+       "HC-SPL-APIXABAN-095A08AC-V7-c001",
+       "HC-SPL-APIXABAN-095A08AC-V7-c002"
+      ],
+      "why": "Keyword-only ranks the A-S Medication ELIQUIS repackager label (NDA, not a generic) #2; filtering genericName=apixaban and ANDA generic leaves only Amneal and Indoco generic chunks with the hip/knee DVT prophylaxis indication and 2.5 mg dose."
      }
     ],
     "S06": [
@@ -1963,18 +2025,84 @@
    "label": "Manufacturing",
    "short": "Manufacturing",
    "group": "Industries",
-   "blurb": "OSHA severe injury reports, guidance and 29 CFR 1910 standards, plus NIST industrial control system security guidance.",
+   "blurb": "OSHA severe injury reports, guidance and 29 CFR 1910 standards, plus NIST operational technology and smart manufacturing guidance.",
    "sources": [
     {
      "agency": "OSHA",
-     "name": "Severe Injury Reports, guidance and 29 CFR 1910",
-     "url": "https://www.osha.gov/severeinjury",
+     "name": "OSHA Severe Injury Reports (SIR), January 2015 - December 2025 - manufacturing subset",
+     "url": "https://www.osha.gov/severe-injury-reports",
      "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
     },
     {
      "agency": "NIST",
-     "name": "SP 800-82 and NIST interagency reports",
+     "name": "NIST SP 800-82 Rev. 3, Guide to Operational Technology (OT) Security (Sept 2023)",
      "url": "https://csrc.nist.gov/pubs/sp/800/82/r3/final",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "NIST",
+     "name": "NIST SP 800-82 Rev. 4 (Initial Public Draft), Guide to OT Security (Sept 2026)",
+     "url": "https://csrc.nist.gov/pubs/sp/800/82/r4/ipd",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "NIST",
+     "name": "NISTIR 8183 Rev. 1, Cybersecurity Framework Version 1.1 Manufacturing Profile (Oct 2020)",
+     "url": "https://csrc.nist.gov/pubs/ir/8183/r1/final",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "NIST",
+     "name": "NIST IR 8183 Rev. 2 (Initial Public Draft), CSF 2.0 Manufacturing Profile (Sept 2025)",
+     "url": "https://csrc.nist.gov/pubs/ir/8183/r2/ipd",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "NIST",
+     "name": "NISTIR 8107, Current Standards Landscape for Smart Manufacturing Systems (Feb 2016)",
+     "url": "https://doi.org/10.6028/NIST.IR.8107",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "NIST",
+     "name": "NISTIR 8012, Standards Related to Prognostics and Health Management (PHM) for Manufacturing (June 2014)",
+     "url": "https://doi.org/10.6028/NIST.IR.8012",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "NIST",
+     "name": "NISTIR 7911, Assessment of Real-Time Factory Performance through the Application of Multi-Relationship Evaluation Design (Apr 2013)",
+     "url": "https://doi.org/10.6028/NIST.IR.7911",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "NIST",
+     "name": "NISTIR 6232, Manufacturing Planning and Execution Objects Foundation Interfaces (Sept 1998)",
+     "url": "https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir6232.pdf",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "OSHA",
+     "name": "OSHA 3170, Safeguarding Equipment and Protecting Employees from Amputations (2007)",
+     "url": "https://www.osha.gov/sites/default/files/publications/osha3170.pdf",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "OSHA",
+     "name": "OSHA 3120, Control of Hazardous Energy (Lockout/Tagout), 2002 (Revised)",
+     "url": "https://www.osha.gov/sites/default/files/publications/osha3120.pdf",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "OSHA",
+     "name": "eCFR Title 29 CFR 1910.147, 1910.178, 1910.212, 1910.217 (OSHA general industry standards)",
+     "url": "https://www.ecfr.gov/current/title-29/part-1910",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "Census Bureau",
+     "name": "U.S. Census Bureau NAICS code lists (2007, 2012, 2017, 2022)",
+     "url": "https://www.census.gov/naics/",
      "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
     }
    ],
@@ -1999,6 +2127,22 @@
     "freshness",
     "authority"
    ],
+   "facetLabels": {
+    "docType": "Document type",
+    "agency": "Agency",
+    "category": "Hazard / topic",
+    "subcategory": "Industry group / publication",
+    "tags": "Equipment, injury and section",
+    "organizations": "Employer / agency",
+    "regions": "State",
+    "publishedDate": "Published",
+    "authority": "Authority",
+    "equipment": "Equipment",
+    "industryGroup": "Industry group",
+    "amputation": "Amputation",
+    "hospitalized": "Hospitalized",
+    "status": "Status"
+   },
    "sourceHosts": [
     "nvlpubs.nist.gov",
     "www.ecfr.gov",
@@ -2637,41 +2781,53 @@
   },
   {
    "id": "energy",
-   "label": "Energy",
-   "short": "Energy",
+   "label": "Energy & utilities",
+   "short": "Energy & utilities",
    "group": "Industries",
-   "blurb": "DOE OE-417 grid incident reports, FERC orders, EIA analysis and DOE reports (public-domain sources only).",
+   "blurb": "DOE OE-417 grid incident reports, FERC orders and staff reports, EIA analysis and outlooks, and DOE grid modernization reports (public-domain sources only).",
    "sources": [
     {
      "agency": "DOE CESER",
-     "name": "OE-417 electric emergency incident reports",
+     "name": "DOE CESER Form OE-417 / DOE-417 Electric Emergency Incident and Disturbance annual summaries (2018 PDF kept as a PDF document; 2019-2025 spreadsheets as event rows)",
      "url": "https://doe417.pnnl.gov/",
      "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
     },
     {
      "agency": "FERC",
-     "name": "FERC orders (Federal Register)",
-     "url": "https://www.federalregister.gov/agencies/federal-energy-regulatory-commission",
+     "name": "FERC staff-only reports: 2025 Assessment of Demand Response and Advanced Metering (Dec 2025; kept as a PDF document) and the 2025-2026 and 2026-2027 Winter Energy Market and Electric Reliability Assessments (text only)",
+     "url": "https://www.ferc.gov/media/2025-assessment-demand-response-and-advanced-metering",
      "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
     },
     {
      "agency": "EIA",
-     "name": "Today in Energy",
-     "url": "https://www.eia.gov/todayinenergy/",
+     "name": "EIA Short-Term Energy Outlook, November 2026 (full PDF incl. electricity tables 7a-7e)",
+     "url": "https://www.eia.gov/outlooks/steo/archives/nov26.pdf",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "FERC",
+     "name": "FERC Reliability Standard orders and rules published in the Federal Register (EOP-012-1/-2/-3, EOP-011-3/-4, TPL-008, IBR registration, Order No. 901, PRC-024-4/PRC-029-1, Order No. 887, CIP-015-1)",
+     "url": "https://www.federalregister.gov/agencies/federal-energy-regulatory-commission",
      "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
     },
     {
      "agency": "DOE OE",
-     "name": "Office of Electricity reports",
-     "url": "https://www.energy.gov/oe/office-electricity",
+     "name": "U.S. DOE Office of Electricity, Distribution Automation: Results from the Smart Grid Investment Grant Program (Sept 2016)",
+     "url": "https://www.energy.gov/sites/prod/files/2016/11/f34/Distribution%20Automation%20Summary%20Report_09-29-16.pdf",
+     "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
+    },
+    {
+     "agency": "EIA",
+     "name": "EIA Today in Energy articles on grid reliability events",
+     "url": "https://www.eia.gov/todayinenergy/",
      "license": "Public domain (U.S. Government work, 17 U.S.C. §105)"
     }
    ],
    "languages": [
     "en"
    ],
-   "status": "pending",
-   "evaluatedAt": null,
+   "status": "final",
+   "evaluatedAt": "2026-11-25T16:35:30Z",
    "scenarios": [
     "S01",
     "S02",
@@ -2679,28 +2835,550 @@
     "S04",
     "S05",
     "S06",
-    "S07"
+    "S07",
+    "S08",
+    "S09",
+    "S10"
    ],
    "boostSubtypes": [
     "freshness",
     "authority",
     "impact"
    ],
+   "facetLabels": {
+    "docType": "Document type",
+    "agency": "Agency",
+    "category": "Event type / topic",
+    "subcategory": "Event or report",
+    "tags": "Topics & standards",
+    "organizations": "Organizations",
+    "regions": "NERC region / state",
+    "publishedDate": "Published",
+    "authority": "Authority",
+    "eventType": "Event type",
+    "nercRegion": "NERC region",
+    "reliabilityStandards": "Reliability standard",
+    "demandLossMw": "Demand loss (MW)",
+    "customersAffected": "Customers affected",
+    "magnitude": "Customers affected"
+   },
    "sourceHosts": [
     "doe417.pnnl.gov",
     "www.eia.gov",
     "www.energy.gov",
-    "www.federalregister.gov"
+    "www.federalregister.gov",
+    "www.ferc.gov"
    ],
    "defaults": {
     "S05": {
      "facets": [
-      "docType,count:5",
-      "agency,count:5"
+      "eventType,count:10",
+      "nercRegion,count:10",
+      "regions,count:10",
+      "tags,count:10"
      ]
+    },
+    "S10": {
+     "sourceHash": "359f87c9e6e72133c0ae3078f15b40f42a35a158fcf0b1856ce0cc6189b51993"
     }
    },
-   "presets": {}
+   "presets": {
+    "S01": [
+     {
+      "id": "NRG-S01-01",
+      "label": "PSPS events during California wildfires",
+      "hint": "PSPS during California wildfires",
+      "query": "PSPS events during California wildfires",
+      "relevant": [
+       "NRG-FERC-WINTER-2025-26-c006",
+       "NRG-EIA-TIE-41714"
+      ],
+      "why": "No document contains the literal acronym, so plain keyword returns 0 hits; the synonym map expands psps -> public safety power shutoff and puts EIA's report on PG&E's October 2019 wildfire-related shutoffs at #1 (FERC's 2025-26 winter assessment PSPS paragraph is #3)."
+     },
+     {
+      "id": "NRG-S01-02",
+      "label": "CAISO EEA 3 rolling outages heat wave",
+      "hint": "CAISO EEA 3 in a heat wave",
+      "query": "CAISO EEA 3 rolling outages heat wave",
+      "relevant": [
+       "NRG-EIA-TIE-54039",
+       "NRG-EIA-TIE-53939"
+      ],
+      "why": "Plain keyword needs every token including 'EEA' and 'outages' and returns 0 hits; eea -> energy emergency alert plus stemming put EIA's September 2022 CAISO article (Energy Emergency Alert Stage 3, 'rolling blackouts') at #1 and the September 2022 heat-wave fuel-mix article (daily Energy Emergency Alerts to prevent rolling power outages) at #2."
+     },
+     {
+      "id": "NRG-S01-03",
+      "label": "distribution PMUs for grid visibility",
+      "hint": "Distribution PMUs",
+      "query": "distribution PMUs for grid visibility",
+      "relevant": [
+       "NRG-RPT-DOESGIGDA2016-S10-c003"
+      ],
+      "why": "Plain keyword needs the literal 'PMUs' and returns 0 hits; stemming plus pmu -> phasor measurement unit put DOE SGIG section 7.2 ('micro-synchrophasors, or distribution phasor measurement units ... enhanced visibility') at #1."
+     },
+     {
+      "id": "NRG-S01-04",
+      "label": "replacing legacy DMS and OMS with an ADMS for FLISR",
+      "hint": "ADMS replacing legacy DMS/OMS",
+      "query": "replacing legacy DMS and OMS with an ADMS for FLISR",
+      "relevant": [
+       "NRG-RPT-DOESGIGDA2016-S05-c008",
+       "NRG-RPT-DOESGIGDA2016-S09-c006"
+      ],
+      "why": "Plain keyword requires 'replacing' (the report says 'replaced') and returns 0 hits; stemming matches CenterPoint's ADMS that 'replaced the utility's legacy DMS, OMS' at #1 (DOE 6.6 Systems Integration) and #2 (CenterPoint case study)."
+     }
+    ],
+    "S02": [
+     {
+      "id": "NRG-S02-01",
+      "label": "utility cut the power on purpose so the lines would not start a fire",
+      "hint": "Deliberate shutoff to prevent wildfire",
+      "query": "utility cut the power on purpose so the lines would not start a fire",
+      "relevant": [
+       "NRG-FERC-WINTER-2025-26-c006",
+       "NRG-EIA-TIE-41714"
+      ],
+      "why": "BM25 matches 'power', 'lines' and 'start' and returns DOE volt/VAR sections and the IBR registration order (nothing relevant in its top 10); vector search ranks EIA's report on PG&E's October 2019 wildfire-related shutoffs #1."
+     },
+     {
+      "id": "NRG-S02-02",
+      "label": "an electric co-op's office IT systems were hit by a cyberattack",
+      "hint": "Co-op hit by an IT cyberattack",
+      "query": "an electric co-op's office IT systems were hit by a cyberattack",
+      "relevant": [
+       "NRG-OE417-2023-0316"
+      ],
+      "why": "BM25 latches onto 'electric' and 'co-' (STEO 'Biofuel losses and co-products' rows, EIA price articles) with nothing relevant in its top 10; vector search maps co-op -> cooperative and IT cyberattack -> 'Cyber event (information technology)' and ranks Seminole Electric Cooperative's December 2023 OE-417 report #1."
+     },
+     {
+      "id": "NRG-S02-03",
+      "label": "somebody fired bullets at grid equipment",
+      "hint": "Gunfire at grid equipment",
+      "query": "somebody fired bullets at grid equipment",
+      "relevant": [
+       "NRG-OE417-2024-0622"
+      ],
+      "why": "No record says 'bullets', so BM25 matches 'grid' and 'equipment' (DOE equipment-health sections, EIA cold-snap articles) with nothing relevant in its top 10; vector search ranks the December 2024 Arkansas OE-417 physical attack (event type 'Ballistic', 10,000 MW) #1."
+     },
+     {
+      "id": "NRG-S02-04",
+      "label": "the meter tells the utility my house lost power before I even call",
+      "hint": "Smart meter last-gasp outage detection",
+      "query": "the meter tells the utility my house lost power before I even call",
+      "relevant": [
+       "NRG-RPT-DOESGIGDA2016-S03-c002",
+       "NRG-RPT-DOESGIGDA2016-S03-c011",
+       "NRG-RPT-DOESGIGDA2016-S04-c003",
+       "NRG-RPT-DOESGIGDA2016-S05-c007",
+       "NRG-RPT-DOESGIGDA2016-S09-c005",
+       "NRG-RPT-DOESGIGDA2016-S09-c008"
+      ],
+      "why": "BM25 returns DOE volt/VAR findings, Puerto Rico outage hours and Colorado's smart-meter opt-out law (first relevant hit, CenterPoint's last-gasp case study, at #5); vector search ranks DOE 2.2 Outage Status Monitoring (pinging smart meters, last-gasp notifications into the OMS) #1."
+     }
+    ],
+    "S03": [
+     {
+      "id": "NRG-S03-01",
+      "label": "Form EIA-861 data files: how many smart meters were in service nationwide in 2020?",
+      "hint": "Form EIA-861 smart meters, 2020",
+      "query": "Form EIA-861 data files: how many smart meters were in service nationwide in 2020?",
+      "relevant": [
+       "NRG-FERC-DRAMI-2025-PDF-t04r08",
+       "NRG-FERC-DRAMI-2025-PDF-t11r14"
+      ],
+      "why": "Keyword is trapped by the 'Sources: ... Form EIA-861 ... data file' footnote rows (#1-5) because CU Layout reads the data rows as 'Form EIA-8611'; hybrid ranks the 2020 Form EIA-861 row (103.1 million advanced meters of 159.7 million) #1."
+     },
+     {
+      "id": "NRG-S03-02",
+      "label": "Order No. 896: planning for lots of generators tripping at once in a deep freeze",
+      "hint": "Order No. 896 correlated generator outages",
+      "query": "Order No. 896: planning for lots of generators tripping at once in a deep freeze",
+      "relevant": [
+       "NRG-FR-2023-13286-S02-c010",
+       "NRG-FR-2023-13286-S02-c011",
+       "NRG-FR-2023-13286-S02-c012",
+       "NRG-FR-2023-13286-S02-c013",
+       "NRG-FR-2023-13286-S02-c014",
+       "NRG-FR-2023-13286-S03-c003",
+       "NRG-FR-2023-13286-S03-c006"
+      ],
+      "why": "Keyword's top 4 are Order No. 896 part headers that repeat the citation and order number (first relevant #8); hybrid ranks Order No. 896 'F. Concurrent/Correlated Generator and Transmission Outages' #1."
+     }
+    ],
+    "S04": [
+     {
+      "id": "NRG-S04-01",
+      "label": "Which hurricane left more than 2.6 million Florida customers without power in 2022?",
+      "hint": "Hurricane Ian outages",
+      "query": "Which hurricane left more than 2.6 million Florida customers without power in 2022?",
+      "relevant": [
+       "NRG-EIA-TIE-61303"
+      ],
+      "why": "Hybrid ranks EIA's 2024-hurricanes and Hurricane Ida articles first and the 2022 interruptions article at #3; the reranker reads its bullet 'Hurricane Ian left over 2.6 million customers in Florida without power' and moves it to #1."
+     },
+     {
+      "id": "NRG-S04-02",
+      "label": "Has a utility ever reported to DOE an uncontrolled loss of 500 MW of solar or wind output?",
+      "hint": "DOE-417 report of a 500 MW IBR loss",
+      "query": "Has a utility ever reported to DOE an uncontrolled loss of 500 MW of solar or wind output?",
+      "relevant": [
+       "NRG-OE417-2025-0306"
+      ],
+      "why": "Hybrid ranks generator-loss OE-417 reports (South Dakota, Puerto Rico, LUMA) first and the San Diego County October 2025 report at #7; the reranker reads its alert criterion 'Uncontrolled loss of a total of 500 MW or more from inverter-based resource(s)' and moves it to #1."
+     },
+     {
+      "id": "NRG-S04-03",
+      "label": "Which grid operator declared an Energy Emergency Alert 1 after unexpectedly losing generation?",
+      "hint": "EEA 1 after unexpected generation loss",
+      "query": "Which grid operator declared an Energy Emergency Alert 1 after unexpectedly losing generation?",
+      "relevant": [
+       "NRG-FERC-DRAMI-2025-PDF-l119"
+      ],
+      "why": "Hybrid ranks LUMA generator-loss and Arizona generation-inadequacy OE-417 reports first and FERC's DR/AMI assessment at #4; the reranker finds 'ISO-NE issued a Power Caution after an unexpected loss of generation and declared an Energy Emergency Alert 1' and moves it to #1."
+     },
+     {
+      "id": "NRG-S04-04",
+      "label": "What system does the DOE smart grid report describe as the brain of the distribution system?",
+      "hint": "The brain of the smart distribution grid",
+      "query": "What system does the DOE smart grid report describe as the brain of the distribution system?",
+      "relevant": [
+       "NRG-RPT-DOESGIGDA2016-S09-c006"
+      ],
+      "why": "Hybrid ranks DOE sections 1.1 (DA technologies), 1.3 (data limitations) and the DER notes first and section 6.6 at #4; the reranker finds 'The DMS is considered the brain of the smart distribution system' and moves it to #1."
+     }
+    ],
+    "S05": [
+     {
+      "id": "NRG-S05-01",
+      "label": "firm load shed in Texas during Winter Storm Uri",
+      "hint": "Texas firm load shed during Uri",
+      "query": "firm load shed in Texas during Winter Storm Uri",
+      "filter": "tags/any(t: t eq 'load-shed') and regions/any(r: r eq 'Texas') and publishedDate ge 2021-02-01T00:00:00Z and publishedDate lt 2021-03-01T00:00:00Z",
+      "facets": [
+       "eventType,count:10",
+       "nercRegion,count:10",
+       "regions,count:10",
+       "tags,count:10"
+      ],
+      "relevant": [
+       "NRG-OE417-2021-0053",
+       "NRG-OE417-2021-0059",
+       "NRG-OE417-2021-0095",
+       "NRG-OE417-2021-0048",
+       "NRG-EIA-TIE-46836"
+      ],
+      "why": "Keyword without filters returns EIA articles on later cold snaps (2024 gas production, January 2024 and 2025 Texas generation); the load-shed tag + Texas + February 2021 filter returns the two TRE February 15, 2021 firm load-shed reports (Texas and Harris County) and the SERC Louisiana/Texas/Illinois report at #1-3, with eventType and nercRegion facets."
+     },
+     {
+      "id": "NRG-S05-03",
+      "label": "fuel supply emergencies at power plants in the West",
+      "hint": "WECC fuel supply emergencies",
+      "query": "fuel supply emergencies at power plants in the West",
+      "filter": "eventType eq 'fuel-supply' and nercRegion eq 'WECC'",
+      "facets": [
+       "eventType,count:10",
+       "nercRegion,count:10",
+       "regions,count:10",
+       "tags,count:10"
+      ],
+      "relevant": [
+       "NRG-OE417-2019-0204",
+       "NRG-OE417-2020-0018",
+       "NRG-OE417-2021-0220",
+       "NRG-OE417-2022-0131",
+       "NRG-OE417-2023-0296"
+      ],
+      "why": "Keyword returns Minnesota and Arkansas fuel supply emergencies at #1 and #3; the fuel-supply + nercRegion WECC filter returns California fuel supply reports from 2020, 2023 and 2021 at #1-3 (New Mexico and Arizona follow) and the nercRegion facet shows WECC 5."
+     },
+     {
+      "id": "NRG-S05-04",
+      "label": "generator trips forcing load shedding in Puerto Rico",
+      "hint": "Puerto Rico generator-trip load shedding",
+      "query": "generator trips forcing load shedding in Puerto Rico",
+      "filter": "tags/any(t: t eq 'load-shed') and regions/any(r: r eq 'Puerto Rico')",
+      "facets": [
+       "eventType,count:10",
+       "regions,count:10",
+       "tags,count:10"
+      ],
+      "relevant": [
+       "NRG-OE417-2024-0240",
+       "NRG-OE417-2024-0282",
+       "NRG-OE417-2024-0423",
+       "NRG-OE417-2025-0035",
+       "NRG-OE417-2023-0331",
+       "NRG-OE417-2023-0336"
+      ],
+      "why": "Keyword's #2 is EIA's article on Puerto Rico's generation mix after the 2020 earthquakes; the load-shed tag + Puerto Rico filter returns the April and July 2024 generator-loss reports with firm load shedding at #1-3, and the tags facet shows load-shed 4 and voltage-reduction 4."
+     },
+     {
+      "id": "NRG-S05-02",
+      "label": "physical attacks on grid facilities since 2024 that cut power to customers",
+      "hint": "Physical attacks with customer impact since 2024",
+      "query": "physical attacks on grid facilities since 2024 that cut power to customers",
+      "filter": "tags/any(t: t eq 'physical-security') and publishedDate ge 2024-01-01T00:00:00Z and customersAffected gt 0",
+      "facets": [
+       "eventType,count:10",
+       "regions,count:10",
+       "tags,count:10"
+      ],
+      "relevant": [
+       "NRG-OE417-2024-0065",
+       "NRG-OE417-2025-0321",
+       "NRG-OE417-2025-0331",
+       "NRG-OE417-2025-0280"
+      ],
+      "why": "Keyword returns 2024 attacks in West Virginia and South Dakota whose reports give no customer count at #2-3; the physical-security + 2024-onward + customersAffected > 0 filter returns attacks in California (234 customers), Pima County AZ (250,000) and El Paso County CO (280,000) at #1-3."
+     }
+    ],
+    "S06": [
+     {
+      "id": "NRG-S06-01",
+      "label": "extreme cold weather preparedness standard for generator owners",
+      "hint": "Current cold weather standard for generators",
+      "query": "extreme cold weather preparedness standard for generator owners",
+      "boostSubtype": "freshness",
+      "relevant": [
+       "NRG-FERC-WINTER-2025-26-c006",
+       "NRG-FERC-WINTER-2025-26-c007",
+       "NRG-FR-2025-18393"
+      ],
+      "why": "Hybrid's top 8 are EOP-012-2 (2024) and EOP-012-1 (2023) order chunks and no EOP-012-3 text appears in its top 10; the freshness profile puts FERC's November 2025 winter assessment note on successor standard EOP-012-3 at #1 and the September 2025 EOP-012-3 order at #2-7."
+     },
+     {
+      "id": "NRG-S06-02",
+      "label": "how many people in Texas lost power and how many died during the February 2021 freeze",
+      "hint": "Uri toll: FERC's finding",
+      "query": "how many people in Texas lost power and how many died during the February 2021 freeze",
+      "boostSubtype": "authority",
+      "relevant": [
+       "NRG-FR-2023-04875-S01-c005",
+       "NRG-FR-2024-03608-c002",
+       "NRG-FR-2024-14668-S01-c003",
+       "NRG-FR-2025-18393-c002"
+      ],
+      "why": "Hybrid's top 10 is EIA articles and Texas OE-417 reports (none state the official toll) with no FERC order; the authority profile (FERC orders = 5) puts the EOP-011-4 and EOP-012-1 order passages 'over 4.5 million people lost power and at least 210 people lost their lives' at #1-2."
+     },
+     {
+      "id": "NRG-S06-03",
+      "label": "Michigan storm outages with the most customers out",
+      "hint": "Biggest Michigan storm outages",
+      "query": "Michigan storm outages with the most customers out",
+      "boostSubtype": "impact",
+      "relevant": [
+       "NRG-OE417-2021-0249",
+       "NRG-OE417-2023-0057",
+       "NRG-OE417-2019-0146"
+      ],
+      "why": "Hybrid ranks EIA national interruption articles first and the Michigan OE-417 reports at #4, #8 and #9; the impact profile (customers affected, log scale) puts the Michigan storms with 700,000, 623,358 and 400,000 customers affected at #1-3."
+     },
+     {
+      "id": "NRG-S06-04",
+      "label": "transmission interruptions that affected the most customers",
+      "hint": "Highest-impact transmission interruptions",
+      "query": "transmission interruptions that affected the most customers",
+      "boostSubtype": "impact",
+      "relevant": [
+       "NRG-OE417-2021-0225",
+       "NRG-OE417-2021-0227"
+      ],
+      "why": "Hybrid ranks EIA SAIDI articles first (its first transmission interruption, California September 2020 with 172,000 customers, is #5); the impact profile puts Nevada's July 2021 Transmission Interruption reports listing 1,300,000 customers affected at #1-2."
+     }
+    ],
+    "S07": [
+     {
+      "id": "NRG-S07-01",
+      "label": "Which cyber events did utilities report to DOE in 2025, and what does CIP-015-1 require for internal network security monitoring?",
+      "hint": "2025 cyber reports + CIP-015-1",
+      "query": "Which cyber events did utilities report to DOE in 2025, and what does CIP-015-1 require for internal network security monitoring?",
+      "relevant": [
+       "NRG-OE417-2025-0378",
+       "NRG-OE417-2025-0358",
+       "NRG-OE417-2025-0330",
+       "NRG-OE417-2025-0263",
+       "NRG-OE417-2025-0306",
+       "NRG-FR-2025-12309"
+      ],
+      "relevantGroups": [
+       [
+        "NRG-OE417-2025-0378",
+        "NRG-OE417-2025-0358",
+        "NRG-OE417-2025-0330",
+        "NRG-OE417-2025-0263",
+        "NRG-OE417-2025-0306"
+       ],
+       [
+        "NRG-FR-2025-12309"
+       ]
+      ],
+      "why": "Hybrid's top 6 are all CIP-015-1 order chunks, so the 2025 incident half is unanswered; agentic retrieval returns the San Diego County October 2025 OE-417 cyber report #1, the CIP-015-1 INSM directive #2 and Arkansas's September 2025 cyber report #3."
+     },
+     {
+      "id": "NRG-S07-02",
+      "label": "Why did PG&E shut off power to customers in October 2019, and how much did automated feeder switching cut customer minutes of interruption?",
+      "hint": "PG&E shutoffs + FLISR",
+      "query": "Why did PG&E shut off power to customers in October 2019, and how much did automated feeder switching cut customer minutes of interruption?",
+      "relevant": [
+       "NRG-EIA-TIE-41714",
+       "NRG-RPT-DOESGIGDA2016-S01-c001",
+       "NRG-RPT-DOESGIGDA2016-S01-c002",
+       "NRG-RPT-DOESGIGDA2016-S01-c005",
+       "NRG-RPT-DOESGIGDA2016-S03-c001",
+       "NRG-RPT-DOESGIGDA2016-S03-c002",
+       "NRG-RPT-DOESGIGDA2016-S03-c003",
+       "NRG-RPT-DOESGIGDA2016-S03-c005",
+       "NRG-RPT-DOESGIGDA2016-S03-c006",
+       "NRG-RPT-DOESGIGDA2016-S03-c007",
+       "NRG-RPT-DOESGIGDA2016-S03-c008",
+       "NRG-RPT-DOESGIGDA2016-S04-c002",
+       "NRG-RPT-DOESGIGDA2016-S04-c003",
+       "NRG-RPT-DOESGIGDA2016-S05-c001",
+       "NRG-RPT-DOESGIGDA2016-S05-c003",
+       "NRG-RPT-DOESGIGDA2016-S05-c004",
+       "NRG-RPT-DOESGIGDA2016-S05-c007",
+       "NRG-RPT-DOESGIGDA2016-S05-c008",
+       "NRG-RPT-DOESGIGDA2016-S05-c010",
+       "NRG-RPT-DOESGIGDA2016-S05-c011",
+       "NRG-RPT-DOESGIGDA2016-S07-c004",
+       "NRG-RPT-DOESGIGDA2016-S09-c003",
+       "NRG-RPT-DOESGIGDA2016-S09-c004",
+       "NRG-RPT-DOESGIGDA2016-S09-c005",
+       "NRG-RPT-DOESGIGDA2016-S09-c006",
+       "NRG-RPT-DOESGIGDA2016-S09-c009",
+       "NRG-RPT-DOESGIGDA2016-S10-c002"
+      ],
+      "relevantGroups": [
+       [
+        "NRG-EIA-TIE-41714"
+       ],
+       [
+        "NRG-RPT-DOESGIGDA2016-S01-c001",
+        "NRG-RPT-DOESGIGDA2016-S01-c002",
+        "NRG-RPT-DOESGIGDA2016-S01-c005",
+        "NRG-RPT-DOESGIGDA2016-S03-c001",
+        "NRG-RPT-DOESGIGDA2016-S03-c002",
+        "NRG-RPT-DOESGIGDA2016-S03-c003",
+        "NRG-RPT-DOESGIGDA2016-S03-c005",
+        "NRG-RPT-DOESGIGDA2016-S03-c006",
+        "NRG-RPT-DOESGIGDA2016-S03-c007",
+        "NRG-RPT-DOESGIGDA2016-S03-c008",
+        "NRG-RPT-DOESGIGDA2016-S04-c002",
+        "NRG-RPT-DOESGIGDA2016-S04-c003",
+        "NRG-RPT-DOESGIGDA2016-S05-c001",
+        "NRG-RPT-DOESGIGDA2016-S05-c003",
+        "NRG-RPT-DOESGIGDA2016-S05-c004",
+        "NRG-RPT-DOESGIGDA2016-S05-c007",
+        "NRG-RPT-DOESGIGDA2016-S05-c008",
+        "NRG-RPT-DOESGIGDA2016-S05-c010",
+        "NRG-RPT-DOESGIGDA2016-S05-c011",
+        "NRG-RPT-DOESGIGDA2016-S07-c004",
+        "NRG-RPT-DOESGIGDA2016-S09-c003",
+        "NRG-RPT-DOESGIGDA2016-S09-c004",
+        "NRG-RPT-DOESGIGDA2016-S09-c005",
+        "NRG-RPT-DOESGIGDA2016-S09-c006",
+        "NRG-RPT-DOESGIGDA2016-S09-c009",
+        "NRG-RPT-DOESGIGDA2016-S10-c002"
+       ]
+      ],
+      "why": "Hybrid returns EIA's annual interruption articles with the PG&E shutoff article at #2 and no FLISR section until #8; agentic retrieval returns the PG&E October 2019 wildfire-related shutoff article #1 and DOE FLISR results sections #2-3."
+     },
+     {
+      "id": "NRG-S07-03",
+      "label": "How did New England keep the lights on with oil during the January 2026 winter storm, and what does EOP-012-3 require generator owners to do for extreme cold?",
+      "hint": "New England oil in Jan 2026 + EOP-012-3",
+      "query": "How did New England keep the lights on with oil during the January 2026 winter storm, and what does EOP-012-3 require generator owners to do for extreme cold?",
+      "relevant": [
+       "NRG-FERC-WINTER-2026-27-c005",
+       "NRG-EIA-TIE-67104",
+       "NRG-FERC-WINTER-2025-26-c006",
+       "NRG-FR-2025-18393"
+      ],
+      "relevantGroups": [
+       [
+        "NRG-FERC-WINTER-2026-27-c005",
+        "NRG-EIA-TIE-67104"
+       ],
+       [
+        "NRG-FERC-WINTER-2025-26-c006",
+        "NRG-FR-2025-18393"
+       ]
+      ],
+      "why": "Hybrid returns the 2022 New England oil article and EOP-012-1/EOP-012-2 orders (neither the January 2026 storm nor EOP-012-3); agentic retrieval returns FERC's 2026-27 assessment (oil supplied roughly 40% of ISO-NE on January 25, 2026) #1 and EOP-012-3 order chunks #2-3."
+     },
+     {
+      "id": "NRG-S07-04",
+      "label": "What RoCoF must IBRs ride through under PRC-029-1, and has any utility reported a 500 MW loss of inverter-based resources to DOE?",
+      "hint": "PRC-029-1 RoCoF + DOE-417 IBR loss",
+      "query": "What RoCoF must IBRs ride through under PRC-029-1, and has any utility reported a 500 MW loss of inverter-based resources to DOE?",
+      "relevant": [
+       "NRG-FR-2025-14304-S01-c007",
+       "NRG-FR-2025-14304-S02-c001",
+       "NRG-OE417-2025-0306"
+      ],
+      "relevantGroups": [
+       [
+        "NRG-FR-2025-14304-S01-c007",
+        "NRG-FR-2025-14304-S02-c001"
+       ],
+       [
+        "NRG-OE417-2025-0306"
+       ]
+      ],
+      "why": "Hybrid's top 5 are footnote and background chunks from the IBR registration, Order No. 901 and PRC-029-1 orders (first RoCoF passage #6, no DOE report in its top 10); agentic retrieval returns the San Diego County 2025 OE-417 report listing the 500 MW inverter-based-resource loss criterion #1 and PRC-029-1 Requirement R3 (RoCoF up to 5 Hz/s) #2."
+     }
+    ],
+    "S10": [
+     {
+      "id": "NRG-S10-01",
+      "label": "What share of U.S. meters were advanced meters at the end of 2020?",
+      "hint": "Advanced meter penetration, 2020",
+      "query": "What share of U.S. meters were advanced meters at the end of 2020?",
+      "sourceHash": "359f87c9e6e72133c0ae3078f15b40f42a35a158fcf0b1856ce0cc6189b51993",
+      "relevant": [
+       "NRG-FERC-DRAMI-2025-PDF-t04r08",
+       "NRG-FERC-DRAMI-2025-PDF-t11r14"
+      ],
+      "page": 10,
+      "why": "CU Read returns whole pages 10, 11 and 8, where Table 2-1 is flattened into '... 2020 Form EIA-8611 Dec 2020 (EIA) 103.1 159.7 64.6% Institute for Electric Innovation2 Dec 2020 (IEI) 107.4 ...'; CU Layout's #1 is the 2020 EIA row (page 10, row 8) with each value under its column: 64.6%."
+     },
+     {
+      "id": "NRG-S10-02",
+      "label": "What is the advanced meter penetration rate for residential customers in New England?",
+      "hint": "New England residential AMI",
+      "query": "What is the advanced meter penetration rate for residential customers in New England?",
+      "sourceHash": "359f87c9e6e72133c0ae3078f15b40f42a35a158fcf0b1856ce0cc6189b51993",
+      "relevant": [
+       "NRG-FERC-DRAMI-2025-PDF-t05r06"
+      ],
+      "page": 12,
+      "why": "CU Read returns pages 11-13 as flat text; CU Layout's #1 is Table 2-2's New England row (page 12, row 6): 25.4% residential, 25.4% commercial, 25.5% industrial."
+     },
+     {
+      "id": "NRG-S10-03",
+      "label": "What is the PJM Western hub wholesale price forecast for the first quarter of 2026?",
+      "hint": "PJM West hub price, 1Q26",
+      "query": "What is the PJM Western hub wholesale price forecast for the first quarter of 2026?",
+      "sourceHash": "384f58eb21474f9390ac868ff7e9d53b1b0e98f759cac000688f1f97c5db7628",
+      "relevant": [
+       "NRG-EIA-STEO-2026-11-PDF-t18r42"
+      ],
+      "page": 47,
+      "why": "CU Read's top pages (29, 10, 24) are price prose and page 47 is not in its top 3; CU Layout's #1 is Table 7a's PJM Western hub row (page 47, row 42) with the 2026 Q1 column: $103.38/MWh."
+     },
+     {
+      "id": "NRG-S10-04",
+      "label": "ERCOT North hub wholesale electricity price forecast for the third quarter of 2027",
+      "hint": "ERCOT North hub price, 3Q27",
+      "query": "ERCOT North hub wholesale electricity price forecast for the third quarter of 2027",
+      "sourceHash": "384f58eb21474f9390ac868ff7e9d53b1b0e98f759cac000688f1f97c5db7628",
+      "relevant": [
+       "NRG-EIA-STEO-2026-11-PDF-t18r38"
+      ],
+      "page": 47,
+      "why": "CU Read's top 3 pages miss page 47 (#5), where the ERCOT North hub line is fifteen unlabeled numbers; CU Layout's #1 is the ERCOT North hub row (page 47, row 38) with the 2027 Q3 column: $50.95/MWh."
+     }
+    ]
+   }
   }
  ]
 }

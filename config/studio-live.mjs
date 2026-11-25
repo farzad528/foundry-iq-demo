@@ -94,7 +94,7 @@ export function liveConfiguration(env, id, language = 'en') {
       || image.corpus.dimensions !== image.dimensions || !/^[a-f0-9]{64}$/.test(image.corpus.manifestHash || '')
       || (image.vectorizer !== undefined ? !name(image.vectorizer)
         : !imageOrigin(env.STUDIO_IMAGE_ENDPOINT) || !(env.STUDIO_IMAGE_API_KEY || env.STUDIO_MODEL_AUTH === 'entra'))) {
-      return unavailable('Compatible pinned Azure Vision image encoder, corpus metadata, dimensions and server-only credentials required; no text-vector substitute.');
+      return unavailable('A compatible pinned image-embedding encoder, corpus metadata, dimensions and server-only credentials are required; no text-vector substitute.');
     }
   }
   if (id === 'S01' && (!Array.isArray(config.synonymMaps) || !config.synonymMaps.length || !config.synonymMaps.every(name))) return unavailable('Reviewed synonym map configuration required.');

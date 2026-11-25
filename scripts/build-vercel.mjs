@@ -137,6 +137,13 @@ export function industryRecordingProblems(catalog, enabled, recorded) {
         const count = result.enhanced?.trace?.configuration?.agenticSearch?.subQueryCount;
         if (scenarioId === 'S07' && planning.test(preset.why || '') && !(count > 0)) problems.push(`${id} ${preset.id}: note claims agentic planning but the recording shows ${count ?? 'no'} sub-queries`);
       }
+      // The first (default) example should show a different #1 in BEFORE and AFTER whenever another example does.
+      const sameTop1 = preset => {
+        const result = recorded.entries?.[`${id}|en|${scenarioId}|${preset.query}`]?.result;
+        const [before, after] = [result?.baseline?.hits?.[0]?.id, result?.enhanced?.hits?.[0]?.id];
+        return result ? !!before && before === after : undefined;
+      };
+      if (sameTop1(presets[0]) === true && presets.some(preset => sameTop1(preset) === false)) problems.push(`${id} ${scenarioId}: the first example has the same #1 in both arms; lead with one that differs`);
     }
   }
   return problems;
@@ -200,7 +207,8 @@ export function aboutWithDataSources(html, catalog, enabled) {
   if (!html.includes(start) || !html.includes(end)) throw new Error('about.html is missing the data-sources markers.');
   const groups = [catalog.zava, ...enabled.map(id => catalog.industries.find(item => item.id === id))];
   const section = groups.map(item => `<article class="source-card"><h3>${escapeHtml(item.label)}</h3><p>${escapeHtml(item.blurb)}</p><ul>${item.sources.map(source =>
-    `<li><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.agency)}: ${escapeHtml(source.name)}</a><span class="license">${escapeHtml(source.license)}</span></li>`).join('')}</ul></article>`).join('\n        ');
+    `<li><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.agency)}: ${escapeHtml(source.name)}</a><span class="license">${escapeHtml(source.license)}</span></li>`).join('')}</ul>${
+    item.aboutNote ? `<p class="source-note">${escapeHtml(item.aboutNote)}</p>` : ''}</article>`).join('\n        ');
   const intro = enabled.length
     ? '<p>Public and synthetic demo data. The Zava store is fictional; the industry demos search public U.S. government documents in English, and every result links to its original public source.</p>'
     : '<p>Synthetic demo data: the Zava store, its products, support articles and images are fictional.</p>';
@@ -295,6 +303,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   write('public/404.html', notFound);
   write('public/assets/client.mjs', readFileSync('assets/client.mjs'));
   write('public/assets/header.mjs', readFileSync('assets/header.mjs'));
+  write('public/assets/display.mjs', readFileSync('assets/display.mjs'));
   write('public/assets/about.mjs', readFileSync('assets/about.mjs'));
   write('public/assets/styles.css', readFileSync('assets/styles.css'));
   write('public/assets/theme.js', readFileSync('assets/theme.js'));

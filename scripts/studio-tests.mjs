@@ -894,7 +894,7 @@ test('S10 native CU requires operation/analyzer provenance and preserves actual 
   const helpers = make(false);
   const result = await liveRun('S10', helpers);
   assert.equal(result.executionStatus, 'success');
-  assert.equal(result.enhanced.label, 'Azure CU Layout table rows');
+  assert.equal(result.enhanced.label, 'Layout: table rows');
   assert.equal(result.enhanced.trace.configuration.contentUnderstandingExecuted, true);
   assert.deepEqual(result.enhanced.hits[0].coordinates, coordinates);
   assert.equal(result.baseline.hits[0].coordinates, undefined);

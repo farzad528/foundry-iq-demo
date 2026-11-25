@@ -9,6 +9,7 @@ import { SEARCH_API_VERSION, AGENTIC_SEARCH_API_VERSION } from '../config/studio
 import { illustrationPng } from './generate-studio.mjs';
 import { retryAfterSeconds } from '../lib/studio.mjs';
 import { imageOnlyQuery } from '../config/studio-languages.mjs';
+import { displayText, notConfigured } from '../assets/display.mjs';
 
 const KEY = 'QueryKeyForTestsOnly0123456789abcdefABCDEF';
 const ENDPOINT = 'https://foundry-iq-demos.search.windows.net';
@@ -77,7 +78,7 @@ test('scenario catalog gates S07 without Standard retrieval and S11 without a Se
   assert.equal(byId.S07.liveAvailable, false);
   assert.match(byId.S07.live.reason, /Standard Knowledge Retrieval/);
   assert.equal(byId.S11.liveAvailable, false);
-  assert.match(byId.S11.live.reason, /Azure Vision image encoder/);
+  assert.match(byId.S11.live.reason, /image-embedding encoder/);
   assert.equal(LIVE_SCENARIOS.length, 11);
   assert.ok(!JSON.stringify(ready).includes(KEY));
   const paused = await (await app.handle('scenarios', new Request(`${ORIGIN}/api/scenarios`), env({ LIVE_ENABLED: undefined }))).json();
@@ -418,6 +419,7 @@ test('S10 labels the flattened-text limitation as a note, not a grounded answer'
 const STALE_COPY = [
   [/\bNOT\b/, 'all-caps NOT'],
   [/\bKB\b/, 'KB jargon'],
+  [/\bAzure CU\b|\bCU (?:Read|Layout)\b/, 'Content Understanding abbreviation'],
   [/\bfixtures?\b/i, 'fixture wording'],
   [/arbitrary image understanding|fixed original illustrat|illustrative/i, 'fixed-illustration Sample claim'],
   [/explicitly unsupported|unsupported until|uploads are unsupported/i, 'stale upload claim'],
@@ -512,13 +514,33 @@ test('API log records every upstream call per arm with the host placeholder, bou
   assert.equal(vectorQuery.base64Image, `[image bytes omitted: ${png.length} bytes]`);
 });
 
-test('visible copy says Foundry IQ; "Azure AI Search" appears only in title, meta and the first About mention', async () => {
+test('visible copy says Foundry IQ; Azure product names appear only in title, meta and the first About mention', async () => {
   const read = file => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
   const app = createVercelApp({ liveConfig, attestations: attestations(), log: () => {} });
+  // Visible catalog copy: titles, descriptions, limits, Sample labels, examples, notes and Live reasons (all languages).
+  const visible = scenario => [scenario.title, scenario.description, scenario.liveDescription, scenario.difference, scenario.limits, scenario.sample?.label,
+    scenario.live?.reason, ...(scenario.demoPresets || []).flatMap(preset => [preset.label, preset.hint, preset.note]), ...(scenario.sampleImages || []).map(image => image.label)];
   for (const language of ['en', 'fr', 'es', 'ja', 'de']) {
     const catalog = await (await app.handle('scenarios', new Request(`${ORIGIN}/api/scenarios?language=${language}`), env())).json();
     assert.ok(!JSON.stringify(catalog).includes('Azure AI Search'), language);
+    for (const scenario of catalog.scenarios) for (const copy of visible(scenario)) assert.doesNotMatch(String(copy ?? ''), /\bAzure\b/, `${language} ${scenario.id}: ${copy}`);
   }
+  const { app: industryApp } = industryHarness({ enabled: industryCatalog.industries.map(item => item.id) });
+  for (const item of industryCatalog.industries) {
+    const catalog = await (await industryApp.handle('scenarios', new Request(`${ORIGIN}/api/scenarios?industry=${item.id}`), env())).json();
+    for (const scenario of catalog.scenarios) for (const copy of visible(scenario)) assert.doesNotMatch(String(copy ?? ''), /\bAzure\b/, `${item.id} ${scenario.id}: ${copy}`);
+    assert.doesNotMatch(`${item.label} ${item.blurb}`, /\bAzure\b/, item.id);
+  }
+  // Visible page text: no Azure product names outside the head, except About’s first mention.
+  const text = html => html.replace(/<head>[\s\S]*?<\/head>/, '').replace(/<[^>]+>/g, ' ');
+  for (const file of ['page.html', '404.html']) assert.doesNotMatch(text(read(file)), /\bAzure\b/, file);
+  assert.equal(text(read('about.html')).match(/\bAzure\b/g)?.length, 1, 'About names Azure once: Foundry IQ (Azure AI Search)');
+  const strings = /(['`])[^'`\n]*\bAzure\b[^'`\n]*\1/;
+  for (const file of ['assets/client.mjs', 'assets/header.mjs', 'assets/about.mjs', 'assets/display.mjs']) {
+    const code = read(file).split(/\r?\n/).filter(line => !/^\s*(\/\/|\*|\/\*)/.test(line)).join('\n');
+    assert.doesNotMatch(code, strings, file);
+  }
+  for (const file of ['lib/vercel-app.mjs', 'lib/industry.mjs', 'lib/search-adapter.mjs']) assert.doesNotMatch(read(file), /HttpError\([^)]*\bAzure\b/, `${file}: error messages are shown to visitors`);
   const body = html => html.replace(/<head>[\s\S]*?<\/head>/, '').replace(/<[^>]+>/g, ' ');
   for (const file of ['page.html', '404.html']) assert.ok(!body(read(file)).includes('Azure AI Search'), file);
   assert.match(read('page.html').match(/<head>[\s\S]*?<\/head>/)[0], /Foundry IQ \(Azure AI Search\)/);
@@ -1003,6 +1025,13 @@ test('build pins industry bindings to attested ETags, checks the public catalog 
   assert.deepEqual(industryRecordingProblems(s07, ['healthcare'], recording(2)), []);
   assert.match(industryRecordingProblems(s07, ['healthcare'], recording(0))[0], /claims agentic planning.*0 sub-queries/);
   assert.match(industryRecordingProblems(s07, ['healthcare'], recording(2, 'partial_success'))[0], /not a successful comparison/);
+  // The default (first) example must show a different #1 whenever another example does.
+  const ordered = structuredClone(industryCatalog);
+  const s05 = ordered.industries.find(item => item.id === 'healthcare').presets.S05;
+  const top1 = (before, after) => ({ executionStatus: 'success', baseline: { status: 'success', hits: [{ id: before }] }, enhanced: { status: 'success', hits: [{ id: after }] } });
+  const s05Recordings = first => ({ entries: Object.fromEntries(s05.map((preset, i) => [`healthcare|en|S05|${preset.query}`, { result: i === 0 ? top1('A', first) : top1('A', 'B') }])) });
+  assert.deepEqual(industryRecordingProblems(ordered, ['healthcare'], s05Recordings('B')), []);
+  assert.match(industryRecordingProblems(ordered, ['healthcare'], s05Recordings('A'))[0], /healthcare S05: the first example has the same #1 in both arms/);
   assert.deepEqual(industryRecordingProblems(s07, ['retail'], recording(0)), [], 'only enabled industries are checked');
   const page = readFileSync(new URL('../page.html', import.meta.url), 'utf8');
   assert.match(pageWithIndustries(page, ids), /<meta name="studio-industries" content="healthcare,retail">/);
@@ -1011,7 +1040,9 @@ test('build pins industry bindings to attested ETags, checks the public catalog 
   const about = readFileSync(new URL('../about.html', import.meta.url), 'utf8');
   const withSources = aboutWithDataSources(about, industryCatalog, ['healthcare']);
   assert.match(withSources, /Public and synthetic demo data/);
-  assert.match(withSources, /href="https:\/\/open\.fda\.gov\/apis\/drug\/label\/"/);
+  assert.match(withSources, /href="https:\/\/api\.fda\.gov\/drug\/label\.json"/);
+  assert.ok(!withSources.includes('source-note'), 'only Financial carries the CFPB note');
+  assert.match(aboutWithDataSources(about, industryCatalog, ['financial']), /<p class="source-note">Consumer complaint narratives come from the CFPB FOIA narratives archive/);
   assert.match(withSources, /<span class="license">CC0 1\.0/);
   assert.match(withSources, /<footer><span>Public and synthetic demo data · <a href="#data-sources">Data sources<\/a>/);
   assert.ok(!withSources.includes('All content is synthetic (Zava Retail)'));
@@ -1058,4 +1089,52 @@ test('industry graph search fails closed on its own without the optional graph s
   assert.equal(other.executionStatus, 'success', 'every other industry scenario keeps working');
   const text = JSON.stringify(other);
   assert.ok(!text.includes(GRAPH_KEY) && !text.includes('fiq-industry-test-search.search.windows.net'));
+});
+
+test('passages display as plain text (Markdown removed) while raw values stay unchanged', () => {
+  assert.equal(displayText('## 5) The occurrence of drug toxicity ##### (a) Adverse Effect'), '5) The occurrence of drug toxicity (a) Adverse Effect');
+  assert.equal(displayText('# Recall\n\n- **Recall number:** 19116\n- **Recall date:** 2019-05-09'), 'Recall\n\n• Recall number: 19116\n• Recall date: 2019-05-09');
+  assert.equal(displayText('(d) *Application of control.* See [the label](https://dailymed.nlm.nih.gov/x).'), '(d) Application of control. See the label.');
+  assert.equal(displayText('| Hired | Training |\n|---|---|\n| Before 1999 | Done |'), 'Hired · Training\n\nBefore 1999 · Done');
+  assert.equal(displayText('BAYER\n![Code128](barcodes/25.1 "8910")\nKerendia®\n----\nNotes'), 'BAYER\n\nKerendia®\n\nNotes');
+  for (const kept of ['C# and item #3', 'wire transfers? _____ _____ 2.', '2*3*4 = 24', 'snake_case_name', 'HC-ICD10CM-FY2027-I-C-19']) assert.equal(displayText(kept), kept);
+  assert.equal(displayText(undefined), undefined);
+  const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
+  assert.match(client, /'hit-open'/);
+  assert.match(client, /displayText\(hit\.title\) \|\| hit\.id, 'hit-open'/);
+  assert.match(client, /displayText\(hit\.snippet\)/);
+  assert.match(client, /const allFields = \{ \.\.\.document_, content: hit\.snippet \}/, 'Raw hit JSON keeps the exact retrieved passage');
+});
+
+test('S10 labels read as Read and Layout, and industry facets use the contract labels', async () => {
+  const { app } = industryHarness();
+  const catalog = await (await catalogFor(app, '?industry=healthcare')).json();
+  const s10 = catalog.scenarios.find(scenario => scenario.id === 'S10');
+  assert.equal(s10.title, 'PDF layout extraction');
+  assert.equal(s10.description.split('Content Understanding').length - 1, 1, 'named once in the description');
+  assert.deepEqual(catalog.industry.facetLabels, industryById('healthcare').facetLabels);
+  const pdf = industryById('healthcare').presets.S10[0];
+  const result = await (await app.handle('run', post('run', industryBody('S10', { query: pdf.query })), env())).json();
+  assert.deepEqual([result.baseline.label, result.enhanced.label], ['Read: page text', 'Layout: table rows']);
+  assert.equal(result.enhanced.trace.configuration.extraction.provider, 'azureContentUnderstanding', 'Technical details keep the provider');
+  const faceted = industryById('healthcare').presets.S05.find(preset => preset.facets?.length);
+  const s05 = await (await app.handle('run', post('run', industryBody('S05', { query: faceted.query })), env())).json();
+  const labels = industryById('healthcare').facetLabels;
+  assert.equal(s05.enhanced.applied.find(item => item.label === 'Facets').value, faceted.facets.map(facet => labels[facet.split(',')[0]] || facet.split(',')[0]).join(', '));
+  const zava = await (await app.handle('scenarios', new Request(`${ORIGIN}/api/scenarios`), env())).json();
+  assert.ok(!JSON.stringify(zava).includes('Azure CU'));
+});
+
+test('a not-configured scenario keeps Search and the query box disabled, even after typing, and sends nothing', () => {
+  assert.equal(notConfigured({ live: { status: 'not_configured' }, sample: { available: false } }), true);
+  assert.equal(notConfigured({ live: { status: 'not_configured' }, sample: { available: true } }), false);
+  assert.equal(notConfigured({ live: { status: 'actual_retrieval_verified' }, sample: { available: false } }), false);
+  assert.equal(notConfigured(undefined), false);
+  const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
+  const body = name => client.slice(client.indexOf(`function ${name}(`), client.indexOf('\n}\n', client.indexOf(`function ${name}(`)));
+  // Every keystroke calls invalidate(); it must not re-enable Search for a not-configured scenario.
+  assert.match(body('invalidate'), /const blocked = notConfigured\(selectedScenario\(\)\);\s*element\('search'\)\.disabled = blocked;\s*element\('query'\)\.disabled = blocked;/);
+  assert.doesNotMatch(body('invalidate'), /element\('search'\)\.disabled = false/);
+  assert.match(body('run'), /if \(notConfigured\(scenario\)\) \{\s*setStatus\(scenario\.live\.reason\);\s*return;/);
+  assert.doesNotMatch(body('run'), /element\('search'\)\.disabled = false/);
 });

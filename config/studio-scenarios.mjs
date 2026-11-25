@@ -28,12 +28,12 @@ export const liveDifferences = {
   S07: 'Compare single-pass hybrid retrieval with agentic retrieval on the same support index. Evidence only: compare the documents and citations; neither arm generates an answer.',
   S08: 'Compare plain retrieval (hybrid search with the semantic ranker) with native Foundry IQ entity-graph search: curated questions return cited relationship paths, including proof that a path does not exist.',
   S09: 'Compare the same hybrid search with topic diversification off and on, and see the corpus themes from the native Foundry IQ topic graph.',
-  S10: 'Compare Read and Layout processing of the same PDF, with page and table-row citations. Extraction ran at ingestion.',
-  S11: 'Compare keyword matching with Azure Vision image similarity: use an image, or describe the item in text.',
+  S10: 'Compare Content Understanding Read and Layout processing of the same PDF, with page and table-row citations. Extraction ran at ingestion.',
+  S11: 'Compare keyword matching with image-embedding similarity: use an image, or describe the item in text.',
 };
 // The native S08/S09 graphs exist only for English Zava; other languages use them with this note.
 export const englishGraphNote = 'The native graph is built from the English Zava content, so these questions and results are in English.';
-export const customPdfDescription = 'Compare custom pre-extracted PDF pages and table rows. Azure Content Understanding is not used for this example.';
+export const customPdfDescription = 'Compare custom pre-extracted PDF pages and table rows. Content Understanding is not used for this example.';
 export const liveLimits = {
   S01: 'Live searches the synthetic Zava product index for the selected document language.',
   S02: 'Foundry IQ vectorizes the query text with its configured vectorizer; the app holds no model key.',
@@ -45,7 +45,7 @@ export const liveLimits = {
   S08: 'Graph traversal runs on the four curated questions; other questions show plain retrieval only. The graph is built from the English Zava content.',
   S09: 'Both arms run the same hybrid search without the semantic ranker; only topic diversification differs. Themes come from the English Zava topic graph.',
   S10: 'Both arms search the same bundled PDF, extracted at ingestion; new PDF uploads are not supported.',
-  S11: 'Live accepts one PNG, JPEG or WebP image up to 40 KiB per search. Foundry IQ vectorizes it with Azure Vision; the image is not stored or indexed.',
+  S11: 'Live accepts one PNG, JPEG or WebP image up to 40 KiB per search. Foundry IQ turns it into image embeddings; the image is not stored or indexed.',
 };
 // Industry demos (public U.S. government data, English only): titles, descriptions and limits for the scenarios that apply.
 export const industryScenarioCopy = {
@@ -67,6 +67,6 @@ export const industryScenarioCopy = {
     limits: 'Graph search for this industry isn’t configured on this deployment yet. The other scenarios work as usual.' },
   S09: { title: 'Topic graph search', description: 'Compare hybrid search with Foundry IQ topic-balanced retrieval, which spreads results across the themes of this industry’s public documents.',
     limits: 'Topic graph search for this industry isn’t configured on this deployment yet. The other scenarios work as usual.' },
-  S10: { title: 'PDF layout (Azure Content Understanding)', description: 'Compare Read and Layout extraction of the same public PDF, with page and table-row citations. Extraction ran at ingestion.',
+  S10: { title: 'PDF layout extraction', description: 'Compare Content Understanding Read and Layout extraction of the same public PDF, with page and table-row citations. Extraction ran at ingestion.',
     limits: 'Both arms search one public PDF, extracted at ingestion; examples choose the PDF, and free-text questions search the first example’s PDF.' },
 };

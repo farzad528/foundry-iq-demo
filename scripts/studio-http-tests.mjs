@@ -229,7 +229,8 @@ test('only verified native CU bindings advertise native treatment, with download
     assert.equal(pdf.nativeTreatment.status, verified ? 'verified' : 'unverified');
     if (verified) {
       assert.equal(pdf.status, 'live_verified');
-      assert.match(pdf.title, /Azure Content Understanding/);
+      assert.equal(pdf.title, 'PDF layout extraction');
+      assert.match(pdf.liveDescription, /Content Understanding/);
       assert.equal(pdf.nativeTreatment.extractionTiming, 'ingestion, not query time');
     }
     const image = await app.fetch(new Request(env.PUBLIC_ORIGIN + '/samples/zava-hat-blue.png'), liveEnv);

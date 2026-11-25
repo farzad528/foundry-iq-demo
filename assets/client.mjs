@@ -1,4 +1,5 @@
 import { initHeader, currentLanguage, currentLanguageLabel, setLanguageLocked } from './header.mjs';
+import { displayText, notConfigured } from './display.mjs';
 
 const element = id => document.getElementById(id);
 let scenarios = [];
@@ -156,7 +157,10 @@ function invalidate() {
   active?.abort();
   active = undefined;
   closeSuggestions();
-  element('search').disabled = false;
+  // Typing invalidates results; it must not re-enable Search for a scenario that isn't configured.
+  const blocked = notConfigured(selectedScenario());
+  element('search').disabled = blocked;
+  element('query').disabled = blocked;
   element('search').textContent = 'Search';
   element('cancel').hidden = true;
   element('results').hidden = true;
@@ -194,7 +198,7 @@ function modeChanged() {
     : 'Curated sample mode ready.', mode === 'live' && selectedScenario()?.liveAvailable);
   element('sample-reference').hidden = selectedScenario()?.id !== 'S11' || mode !== 'sample' || !!selectedScenario()?.sample?.recorded;
   // A scenario this deployment hasn't configured (industry graph search) shows why and sends nothing.
-  element('search').disabled = scenario?.live?.status === 'not_configured' && !scenario.sample?.available;
+  element('search').disabled = element('query').disabled = notConfigured(scenario);
   closeSuggestions();
   if (['S10', 'S11'].includes(scenario?.id)) element('upload-help').textContent = uploadHelp(scenario, mode);
 }
@@ -202,7 +206,7 @@ function modeChanged() {
 function uploadHelp(scenario, mode) {
   if (scenario.id === 'S10' && industry !== 'zava') return 'Both arms search the same public PDF, extracted at ingestion; each example chooses its PDF, and citations open the original document at the page. Uploading new PDFs isn’t supported in this demo.';
   if (scenario.id === 'S10') return 'Both arms search the same bundled product manual PDF, and citations open the exact page. Uploading new PDFs isn’t supported in this demo.';
-  if (mode === 'live' && scenario.liveAvailable) return 'PNG, JPEG or WebP up to 40 KiB, sent once to Foundry IQ, which vectorizes it with Azure Vision. Nothing is stored or indexed. Without an image, your text is matched against the image vectors (text-to-image).';
+  if (mode === 'live' && scenario.liveAvailable) return 'PNG, JPEG or WebP up to 40 KiB, sent once to Foundry IQ, which turns it into image embeddings. Nothing is stored or indexed. Without an image, your text is matched against the image vectors (text-to-image).';
   if (mode === 'live') return 'Live image search is currently unavailable for this scenario. Switch to Sample to try the bundled example images.';
   if (scenario.sample?.recorded) return 'Sample replays recorded results for the bundled example images and queries. Switch to Live data to search with your own PNG, JPEG or WebP image (up to 40 KiB).';
   return 'Sample uses the bundled blue hat illustration with curated example queries. Switch to Live data, where available, to search with your own PNG, JPEG or WebP image (up to 40 KiB).';
@@ -245,7 +249,7 @@ function facetSummary(facets) {
   for (const [field, values] of Object.entries(facets)) {
     if (!Array.isArray(values) || !values.length) continue;
     const row = node('div', undefined, 'facet-row');
-    row.append(node('span', field, 'facet-name'), ...values.slice(0, 3).map(chip));
+    row.append(node('span', configuration?.industry?.facetLabels?.[field] || field, 'facet-name'), ...values.slice(0, 3).map(chip));
     if (values.length > 3) {
       const more = node('details', undefined, 'facet-more');
       more.append(node('summary', `+${values.length - 3} more`), ...values.slice(3).map(chip));
@@ -289,17 +293,17 @@ function renderHit(hit, side, index, baselineIds) {
   head.append(node('span', `#${hit.rank || index + 1}`, 'rank'), sourceLink(hit));
   card.append(head);
   const image = safeUrl(hit.thumbnailUrl);
-  if (image) card.append(Object.assign(node('img'), { src: image, alt: hit.title || 'Synthetic product illustration', loading: 'lazy' }));
+  if (image) card.append(Object.assign(node('img'), { src: image, alt: displayText(hit.title) || 'Synthetic product illustration', loading: 'lazy' }));
   const content = node('div', undefined, 'hit-body');
   // The title opens the result details drawer; its hit area covers the card (links and disclosures stay on top).
-  const open = node('button', hit.title || hit.id, 'hit-open');
+  const open = node('button', displayText(hit.title) || hit.id, 'hit-open');
   open.type = 'button';
   open.setAttribute('aria-haspopup', 'dialog');
   open.addEventListener('click', () => openDrawer(side, index, open));
   const heading = node('h3');
   heading.append(open);
   // Public-document chunks can be long: cards show the first lines, and the details drawer shows the full passage.
-  content.append(heading, node('p', hit.snippet || 'No passage returned.', industry === 'zava' ? 'snippet' : 'snippet clamp-long'));
+  content.append(heading, node('p', displayText(hit.snippet) || 'No passage returned.', industry === 'zava' ? 'snippet' : 'snippet clamp-long'));
   const meta = node('div', undefined, 'meta');
   meta.append(node('span', hit.sourceId || hit.id || 'No source ID'));
   if (hit.page !== undefined) meta.append(node('span', `Page ${hit.page}`));
@@ -624,6 +628,10 @@ async function readResult(response) {
 async function run(event) {
   event?.preventDefault();
   const scenario = selectedScenario();
+  if (notConfigured(scenario)) {
+    setStatus(scenario.live.reason);
+    return;
+  }
   const imageCompatible = scenario.id === 'S11' && element('mode').value === 'live' && scenario.liveAvailable;
   const recordedSample = recordedSampleMode();
   const query = element('query').value.trim() || ((imageCompatible || recordedSample) && selectedFile
@@ -711,7 +719,7 @@ async function run(event) {
   } finally {
     if (id === sequence) {
       active = undefined;
-      element('search').disabled = false;
+      element('search').disabled = notConfigured(selectedScenario());
       element('search').textContent = 'Search';
       element('cancel').hidden = true;
     }
@@ -972,7 +980,7 @@ function openDrawer(side, index, opener) {
   const configuration = arm.trace?.configuration || {};
   const document_ = hit.document || {};
   element('drawer-eyebrow').textContent = `${armName(side)} · #${hit.rank || index + 1} · ${arm.label || label(selectedScenario()?.[side], armName(side))}`;
-  element('drawer-title').textContent = hit.title || hit.id;
+  element('drawer-title').textContent = displayText(hit.title) || hit.id;
   const status = node('p', undefined, 'sr-only');
   status.setAttribute('role', 'status');
 
@@ -1041,14 +1049,17 @@ function openDrawer(side, index, opener) {
 
   const fieldsList = node('dl', undefined, 'facts fields');
   const allFields = { ...document_, content: hit.snippet };
-  for (const [name, value] of Object.entries(allFields)) definition(fieldsList, name, typeof value === 'string' ? value : JSON.stringify(value));
+  // The passage is shown once, as readable text under Passage; Raw hit JSON keeps the exact retrieved value.
+  for (const [name, value] of Object.entries(allFields)) definition(fieldsList, name, name === 'content' ? 'Shown under Passage; the exact text is in Raw hit JSON.'
+    : typeof value === 'string' ? value : JSON.stringify(value));
+  const passage = section('Passage', node('p', displayText(hit.snippet) || 'No passage returned.', 'passage-text'));
   const raw = { ...(hit.search?.score !== undefined ? { '@search.score': hit.search.score } : {}),
     ...(hit.search?.rerankerScore !== undefined ? { '@search.rerankerScore': hit.search.rerankerScore } : {}),
     ...(hit.search?.captions ? { '@search.captions': hit.search.captions } : {}), ...(hit.search?.highlights ? { '@search.highlights': hit.search.highlights } : {}),
     ...(Object.keys(document_).length ? allFields : hit) };
   const rawSection = section('Raw hit JSON', copyButton('Copy JSON', () => pretty(raw), status), codeBlock(pretty(raw), 'Raw hit JSON'));
   element('drawer-body').replaceChildren(status, section('Document', overview), section('Ranking', ranking), section('Scores', scores),
-    section('Retrieval', retrieval), ...related, section('Retrievable fields', fieldsList), rawSection);
+    section('Retrieval', retrieval), ...related, passage, section('Retrievable fields', fieldsList), rawSection);
   element('drawer-body').scrollTop = 0;
   showDialog(element('drawer'), opener);
 }
