@@ -88,9 +88,14 @@ message that never includes the value. Sample results are never substituted.
 - **S07** compares single-pass hybrid retrieval with native single-index agentic
   retrieval (`queryType: "agentic"`, API `2026-11-01-preview`,
   `maxRuntimeInSeconds: 10`) on the same support index. It is **evidence-only**:
-  Vercel has no model credential, so neither arm generates an answer. Safe
-  diagnostics appear in Technical details: termination reason, sub-query count
-  and planning/reasoning token usage.
+  Vercel has no model credential, so neither arm generates an answer. AFTER
+  shows the agentic plan: the follow-up sub-queries Microsoft Retriever 1
+  issued, with their turn (up to 10, 200 characters each, sanitized). The
+  drawer, Technical details and API log add the termination reason and
+  planning/reasoning token usage. S07 presets use everyday wording ("brick",
+  "won't take juice") that the policy documents don't use, so the planner
+  visibly issues follow-up sub-queries; their notes state only the recorded
+  sub-query count and ranking.
 - **S11** sends an uploaded or bundled image as an `imageBinary` vector query,
   or text as a `text` vector query (text-to-image). Azure AI Search vectorizes
   both with the same Azure Vision multimodal model (`2023-04-15`, 1,024
@@ -492,7 +497,7 @@ It remains intact but is no longer used by S07. The replacement uses
 with `queryType: "agentic"`, `debug: "agentic"` and a 30-second agentic runtime
 bound. It accepts actual `value` documents and native agentic diagnostics; HTTP
 206/early termination remains partial. Traces expose safe diagnostic counts and
-metered token usage when supplied, never raw generated subqueries. Do not send
+metered token usage when supplied, plus the issued sub-queries (bounded and sanitized). Do not send
 `queryLanguage`, classic semantic/answer/caption options or vector queries to this
 treatment. Both arms share the same configured index and public scope.
 The existing embedding binding is

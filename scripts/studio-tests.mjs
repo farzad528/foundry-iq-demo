@@ -390,7 +390,7 @@ test('S07 uses exact SAME answer model/instructions, controlled retrieval and ch
   assert.ok(!helpers.calls.some(call => call.url.includes('knowledgebases') || call.url.includes('retrieve')));
   assert.equal(result.enhanced.trace.configuration.agenticSearch.subQueryCount, 1);
   assert.deepEqual(result.enhanced.trace.configuration.agenticSearch.usage, { agenticPlanningTokens: 12, reasoningTokens: 34 });
-  assert.ok(!JSON.stringify(result.enhanced.trace).includes('synthetic public evidence'));
+  assert.deepEqual(result.enhanced.trace.configuration.agenticSearch.subQueries, [{ iteration: 1, search: 'synthetic public evidence' }]);
   assert.equal(result.baseline.usage.total_tokens, 15);
   assert.equal(result.enhanced.usage.total_tokens, 15);
   assert.match(result.baseline.usage.source, /this arm/);

@@ -288,6 +288,7 @@ function renderArm(side, arm, scenario, result) {
     return;
   }
   if (arm.error) container.append(node('p', `Partial result: ${errorText(arm.error)}`, 'error'));
+  if (arm.trace?.configuration?.agenticSearch) container.append(agenticPlan(arm.trace.configuration.agenticSearch));
   // "Insufficient evidence." is a refusal, not an answer: without hits the empty state says it; with hits, say so plainly.
   const noAnswer = arm.answer === 'Insufficient evidence.';
   // An "answer" that only concatenates the ranked snippets adds nothing beyond the results themselves.
@@ -368,6 +369,36 @@ function renderArm(side, arm, scenario, result) {
   const trace = node('details', undefined, 'trace');
   trace.append(node('summary', 'Technical details'), node('pre', JSON.stringify({ executionMode: result.mode, status: arm.status, trace: arm.trace, usage: arm.usage, sharedComparison: result.comparison }, null, 2)));
   container.append(trace);
+}
+
+// The agentic plan: Search ranks the original question first; sub-queries are the follow-up searches the model issued.
+function subQueryList(agentic) {
+  const queries = Array.isArray(agentic.subQueries) ? agentic.subQueries.filter(query => typeof query?.search === 'string') : [];
+  const turns = new Set(queries.map(query => query.iteration)).size > 1;
+  const list = node('ol', undefined, 'plan-queries');
+  for (const query of queries) {
+    const item = node('li');
+    item.append(node('span', query.search, 'plan-query'));
+    if (turns && Number.isInteger(query.iteration)) item.append(node('span', ` turn ${query.iteration}`, 'plan-turn'));
+    list.append(item);
+  }
+  return { list, shown: queries.length };
+}
+function subQueryCount(agentic) {
+  return Number.isInteger(agentic.subQueryCount) ? agentic.subQueryCount : (agentic.subQueries || []).length;
+}
+function agenticPlan(agentic) {
+  const count = subQueryCount(agentic);
+  const plan = node('div', undefined, 'agentic-plan');
+  const line = node('p', undefined, 'plan-line');
+  line.append(node('strong', 'Agentic plan'), count
+    ? `Microsoft Retriever 1 reviewed the first ranked results, then issued ${count} follow-up sub-quer${count === 1 ? 'y' : 'ies'}:`
+    : 'Microsoft Retriever 1 reviewed the ranked results for your question and issued no follow-up sub-queries.');
+  plan.append(line);
+  const { list, shown } = subQueryList(agentic);
+  if (shown) plan.append(list);
+  if (count > shown) plan.append(node('p', `${count - shown} more in the API log`, 'meta'));
+  return plan;
 }
 
 function renderResults(result, scenario) {
@@ -770,7 +801,15 @@ function openDrawer(side, index, opener) {
   if (configuration.synonymMaps?.length) definition(retrieval, 'Synonym expansion', `Synonym map ${configuration.synonymMaps.join(', ')} applied to keyword matching on title and content`);
   if (configuration.semanticConfiguration) definition(retrieval, 'Semantic configuration', configuration.semanticConfiguration);
   for (const use of vectorUse(arm)) definition(retrieval, 'Vector field', `${use.field}${use.dimensions ? ` · ${use.dimensions} dimensions` : ''} · ${use.kind} query (vector values are never shown)`);
-  if (configuration.agenticSearch) definition(retrieval, 'Agentic retrieval', `${configuration.agenticSearch.subQueryCount} sub-queries · ${configuration.agenticSearch.terminationReason}`);
+  if (configuration.agenticSearch) {
+    const agentic = configuration.agenticSearch, count = subQueryCount(agentic);
+    const value = node('div');
+    value.append(node('p', `Microsoft Retriever 1 · ${count} sub-quer${count === 1 ? 'y' : 'ies'} · ${agentic.terminationReason}`));
+    const { list, shown } = subQueryList(agentic);
+    if (shown) value.append(list);
+    else value.append(node('p', 'Search ranked the original question; the model issued no follow-up searches.', 'meta'));
+    definition(retrieval, 'Agentic retrieval', value);
+  }
 
   const related = [];
   const edges = (arm.graph?.edges || []).filter(edge => edge.sourceId === hit.sourceId || edge.sourceId === hit.id);

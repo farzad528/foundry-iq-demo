@@ -252,7 +252,8 @@ test('S07 runs evidence-only native agentic retrieval on the preview API with sa
   const { app, calls } = harness({ config, extra: [{ index: 'zava-studio-support', etag: '"e2"', schema: support }],
     handler: async (url, init) => JSON.parse(init.body).queryType === 'agentic'
       ? json({ value: [doc('POL-RET-2026-01'), doc('WAR-BAT-2026-01')], '@search.debug': { agentic: { terminationReason: 'modelStopped',
-        subQueries: [{ iteration: 1, search: 'private planner text' }], usage: { agenticPlanningTokens: 12, reasoningTokens: 8 } } } }, 'agentic-request')
+        subQueries: [{ iteration: 1, search: 'battery   return policy after 45 days' }, { iteration: 2, search: `warranty ${'x'.repeat(300)}` },
+          ...Array.from({ length: 11 }, (_, i) => ({ iteration: 2, search: `extra ${i}` }))], usage: { agenticPlanningTokens: 12, reasoningTokens: 8 } } } }, 'agentic-request')
       : json({ value: [doc('CASE-001')] }) });
   const result = await (await app.handle('run', post('run', liveBody('S07', { query: 'My drill battery stopped charging after 45 days. Can I return it?' })), env())).json();
   assert.equal(result.executionStatus, 'success');
@@ -263,8 +264,16 @@ test('S07 runs evidence-only native agentic retrieval on the preview API with sa
   assert.equal(searchVersion(calls.find(call => call !== agentic).url), SEARCH_API_VERSION);
   assert.deepEqual(result.enhanced.citations.map(c => c.id), ['POL-RET-2026-01', 'WAR-BAT-2026-01']);
   assert.equal(result.enhanced.trace.configuration.agenticSearch.terminationReason, 'modelStopped');
-  assert.equal(result.enhanced.trace.configuration.agenticSearch.subQueryCount, 1);
-  assert.ok(!JSON.stringify(result).includes('private planner text'));
+  // Sub-queries are the model's follow-up searches: shown with their turn, whitespace-normalized and bounded.
+  const agenticTrace = result.enhanced.trace.configuration.agenticSearch;
+  assert.equal(agenticTrace.subQueryCount, 13);
+  assert.equal(agenticTrace.subQueries.length, 10);
+  assert.deepEqual(agenticTrace.subQueries[0], { iteration: 1, search: 'battery return policy after 45 days' });
+  assert.equal(agenticTrace.subQueries[1].iteration, 2);
+  assert.ok(agenticTrace.subQueries[1].search.length <= 201 && agenticTrace.subQueries[1].search.endsWith('…'));
+  const loggedQueries = result.enhanced.apiLog[0].response.body['@search.debug'].agentic.subQueries;
+  assert.equal(loggedQueries[0].search, 'battery   return policy after 45 days');
+  assert.equal(loggedQueries.length, 13);
   assert.match(result.comparison.intendedDifference, /Evidence only/);
   assert.equal(result.enhanced.answer, undefined);
 });
@@ -547,6 +556,19 @@ test('every showcase preset is recorded with a curated note, and AFTER clearly b
           const delta = ndcg3(enhanced, preset) - ndcg3(baseline, preset);
           assert.ok(delta >= 0.15, `${key}: AFTER must clearly win (delta ${delta.toFixed(2)})`);
           assert.ok(ids(enhanced.hits[0]).some(id => preset.relevant.includes(id)), `${key}: AFTER #1 must be relevant`);
+        }
+        if (scenarioId === 'S07') {
+          // The note may describe only the agentic planning the recorded response shows: no invented sub-queries.
+          const agentic = enhanced.trace.configuration.agenticSearch;
+          const logged = enhanced.apiLog[0].response.body['@search.debug'].agentic.subQueries;
+          assert.equal(agentic.subQueryCount, logged.length, key);
+          assert.deepEqual(agentic.subQueries.map(query => query.iteration), logged.slice(0, 10).map(query => query.iteration), key);
+          assert.ok(logged.every(query => typeof query.search === 'string' && !query.search.includes('omitted')), `${key}: sub-query text shown`);
+          const note = notesFile.entries[key];
+          assert.doesNotMatch(note, /plans? separate searches|searches .* separately|covers .* separately/i, key);
+          if (agentic.subQueryCount) assert.match(note, new RegExp(`issued ${agentic.subQueryCount} follow-up sub-quer`), key);
+          else assert.match(note, /without needing follow-up sub-queries/, key);
+          if (preset === list[0]) assert.ok(agentic.subQueryCount > 0, `${key}: the first S07 preset must show agentic planning`);
         }
         checked++;
       }

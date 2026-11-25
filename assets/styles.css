@@ -177,6 +177,14 @@ a{color:var(--link);text-underline-offset:3px}
 .clamped{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .link-btn{all:unset;cursor:pointer;color:var(--link);font-size:13px;font-weight:600;margin-top:6px;border-radius:4px}
 .link-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.agentic-plan{margin:0 0 12px;padding:6px 12px;border:1px solid var(--line-soft);border-left:4px solid var(--enhanced-line);border-radius:10px;background:var(--surface);font-size:13px;line-height:1.45}
+.agentic-plan .plan-line{margin:0}
+.agentic-plan strong{color:var(--enhanced-line);margin-right:6px}
+.plan-queries{margin:4px 0 0;padding-left:22px}
+.plan-queries li{margin:2px 0}
+.plan-query{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--ink)}
+.plan-turn{font-size:11px;color:var(--muted)}
+.drawer .plan-queries{margin-top:6px}
 .graph-details{margin:0 0 12px;font-size:13px}
 .graph-details summary{font-weight:600;color:var(--ink-2)}
 .meta{font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
