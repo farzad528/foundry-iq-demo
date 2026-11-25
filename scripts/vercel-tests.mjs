@@ -1099,10 +1099,15 @@ test('passages display as plain text (Markdown removed) while raw values stay un
   assert.equal(displayText('BAYER\n![Code128](barcodes/25.1 "8910")\nKerendia®\n----\nNotes'), 'BAYER\n\nKerendia®\n\nNotes');
   for (const kept of ['C# and item #3', 'wire transfers? _____ _____ 2.', '2*3*4 = 24', 'snake_case_name', 'HC-ICD10CM-FY2027-I-C-19']) assert.equal(displayText(kept), kept);
   assert.equal(displayText(undefined), undefined);
+  // English-only industry corpora: a kana-plus-Latin token is a PDF extraction artifact; Zava's Japanese text is untouched.
+  assert.equal(displayText('UD N=3003 · N-ム99O Value: 1024 (19.1%)', { englishOnly: true }), 'UD N=3003 · [unreadable] Value: 1024 (19.1%)');
+  assert.equal(displayText('ドリルパック 7週目 N-ム99O'), 'ドリルパック 7週目 N-ム99O');
+  assert.equal(displayText('Brand 小米 power bank', { englishOnly: true }), 'Brand 小米 power bank', 'only kana mixed with Latin letters or digits');
   const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
   assert.match(client, /'hit-open'/);
-  assert.match(client, /displayText\(hit\.title\) \|\| hit\.id, 'hit-open'/);
-  assert.match(client, /displayText\(hit\.snippet\)/);
+  assert.match(client, /shownText\(hit\.title\) \|\| hit\.id, 'hit-open'/);
+  assert.match(client, /shownText\(hit\.snippet\)/);
+  assert.match(client, /const shownText = value => displayText\(value, \{ englishOnly: industry !== 'zava' \}\)/);
   assert.match(client, /const allFields = \{ \.\.\.document_, content: hit\.snippet \}/, 'Raw hit JSON keeps the exact retrieved passage');
 });
 
@@ -1132,11 +1137,27 @@ test('a not-configured scenario keeps Search and the query box disabled, even af
   assert.equal(notConfigured(undefined), false);
   const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
   const body = name => client.slice(client.indexOf(`function ${name}(`), client.indexOf('\n}\n', client.indexOf(`function ${name}(`)));
-  // Every keystroke calls invalidate(); it must not re-enable Search for a not-configured scenario.
-  assert.match(body('invalidate'), /const blocked = notConfigured\(selectedScenario\(\)\);\s*element\('search'\)\.disabled = blocked;\s*element\('query'\)\.disabled = blocked;/);
+  // Every keystroke calls invalidate(); it must not re-enable Search for a not-configured scenario or while a catalog loads.
+  assert.match(body('invalidate'), /const blocked = notConfigured\(selectedScenario\(\)\);\s*element\('search'\)\.disabled = blocked \|\| !!catalogLoad;\s*element\('query'\)\.disabled = blocked;/);
   assert.doesNotMatch(body('invalidate'), /element\('search'\)\.disabled = false/);
-  assert.match(body('run'), /if \(notConfigured\(scenario\)\) \{\s*setStatus\(scenario\.live\.reason\);\s*return;/);
+  assert.match(body('run'), /if \(catalogLoad\) \{\s*setStatus\(catalogLoad\.message\);\s*return;\s*\}\s*if \(notConfigured\(scenario\)\) \{\s*setStatus\(scenario\.live\.reason\);\s*return;/);
   assert.doesNotMatch(body('run'), /element\('search'\)\.disabled = false/);
+});
+
+test('an industry switch is atomic: scenario or mode changes never cancel it, and requests use the rendered industry', () => {
+  const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
+  const body = name => client.slice(client.indexOf(`function ${name}(`), client.indexOf('\n}\n', client.indexOf(`function ${name}(`)));
+  // invalidate() (called by scenario, mode and query changes) cancels comparisons only, never the catalog request.
+  assert.doesNotMatch(body('invalidate'), /catalogLoad\??\.controller/);
+  const load = body('loadScenarios');
+  assert.match(load, /signal: load\.controller\.signal/);
+  // The committed industry changes only together with the catalog it renders; a superseded load leaves the UI alone.
+  assert.ok(load.indexOf('if (catalogLoad !== load) return;') < load.indexOf('industry = target;'));
+  assert.match(load, /if \(!load\.modeTouched\) element\('mode'\)\.value/);
+  assert.match(load, /element\('industry'\)\.value = industry;/, 'a failed switch returns the selector to the industry still shown');
+  const listener = client.slice(client.indexOf("element('industry').addEventListener('change'"), client.indexOf("element('mode').addEventListener('change'"));
+  assert.doesNotMatch(listener, /\bindustry = /);
+  assert.match(client, /element\('mode'\)\.addEventListener\('change', \(\) => \{\s*\/\/[^\n]*\n\s*if \(catalogLoad\) catalogLoad\.modeTouched = true;/);
 });
 
 // Industry entity and topic graphs (S08/S09) on the dedicated graph service: curated questions only, Search reads only.
@@ -1181,7 +1202,7 @@ const gTopicRows = id => {
   }
   return rows;
 };
-function graphHarness(id = 'energy', { handler } = {}) {
+function graphHarness(id = 'energy', { handler, recorded } = {}) {
   gData(id).sourceOfBlob[gHash(TEST_BLOB)] = 'NRG-TEST-1';
   gData(id).sourceUrls['NRG-TEST-1'] = 'https://www.eia.gov/todayinenergy/detail.php?id=1';
   const firstLeaf = gData(id).topics.leaves.find(leaf => leaf.title);
@@ -1203,7 +1224,7 @@ function graphHarness(id = 'energy', { handler } = {}) {
   const bindings = industryBindingsFrom(privateIndustryBinding(enabled), attestations(undefined, undefined, industryEntries(enabled)), enabled);
   const graph = { service: 'fiq-industry-test', apiVersion: AGENTIC_SEARCH_API_VERSION, industries: { [id]: gBinding(id) },
     attestations: { service: 'fiq-industry-test', apiVersion: SEARCH_API_VERSION, entries: gSchemas(id) } };
-  return harness({ extra: industryEntries(enabled), industries: { enabled, bindings, graph },
+  return harness({ extra: industryEntries(enabled), industries: { enabled, bindings, graph }, recorded,
     handler: async (url, init) => url.startsWith(G_ENDPOINT) ? (handler || graphHandler)(url, init) : industryHandler(url, init) });
 }
 const gBody = (id, scenarioId, query) => ({ industry: id, scenarioId, mode: 'live', query, topK: 10, language: 'en' });
@@ -1233,6 +1254,8 @@ test('industry S08 runs allowlisted graph statements on the graph service with c
   assert.equal(result.enhanced.hits[0].sourceId, 'NRG-TEST-1');
   assert.match(result.enhanced.hits[0].id, /^NRG-TEST-1#[0-9a-f]{8}$/, 'each passage keeps its own ID');
   assert.equal(result.enhanced.hits[0].url, 'https://www.eia.gov/todayinenergy/detail.php?id=1');
+  assert.deepEqual(result.enhanced.graph.sourceLinks, { 'NRG-TEST-1': 'https://www.eia.gov/todayinenergy/detail.php?id=1' },
+    'every cited source links to its original public document, even when it is not among the returned passages');
   const text = JSON.stringify(result);
   for (const secret of [G_KEY, 'fiq-industry-test.search.windows.net', 'teststorageacct', TEST_BLOB]) assert.ok(!text.includes(secret), secret);
   assert.match(result.enhanced.apiLog[0].url, /^https:\/\/<your-search-service>\.search\.windows\.net\/indexes\('g-energy-graph'\)\/docs\/search\.graph/);
@@ -1301,4 +1324,48 @@ test('graph path rows give screen readers the path as text, not a prohibited ari
   assert.doesNotMatch(body, /path\.setAttribute\('aria-label'/);
   assert.match(body, /path\.append\(node\('span', pathText\(statement, row\), 'sr-only'\)\)/);
   assert.match(body, /Citation unavailable/);
+});
+
+test('a curated example from another demo is rejected for the selected industry, before Azure and in both modes', async () => {
+  const zavaQuery = 'cordless drill for brick walls';
+  const recorded = { recordedAt: '2026-11-26', entries: { [`en|S03|${zavaQuery}`]: { language: 'en', scenarioId: 'S03', query: zavaQuery, topK: 10, result: {} } } };
+  const { app, calls } = industryHarness({ recorded });
+  const retail = industryById('retail').presets.S03[0].query;
+  const healthcare = industryById('healthcare').presets.S03[0].query;
+  for (const [body, owner] of [[industryBody('S03', { query: zavaQuery }), 'Retail · Zava demo store'], [industryBody('S03', { query: retail }), industryById('retail').label],
+    [industryBody('S03', { query: retail, mode: 'sample' }), industryById('retail').label], [liveBody('S03', { query: healthcare }), industryById('healthcare').label]]) {
+    for (const route of ['prepare', 'run']) {
+      const response = await app.handle(route, post(route, body), env());
+      const result = await response.json();
+      assert.equal(response.status, 400, `${route} ${body.query}`);
+      assert.equal(result.errorCode, 'studio_example_other_industry');
+      assert.ok(result.error.includes(owner), result.error);
+    }
+  }
+  assert.equal(calls.length, 0);
+  const own = await app.handle('run', post('run', industryBody('S03', { query: healthcare })), env());
+  assert.equal(own.status, 200, 'an industry’s own example still runs');
+  const free = await app.handle('run', post('run', industryBody('S03', { query: 'cordless drill for brick walls and tiles' })), env());
+  assert.equal(free.status, 200, 'free text that only resembles another demo’s example still runs');
+});
+
+test('recorded graph replays add path source links, and Cited by links open the original source when no passage is shown', async () => {
+  const preset = gData('energy').s08[0];
+  const statements = [{ label: 'Path', gql: preset.statements[0].gql, outcome: 'rows', columns: ['a'],
+    rows: [{ values: { a: 'Entity A' }, sources: ['NRG-TEST-1', 'NRG-NO-URL'] }], diagnostics: [] }];
+  const recorded = { recordedAt: '2026-11-26', entries: { [`energy|en|S08|${preset.question}`]: { industry: 'energy', language: 'en', scenarioId: 'S08', query: preset.question, topK: 10,
+    result: { mode: 'live', industry: 'energy', scenarioId: 'S08', query: preset.question, executionStatus: 'success', comparison: {},
+      baseline: { status: 'success', kind: 'rerank', hits: [], citations: [], trace: { steps: [] } },
+      enhanced: { status: 'success', kind: 'graph', hits: [], citations: [], trace: { steps: [] }, graph: { kind: 'native', dataset: 'energy-en', statements } } } } } };
+  const { app, calls } = graphHarness('energy', { recorded });
+  const replay = await (await app.handle('run', post('run', { ...gBody('energy', 'S08', preset.question), mode: 'sample' }), gEnv())).json();
+  assert.equal(replay.recorded.recordedAt, '2026-11-26');
+  assert.deepEqual(replay.enhanced.graph.sourceLinks, { 'NRG-TEST-1': 'https://www.eia.gov/todayinenergy/detail.php?id=1' }, 'a source without a public URL stays unlinked');
+  assert.equal(calls.length, 0);
+  const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
+  const start = client.indexOf('function renderPathRow(');
+  const body = client.slice(start, client.indexOf('\nfunction ', start + 10));
+  assert.match(body, /safeUrl\(arm\.graph\?\.sourceLinks\?\.\[id\]\)/);
+  assert.match(body, /link\.target = '_blank'/);
+  assert.match(body, /citation unavailable/, 'only a source without any URL says citation unavailable');
 });

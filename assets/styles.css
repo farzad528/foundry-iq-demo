@@ -232,7 +232,9 @@ a{color:var(--link);text-underline-offset:3px}
 .rel::after{content:" →"}
 .graph-cited{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-top:6px;font-size:12px}
 .graph-cited-label{color:var(--muted)}
-.graph-cited a,.graph-cited span:not(.graph-cited-label){font-family:ui-monospace,Consolas,monospace}
+.graph-cited a,.graph-cited span:not(.graph-cited-label):not(.sr-only){font-family:ui-monospace,Consolas,monospace}
+.graph-source-link::after{content:"↗";margin-left:2px;font-family:system-ui,sans-serif}
+.graph-cited-missing{color:var(--muted)}
 .section-label{margin:4px 0 8px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
 .coverage{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px;font-size:12px}
 .coverage strong{font-size:13px;margin-right:4px}

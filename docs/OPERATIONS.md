@@ -176,8 +176,14 @@ identity override.
 - Requests are limited to 64 KiB, questions to 8,000 characters and top-K to 5/10/20/50.
 - A comparison can make at most 5 Search calls (Energy's Odessa question uses
   all 5: one plain retrieval plus four graph statements). Each call has a
-  45-second timeout (10 seconds for S08/S09), and the whole comparison has a
+  12-second timeout (10 seconds for S08/S09), and the whole comparison has a
   55-second budget. Functions stop at 60 seconds.
+  - Why 12 seconds: Search's query-time vectorizer occasionally waits about
+    30 seconds when the embedding deployment returns `408 Request Timeout`
+    (about 1–3% of embedding calls; Search's `elapsed-time` header shows the
+    wait), then succeeds. Normal calls finish in under about 7 seconds, so the
+    cap shows that stall as a timeout on one arm instead of a 30-second wait.
+    The other arm's results stay visible.
 - There are no automatic retries.
 - Each instance allows at most 8 live comparisons in flight (best effort).
 - The Vercel Firewall rule "Rate limit live demo API" allows 30 requests per

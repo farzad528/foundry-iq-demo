@@ -15,9 +15,18 @@ let lastResult;
 const startParams = new URLSearchParams(location.search);
 // Industries compiled into this build; an unknown industry in a link opens the Zava demo without a failed request.
 const builtIndustries = (document.querySelector('meta[name="studio-industries"]')?.content || '').split(',').filter(Boolean);
-let industry = builtIndustries.includes(startParams.get('industry')) ? startParams.get('industry') : 'zava';
+// `industry` is the committed industry: it changes only together with the catalog it renders, so a request never
+// pairs one industry with another industry's scenarios or examples.
+const startIndustry = builtIndustries.includes(startParams.get('industry')) ? startParams.get('industry') : 'zava';
+let industry = 'zava';
 let pendingScenario = /^S(?:0[1-9]|1[01])$/.test(startParams.get('scenario') || '') ? startParams.get('scenario') : null;
-const requestLanguage = () => industry === 'zava' ? currentLanguage() : 'en';
+// In-flight catalog load ({ controller, target, changed, modeTouched }). Separate from comparisons: invalidate() never cancels it.
+let catalogLoad;
+const languageFor = id => id === 'zava' ? currentLanguage() : 'en';
+const requestLanguage = () => languageFor(industry);
+const searchBlocked = () => !!catalogLoad || notConfigured(selectedScenario());
+// Industry corpora are English-only public documents; see displayText for the extraction-artifact rule.
+const shownText = value => displayText(value, { englishOnly: industry !== 'zava' });
 const BOOST_LABELS = { freshness: 'Freshness', magnitude: 'Magnitude', distance: 'Distance', tags: 'Tags', availability: 'Availability',
   authority: 'Authority', impact: 'Impact' };
 const recordedSampleMode = () => element('mode').value === 'sample' && !!selectedScenario()?.sample?.recorded;
@@ -135,7 +144,7 @@ async function choosePreset(preset) {
   } catch (error) {
     if (epoch === sequence) showError(error.message);
   } finally {
-    if (epoch === sequence) element('search').disabled = false;
+    if (epoch === sequence) element('search').disabled = searchBlocked();
   }
 }
 
@@ -157,9 +166,9 @@ function invalidate() {
   active?.abort();
   active = undefined;
   closeSuggestions();
-  // Typing invalidates results; it must not re-enable Search for a scenario that isn't configured.
+  // Typing invalidates results; it must not re-enable Search for a scenario that isn't configured or while a catalog loads.
   const blocked = notConfigured(selectedScenario());
-  element('search').disabled = blocked;
+  element('search').disabled = blocked || !!catalogLoad;
   element('query').disabled = blocked;
   element('search').textContent = 'Search';
   element('cancel').hidden = true;
@@ -199,6 +208,10 @@ function modeChanged() {
   element('sample-reference').hidden = selectedScenario()?.id !== 'S11' || mode !== 'sample' || !!selectedScenario()?.sample?.recorded;
   // A scenario this deployment hasn't configured (industry graph search) shows why and sends nothing.
   element('search').disabled = element('query').disabled = notConfigured(scenario);
+  if (catalogLoad) {
+    element('search').disabled = true;
+    setStatus(catalogLoad.message);
+  }
   closeSuggestions();
   if (['S10', 'S11'].includes(scenario?.id)) element('upload-help').textContent = uploadHelp(scenario, mode);
 }
@@ -293,17 +306,17 @@ function renderHit(hit, side, index, baselineIds) {
   head.append(node('span', `#${hit.rank || index + 1}`, 'rank'), sourceLink(hit));
   card.append(head);
   const image = safeUrl(hit.thumbnailUrl);
-  if (image) card.append(Object.assign(node('img'), { src: image, alt: displayText(hit.title) || 'Synthetic product illustration', loading: 'lazy' }));
+  if (image) card.append(Object.assign(node('img'), { src: image, alt: shownText(hit.title) || 'Synthetic product illustration', loading: 'lazy' }));
   const content = node('div', undefined, 'hit-body');
   // The title opens the result details drawer; its hit area covers the card (links and disclosures stay on top).
-  const open = node('button', displayText(hit.title) || hit.id, 'hit-open');
+  const open = node('button', shownText(hit.title) || hit.id, 'hit-open');
   open.type = 'button';
   open.setAttribute('aria-haspopup', 'dialog');
   open.addEventListener('click', () => openDrawer(side, index, open));
   const heading = node('h3');
   heading.append(open);
   // Public-document chunks can be long: cards show the first lines, and the details drawer shows the full passage.
-  content.append(heading, node('p', displayText(hit.snippet) || 'No passage returned.', industry === 'zava' ? 'snippet' : 'snippet clamp-long'));
+  content.append(heading, node('p', shownText(hit.snippet) || 'No passage returned.', industry === 'zava' ? 'snippet' : 'snippet clamp-long'));
   const meta = node('div', undefined, 'meta');
   meta.append(node('span', hit.sourceId || hit.id || 'No source ID'));
   if (hit.page !== undefined) meta.append(node('span', `Page ${hit.page}`));
@@ -518,12 +531,22 @@ function renderPathRow(statement, row, side, arm) {
     cited.append(node('span', 'Cited by', 'graph-cited-label'));
     for (const id of row.sources.slice(0, 8)) {
       const index = (arm.hits || []).findIndex(hit => hit.sourceId === id);
+      // Prefer the passage shown on the page; otherwise open the original source document.
+      const url = index < 0 ? safeUrl(arm.graph?.sourceLinks?.[id]) : null;
       if (index >= 0) {
         const link = node('a', id);
         link.href = `#${side}-evidence-${index}`;
         link.addEventListener('click', () => element(`${side}-evidence-${index}`).focus());
         cited.append(link);
-      } else cited.append(node('span', id));
+      } else if (url) {
+        const link = node('a', id, 'graph-source-link');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.title = `Open ${id}, the original source (new tab)`;
+        link.append(node('span', ' (opens original source in a new tab)', 'sr-only'));
+        cited.append(link);
+      } else cited.append(node('span', `${id} · citation unavailable`, 'graph-cited-missing'));
     }
     item.append(cited);
   } else if (row.citationUnavailable) {
@@ -635,6 +658,10 @@ async function readResult(response) {
 async function run(event) {
   event?.preventDefault();
   const scenario = selectedScenario();
+  if (catalogLoad) {
+    setStatus(catalogLoad.message);
+    return;
+  }
   if (notConfigured(scenario)) {
     setStatus(scenario.live.reason);
     return;
@@ -706,7 +733,7 @@ async function run(event) {
       element('search').textContent = 'Searching…';
       setStatus('Running both comparison arms…');
     }
-    const slow = setTimeout(() => { if (id === sequence) setStatus('Still working… the first Live query after a quiet period can take up to 30 seconds while the service warms up.'); }, 6000);
+    const slow = setTimeout(() => { if (id === sequence) setStatus('Still working… Foundry IQ is responding slowly. Each call stops after at most 12 seconds and is never retried.'); }, 6000);
     let response;
     try {
       response = await fetch('/api/demo/run', {
@@ -726,7 +753,7 @@ async function run(event) {
   } finally {
     if (id === sequence) {
       active = undefined;
-      element('search').disabled = notConfigured(selectedScenario());
+      element('search').disabled = searchBlocked();
       element('search').textContent = 'Search';
       element('cancel').hidden = true;
     }
@@ -741,11 +768,14 @@ const industrySelector = element('industry-selector');
 element('industry').addEventListener('pointerdown', () => { industrySelector.dataset.pointerFocus = 'true'; });
 document.addEventListener('keydown', () => { delete scenarioSelector.dataset.pointerFocus; delete industrySelector.dataset.pointerFocus; }, { capture: true });
 element('industry').addEventListener('change', () => {
-  industry = element('industry').value;
-  pendingScenario = element('scenario').value;
-  void loadScenarios('industry');
+  // The selector shows the requested industry; everything else changes only when its catalog arrives.
+  void loadScenarios('industry', element('industry').value);
 });
-element('mode').addEventListener('change', modeChanged);
+element('mode').addEventListener('change', () => {
+  // A mode chosen while an industry catalog loads is kept when the new catalog is applied.
+  if (catalogLoad) catalogLoad.modeTouched = true;
+  modeChanged();
+});
 element('count').addEventListener('change', () => { invalidate(); setStatus('Result count changed. Search again to apply.'); });
 element('boost').addEventListener('change', () => { invalidate(); setStatus('Boost changed. Search again to apply.'); });
 element('weight').addEventListener('change', () => { invalidate(); setStatus('Weight changed. Search again to apply.'); });
@@ -858,48 +888,67 @@ function renderIndustry() {
 }
 
 // changed: false on first load, true after a language change, 'industry' after an industry change.
-async function loadScenarios(changed = false) {
+// The switch is atomic: `industry`, the catalog, scenarios and examples change together when the catalog arrives.
+// Scenario or mode changes made meanwhile don't cancel it (they're applied to the new catalog); only a newer catalog
+// request supersedes it. If it fails, the selector returns to the industry still shown.
+async function loadScenarios(changed = false, target = industry) {
+  catalogLoad?.controller.abort();
+  const targetLabel = element('industry').selectedOptions?.[0]?.textContent || 'the selected industry';
+  const load = { controller: new AbortController(), target, changed, modeTouched: false,
+    message: changed === 'industry' ? `Loading ${targetLabel}…` : 'Loading scenarios…' };
+  catalogLoad = load;
   invalidate();
   clearFile();
-  const epoch = sequence;
-  const previous = pendingScenario || element('scenario').value;
-  element('search').disabled = true;
-  const controller = new AbortController();
-  active = controller;
+  setStatus(load.message, !changed);
   try {
-    const request = () => {
+    const request = id => {
       const params = new URLSearchParams();
-      if (industry !== 'zava') params.set('industry', industry);
-      if (requestLanguage() !== 'en') params.set('language', requestLanguage());
-      return fetch(`/api/scenarios${params.size ? `?${params}` : ''}`, { signal: controller.signal });
+      if (id !== 'zava') params.set('industry', id);
+      if (languageFor(id) !== 'en') params.set('language', languageFor(id));
+      return fetch(`/api/scenarios${params.size ? `?${params}` : ''}`, { signal: load.controller.signal });
     };
-    let response = await request();
+    let response = await request(target);
     // An unknown or unavailable industry in a shared link opens the default demo.
-    if (response.status === 400 && industry !== 'zava') { industry = 'zava'; response = await request(); }
-    if (!response.ok) throw new Error('Scenario catalog could not be loaded.');
+    if (response.status === 400 && target !== 'zava') { target = 'zava'; response = await request(target); }
+    if (!response.ok) throw new Error(changed === 'industry' ? `${targetLabel} could not be loaded.` : 'Scenario catalog could not be loaded.');
     const next = await response.json();
-    if (epoch !== sequence) return;
+    const list = Array.isArray(next) ? next : next?.scenarios;
+    if (!Array.isArray(list) || !list.length) throw new Error('The scenario catalog is unavailable.');
+    if (catalogLoad !== load) return;
+    // Commit: the scenario chosen while loading (or the shared link's) is kept when the new industry has it.
+    const previous = pendingScenario || element('scenario').value;
+    catalogLoad = undefined;
+    industry = target;
     configuration = next;
-    scenarios = Array.isArray(configuration) ? configuration : configuration.scenarios;
-    if (!Array.isArray(scenarios) || !scenarios.length) throw new Error('The scenario catalog is unavailable.');
+    scenarios = list;
     renderIndustry();
     element('scenario').replaceChildren(...scenarios.map(item => Object.assign(node('option', item.title), { value: item.id })));
     if (scenarios.some(item => item.id === previous)) element('scenario').value = previous;
     pendingScenario = null;
-    if (changed === 'industry') element('mode').value = configuration.defaultMode === 'sample' ? 'sample' : 'live';
+    if (changed === 'industry') { if (!load.modeTouched) element('mode').value = configuration.defaultMode === 'sample' ? 'sample' : 'live'; }
     else if (requestLanguage() !== 'en' || configuration.defaultMode === 'live' && !changed) element('mode').value = 'live';
-    active = undefined;
     scenarioChanged();
     if (changed === 'industry') setStatus(`Industry changed to ${configuration.industry?.label || 'the selected industry'}. Search to compare; nothing has run.`);
     else if (changed) setStatus(`Document language changed to ${currentLanguageLabel()}. Search to compare; nothing has run.`);
   } catch (error) {
-    if (epoch !== sequence || controller.signal.aborted) return;
-    element('search').disabled = true;
-    showError(error.message);
+    // Superseded by a newer catalog request: that request owns the UI.
+    if (catalogLoad !== load) return;
+    catalogLoad = undefined;
+    if (!configuration) {
+      element('search').disabled = true;
+      showError(error.message);
+      return;
+    }
+    // Roll back: the selector matches the industry, scenarios and examples still shown.
+    element('industry').value = industry;
+    element('search').disabled = searchBlocked();
+    showError(changed === 'industry' ? `${error.message} Still showing ${configuration.industry?.label || 'the previous industry'}; choose the industry again to retry.` : error.message);
+    setStatus('Nothing has run.');
   }
 }
 // Shared header (Share, menu, settings); language changes reload the localized catalog.
-const header = initHeader({ onLanguageChange: () => { void loadScenarios(true); } });
+// A language change during an industry switch reloads that pending industry's catalog rather than cancelling the switch.
+const header = initHeader({ onLanguageChange: () => { void loadScenarios(catalogLoad?.changed === 'industry' ? 'industry' : true, catalogLoad?.target ?? industry); } });
 document.addEventListener('keydown', event => {
   const target = event.target;
   const typing = target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
@@ -987,7 +1036,7 @@ function openDrawer(side, index, opener) {
   const configuration = arm.trace?.configuration || {};
   const document_ = hit.document || {};
   element('drawer-eyebrow').textContent = `${armName(side)} · #${hit.rank || index + 1} · ${arm.label || label(selectedScenario()?.[side], armName(side))}`;
-  element('drawer-title').textContent = displayText(hit.title) || hit.id;
+  element('drawer-title').textContent = shownText(hit.title) || hit.id;
   const status = node('p', undefined, 'sr-only');
   status.setAttribute('role', 'status');
 
@@ -1059,7 +1108,7 @@ function openDrawer(side, index, opener) {
   // The passage is shown once, as readable text under Passage; Raw hit JSON keeps the exact retrieved value.
   for (const [name, value] of Object.entries(allFields)) definition(fieldsList, name, name === 'content' ? 'Shown under Passage; the exact text is in Raw hit JSON.'
     : typeof value === 'string' ? value : JSON.stringify(value));
-  const passage = section('Passage', node('p', displayText(hit.snippet) || 'No passage returned.', 'passage-text'));
+  const passage = section('Passage', node('p', shownText(hit.snippet) || 'No passage returned.', 'passage-text'));
   const raw = { ...(hit.search?.score !== undefined ? { '@search.score': hit.search.score } : {}),
     ...(hit.search?.rerankerScore !== undefined ? { '@search.rerankerScore': hit.search.rerankerScore } : {}),
     ...(hit.search?.captions ? { '@search.captions': hit.search.captions } : {}), ...(hit.search?.highlights ? { '@search.highlights': hit.search.highlights } : {}),
@@ -1142,4 +1191,4 @@ setupDialog(element('drawer'));
 setupDialog(element('apilog'));
 element('drawer-close').addEventListener('click', () => element('drawer').close());
 element('apilog-close').addEventListener('click', () => element('apilog').close());
-await loadScenarios();
+await loadScenarios(false, startIndustry);
