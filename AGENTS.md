@@ -30,7 +30,7 @@ test runner. Match surrounding two-space JavaScript style and explicit imports.
   personal Vercel build. Search docs/search is the only upstream; schema checks use
   private, ETag-pinned attestations compiled into the server bundle; limits are
   stateless, with the `LIVE_ENABLED` kill switch. The owner accepted this build's
-  trade-offs (see README). It does not relax the App Service invariants below.
+  trade-offs (see docs/OPERATIONS.md). It does not relax the App Service invariants below.
 - `config/`: explicit live KB/source identities and synthetic replay catalog.
 - `samples/`: fictional, public example documents, never real customer content.
 - `scripts/`: build/dev/start, Node tests, Storage double, ZIP allowlist and
@@ -131,7 +131,7 @@ Live is OFF by default. Resource names are not automatic inventory or proof of
 another deployment's health. Each target needs real indexed/Web captures,
 Blob coordination/restart, document-change/both-source grounding, cost/latency
 and anonymous HTTPS/mobile/keyboard evidence. The dedicated hosted demo's
-accepted scope and remaining limits are documented in `README.md`; that
+accepted scope and remaining limits are documented in `docs/OPERATIONS.md`; that
 acceptance does not authorize another rollout or establish its proxy contract
 or billed cost. Do not treat fixtures as real captures.
 Web approval, terms, domains and boundary/cost review are separate gates.

@@ -4,7 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Foundry IQ Demo Studio</title>
-  <meta name="description" content="Compare Azure AI Search and Foundry IQ retrieval patterns side by side with real queries and citations.">
+  <meta name="description" content="Compare Foundry IQ (Azure AI Search) retrieval patterns side by side with real queries and citations.">
+  <meta property="og:title" content="Foundry IQ Demo Studio">
+  <meta property="og:description" content="Compare Foundry IQ (Azure AI Search) retrieval patterns side by side with real queries and citations.">
+  <meta property="og:type" content="website">
   <meta name="color-scheme" content="light dark">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
@@ -80,19 +83,17 @@
         </div>
       </div>
       <form id="search-form" class="search-card">
-        <label class="search-label" for="query">Search</label>
-        <p class="search-help" id="search-help">Ask a question or choose an example, then compare BEFORE and AFTER retrieval. Press <kbd>/</kbd> to focus search.</p>
+        <div class="search-head"><label class="search-label" for="query">Search</label><p class="search-help" id="search-help">Ask a question or pick an example to compare BEFORE and AFTER. Press <kbd>/</kbd> to focus.</p></div>
         <div class="search-row">
           <div class="query">
             <div class="search-box">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.3-4.3"/></svg>
-              <input id="query" type="search" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="query-suggestions" aria-describedby="search-help" maxlength="8000" autocomplete="off" placeholder="Search or pick an example" required>
+              <input id="query" type="search" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="query-suggestions" aria-describedby="search-help" maxlength="8000" autocomplete="off" placeholder="Search, or choose an example" required>
             </div>
-            <div id="query-suggestions" class="suggestions" role="listbox" aria-label="Demo query examples" hidden></div>
+            <div id="query-suggestions" class="suggestions" role="listbox" aria-label="Example queries" hidden></div>
           </div>
           <button class="primary" id="search" type="submit">Search</button>
         </div>
-        <div class="presets field"><label for="preset">Example queries</label><select id="preset"><option value="">Choose one of the examples…</option></select></div>
         <div class="upload" id="upload-area" hidden>
           <div class="field"><label for="file" id="file-label">Optional reference file</label><input id="file" type="file"></div>
           <img id="file-preview" alt="Selected reference image" hidden>
@@ -102,7 +103,7 @@
         </div>
         <div class="search-tools">
           <button class="disclosure" id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings">Advanced options<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-          <div class="actions"><span class="mode-chip" id="mode-chip" data-mode="sample">Sample</span><button class="subtle" id="reset" type="button" aria-label="Reset search" title="Reset search">Reset</button></div>
+          <div class="actions"><button class="subtle" id="reset" type="button" aria-label="Reset search" title="Reset search">Reset</button></div>
         </div>
         <div class="advanced" id="settings" hidden>
           <div class="settings-row">
@@ -110,7 +111,7 @@
             <div class="field count"><label for="count">Evidence per arm</label><select id="count"><option>5</option><option selected>10</option><option>20</option><option>50</option></select></div>
             <div class="field" id="boost-field" hidden><label for="boost">Boost subtype</label><select id="boost"><option value="freshness">Freshness</option><option value="magnitude">Magnitude</option><option value="distance">Distance</option><option value="tags">Tags</option><option value="availability">Availability</option></select></div>
             <div class="field" id="weight-field" hidden><label for="weight">Sample boost weight</label><input id="weight" type="number" min="0" max="10" step="0.5" value="1"></div>
-            <p id="mode-help">Sample replays curated examples without contacting Azure.</p>
+            <p id="mode-help">Sample replays curated examples without sending a query to Foundry IQ.</p>
           </div>
         </div>
       </form>
@@ -118,12 +119,23 @@
       <div id="error" class="error" role="alert" hidden></div>
       <section class="results" id="results" aria-label="Comparison results" hidden>
         <h2 class="results-title" id="results-title"></h2>
+        <div class="why-note" id="why-note" hidden></div>
         <div class="comparison"><section id="baseline" class="arm" aria-label="Before results"></section><section id="enhanced" class="arm" aria-label="After results"></section></div>
         <div class="metrics" id="metrics"></div>
       </section>
     </section>
-    <footer><span>Synthetic demo content · Zava Retail · S01–S11</span><span><a href="/about">About</a> · <a href="https://learn.microsoft.com/en-us/azure/search/" target="_blank" rel="noopener noreferrer">Azure AI Search docs</a> · <a href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer">GitHub</a></span></footer>
+    <footer><span>Synthetic demo content · Zava Retail · S01–S11</span><span><a href="/about">About</a> · <a href="https://learn.microsoft.com/en-us/azure/search/" target="_blank" rel="noopener noreferrer">Foundry IQ docs</a> · <a href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer">GitHub</a></span></footer>
   </main>
+  <dialog class="drawer" id="drawer" role="dialog" aria-labelledby="drawer-title">
+    <div class="sheet-head"><div><p class="eyebrow" id="drawer-eyebrow"></p><h2 id="drawer-title">Result details</h2></div><button class="icon-btn" id="drawer-close" type="button" aria-label="Close result details" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+    <div class="sheet-body" id="drawer-body"></div>
+  </dialog>
+  <dialog class="modal" id="apilog" role="dialog" aria-labelledby="apilog-title">
+    <div class="sheet-head"><div><p class="eyebrow" id="apilog-eyebrow"></p><h2 id="apilog-title">API log</h2></div><button class="icon-btn" id="apilog-close" type="button" aria-label="Close API log" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+    <p class="apilog-note" id="apilog-note"></p>
+    <div class="tabs" role="tablist" aria-label="Foundry IQ calls" id="apilog-tabs"></div>
+    <div id="apilog-panels"></div>
+  </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
   <script type="module" src="/assets/client.mjs"></script>
 </body>

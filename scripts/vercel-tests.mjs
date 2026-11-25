@@ -7,6 +7,7 @@ import { transformBindings, reduceAttestations } from './build-vercel.mjs';
 import { SEARCH_API_VERSION, AGENTIC_SEARCH_API_VERSION } from '../config/studio-live.mjs';
 import { illustrationPng } from './generate-studio.mjs';
 import { retryAfterSeconds } from '../lib/studio.mjs';
+import { imageOnlyQuery } from '../config/studio-languages.mjs';
 
 const KEY = 'QueryKeyForTestsOnly0123456789abcdefABCDEF';
 const ENDPOINT = 'https://foundry-iq-demos.search.windows.net';
@@ -447,4 +448,110 @@ test('recorded Sample narration, client and pages carry no stale claims', () => 
   const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
   assert.match(client, /Switch to Live data to search with your own PNG, JPEG or WebP image \(up to 40 KiB\)/);
   assert.doesNotMatch(client, /liveDescriptions\s*=/, 'descriptions come from the server catalog only');
+});
+
+test('API log records every upstream call per arm with the host placeholder, bounded bodies and no credentials', async () => {
+  const doc = { id: 'DRILL-1001', title: 'Compact hammer drill', content: 'x'.repeat(2000), url: '/samples/zava-catalog.csv', scope: 'public',
+    category: 'drill', price: 129, contentVector: Array.from({ length: 12 }, (_, i) => i / 10), '@search.score': 2.5, '@search.rerankerScore': 3.1 };
+  const { app } = harness({ handler: async () => new Response(JSON.stringify({ '@odata.context': `${ENDPOINT}/indexes('zava-studio-products')/$metadata#docs(*)`, value: [doc] }),
+    { status: 200, headers: { 'content-type': 'application/json', 'request-id': 'svc-request-1', 'elapsed-time': '12', 'x-internal': 'internal-header-value' } }) });
+  const result = await (await app.handle('run', post('run', liveBody()), env())).json();
+  for (const side of ['baseline', 'enhanced']) {
+    const [call, ...rest] = result[side].apiLog;
+    assert.equal(rest.length, 0);
+    assert.equal(call.method, 'POST');
+    assert.equal(call.url, `https://<your-search-service>.search.windows.net/indexes/zava-studio-products/docs/search?api-version=${SEARCH_API_VERSION}`);
+    assert.equal(call.request.body.search ?? call.request.body.vectorQueries[0].text, 'A lightweight tool for making holes in brick walls');
+    assert.equal(call.response.status, 200);
+    assert.ok(Number.isInteger(call.response.latencyMs));
+    assert.deepEqual(call.response.headers, { 'request-id': 'svc-request-1', 'elapsed-time': '12', 'content-type': 'application/json' });
+    assert.match(call.response.body.value[0].content, /… \[2000 characters\]$/);
+    assert.equal(call.response.body.value[0].contentVector, '[vector omitted: 12 numbers]');
+    assert.match(call.response.body['@odata.context'], /^https:\/\/<your-search-service>\.search\.windows\.net\/indexes/);
+  }
+  const hit = result.enhanced.hits[0];
+  assert.equal(hit.document.category, 'drill');
+  assert.equal(hit.document.contentVector, undefined);
+  assert.equal(hit.search.rerankerScore, 3.1);
+  const logs = JSON.stringify([result.baseline.apiLog, result.enhanced.apiLog]);
+  for (const forbidden of [KEY, 'foundry-iq-demos', 'api-key', 'internal-header-value']) assert.ok(!logs.includes(forbidden), forbidden);
+  assert.ok(!JSON.stringify(result).includes(KEY));
+
+  const config = structuredClone(liveConfig);
+  config.scenarios.S11.image.vectorizer = 'zava-image-vectorizer';
+  const hat = { id: 'HAT-001', title: 'Blue hat', content: 'Blue cotton bucket hat', url: '/samples/zava-hat-blue.svg', scope: 'public',
+    thumbnailUrl: '/samples/zava-hat-blue.png', imageModel: 'azure-vision-multimodal', imageModelVersion: '2023-04-15', imageDimensions: 1024,
+    imageManifestHash: 'a'.repeat(64), '@search.score': 0.9 };
+  const image = harness({ config, extra: [{ index: 'zava-studio-images-vision', etag: '"e3"', schema: imageSchema() }],
+    handler: async () => json({ value: [hat] }) });
+  const png = illustrationPng(0);
+  const withImage = await (await image.app.handle('run', post('run', liveBody('S11', { query: 'Image-only reference search',
+    imageInput: { mimeType: 'image/png', base64: png.toString('base64') } })), env())).json();
+  const vectorQuery = withImage.enhanced.apiLog[0].request.body.vectorQueries[0];
+  assert.equal(vectorQuery.kind, 'imageBinary');
+  assert.equal(vectorQuery.base64Image, `[image bytes omitted: ${png.length} bytes]`);
+});
+
+test('visible copy says Foundry IQ; "Azure AI Search" appears only in title, meta and the first About mention', async () => {
+  const read = file => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+  const app = createVercelApp({ liveConfig, attestations: attestations(), log: () => {} });
+  for (const language of ['en', 'fr', 'es', 'ja', 'de']) {
+    const catalog = await (await app.handle('scenarios', new Request(`${ORIGIN}/api/scenarios?language=${language}`), env())).json();
+    assert.ok(!JSON.stringify(catalog).includes('Azure AI Search'), language);
+  }
+  const body = html => html.replace(/<head>[\s\S]*?<\/head>/, '').replace(/<[^>]+>/g, ' ');
+  for (const file of ['page.html', '404.html']) assert.ok(!body(read(file)).includes('Azure AI Search'), file);
+  assert.match(read('page.html').match(/<head>[\s\S]*?<\/head>/)[0], /Foundry IQ \(Azure AI Search\)/);
+  const about = body(read('about.html'));
+  assert.equal(about.split('Azure AI Search').length - 1, 1, 'About names Azure AI Search once');
+  assert.ok(about.includes('Foundry IQ (Azure AI Search)'));
+  // Client strings, server messages and score labels (comments excluded).
+  const literal = /(['`])[^'`\n]*Azure AI Search[^'`\n]*\1/;
+  for (const file of ['assets/client.mjs', 'assets/header.mjs', 'assets/about.mjs', 'lib/studio.mjs', 'lib/vercel-app.mjs', 'lib/search-adapter.mjs', 'config/studio-scenarios.mjs']) {
+    const code = read(file).split(/\r?\n/).filter(line => !/^\s*(\/\/|\*|\/\*)/.test(line)).join('\n');
+    assert.doesNotMatch(code, literal, file);
+  }
+  assert.ok(!read('config/studio-recorded.json').includes('Azure AI Search'), 'recorded narration');
+});
+
+test('every showcase preset is recorded with a curated note, and AFTER clearly beats BEFORE in the top 3', () => {
+  const load = file => JSON.parse(readFileSync(new URL(`../config/${file}`, import.meta.url), 'utf8'));
+  const { presets } = load('studio-presets.json');
+  const recordedFile = load('studio-recorded.json');
+  const notesFile = load('studio-notes.json');
+  const ids = hit => [hit?.id, hit?.sourceId];
+  const ndcg3 = (arm, preset) => {
+    let dcg = 0;
+    (arm.hits || []).slice(0, 3).forEach((hit, i) => {
+      if (ids(hit).some(id => preset.relevant.includes(id))) dcg += 1 / Math.log2(i + 2);
+      if (ids(hit).some(id => (preset.forbidden || []).includes(id))) dcg -= 1 / Math.log2(i + 2);
+    });
+    const ideal = Array.from({ length: Math.min(3, preset.relevant.length) }, (_, i) => 1 / Math.log2(i + 2)).reduce((a, b) => a + b, 0);
+    return dcg / ideal;
+  };
+  let checked = 0;
+  for (const [language, byScenario] of Object.entries(presets)) {
+    for (const [scenarioId, list] of Object.entries(byScenario)) {
+      assert.equal(list.length, 4, `${language} ${scenarioId}`);
+      for (const preset of list) {
+        const key = `${language}|${scenarioId}|${(preset.query || imageOnlyQuery(language)).trim()}`;
+        const entry = recordedFile.entries[key];
+        assert.ok(entry, `recorded: ${key}`);
+        assert.ok(notesFile.entries[key]?.trim(), `note: ${key}`);
+        assert.equal(entry.boostSubtype, scenarioId === 'S06' ? preset.boostSubtype : undefined, key);
+        const { baseline, enhanced } = entry.result;
+        assert.ok(baseline.apiLog?.length && enhanced.apiLog?.length, `API log: ${key}`);
+        if (preset.criterion === 'graph') assert.ok(enhanced.graph?.edges?.length && !baseline.graph, key);
+        else if (preset.criterion === 'row') assert.ok(Number.isInteger(enhanced.hits[0]?.row) && !Number.isInteger(baseline.hits?.[0]?.row), key);
+        else {
+          const delta = ndcg3(enhanced, preset) - ndcg3(baseline, preset);
+          assert.ok(delta >= 0.15, `${key}: AFTER must clearly win (delta ${delta.toFixed(2)})`);
+          assert.ok(ids(enhanced.hits[0]).some(id => preset.relevant.includes(id)), `${key}: AFTER #1 must be relevant`);
+        }
+        checked++;
+      }
+    }
+  }
+  assert.equal(checked, 220);
+  assert.equal(Object.keys(notesFile.entries).length, 220);
 });

@@ -56,11 +56,14 @@ test('eleven safe public scenarios, >= five distinct curated questions each, UI 
     assert.equal(new Set(scenario.demoPresets.map(preset => preset.label)).size, 4);
     for (const preset of scenario.demoPresets) {
       if (scenario.id !== 'S11') assert.ok(scenario.queries.includes(preset.query));
-      else assert.match(preset.image, /^\/samples\/zava-(hat-(blue|red)|bowl-blue)\.png$/);
+      // S11 examples use a bundled image, or text only for text-to-image search.
+      else if (preset.image) assert.match(preset.image, /^\/samples\/zava-(hat-(blue|red)|bowl-blue)\.png$/);
+      else assert.ok(preset.query.trim());
     }
     assert.equal(scenario.liveAvailable, false);
     assert.equal(scenario.live.status, 'unavailable');
   }
+  assert.ok(list[10].demoPresets.some(preset => preset.image && !preset.query) && list[10].demoPresets.some(preset => !preset.image && preset.query));
   assert.equal(list[10].sampleImageId, 'zava-hat-blue');
   assert.ok(!JSON.stringify(list).includes('do-not-disclose'));
 });
@@ -225,7 +228,7 @@ test('live Search per-attempt quota, canonical endpoint, pinned API and no telem
   assert.ok(!JSON.stringify(result).includes('private-search-key'));
   assert.ok(!JSON.stringify(studioScenarios(liveEnv())).includes('private-search-key'));
   assert.equal(result.baseline.hits[0].score, undefined);
-  assert.equal(result.enhanced.hits[0].scoreType, 'Azure BM25');
+  assert.equal(result.enhanced.hits[0].scoreType, 'Foundry IQ keyword score (BM25)');
 });
 test('independent live arms retain partial success and no success-shaped fixture fallback', async () => {
   const helpers = harness(liveEnv(), async (url, request) => {
@@ -383,7 +386,7 @@ test('S07 uses exact SAME answer model/instructions, controlled retrieval and ch
   const agentic = helpers.calls.find(call => call.request.body && JSON.parse(call.request.body).queryType === 'agentic');
   assert.ok(agentic.url.endsWith(AGENTIC_SEARCH_API_VERSION));
   assert.deepEqual(JSON.parse(agentic.request.body), agenticSearchPayload(
-    { query: first('S07'), topK: 10 }, JSON.parse(helpers.env.STUDIO_LIVE_CONFIG).scenarios.S07, new Map()));
+    { query: first('S07'), topK: 10 }, JSON.parse(helpers.env.STUDIO_LIVE_CONFIG).scenarios.S07, new Map(indexSchema().fields.map(field => [field.name, field]))));
   assert.ok(!helpers.calls.some(call => call.url.includes('knowledgebases') || call.url.includes('retrieve')));
   assert.equal(result.enhanced.trace.configuration.agenticSearch.subQueryCount, 1);
   assert.deepEqual(result.enhanced.trace.configuration.agenticSearch.usage, { agenticPlanningTokens: 12, reasoningTokens: 34 });
@@ -577,7 +580,7 @@ test('S11 executable binary Azure Vision encoder -> compatible raw image-vector 
   assert.match(vectorRequest.filter, /imageModelVersion eq '2023-04-15'/);
   assert.ok(!JSON.stringify(result).includes(pngImage.base64));
   assert.ok(!JSON.stringify(result).includes('private-image-key'));
-  assert.equal(result.enhanced.hits[0].scoreType, 'Azure vector similarity');
+  assert.equal(result.enhanced.hits[0].scoreType, 'Foundry IQ vector similarity');
   const info = studioScenarios(liveEnv('S11')).find(scenario => scenario.id === 'S11');
   assert.equal(info.liveAvailable, true);
   assert.equal(info.imageInput.maxBytes, 40960);
@@ -844,8 +847,8 @@ test('S06 all five live boost subtypes use reviewed functions and server-only pa
     const requests = helpers.calls.filter(call => call.request.method === 'POST').map(call => JSON.parse(call.request.body));
     assert.equal(requests[0].scoringProfile, undefined);
     assert.equal(requests[1].scoringProfile, scoringProfiles[subtype]);
-    if (subtype === 'distance') assert.deepEqual(requests[1].scoringParameters, ['currentLocation---0.1278,51.5074']);
-    if (subtype === 'tags') assert.deepEqual(requests[1].scoringParameters, ['preferredTags--renovation']);
+    if (subtype === 'distance') assert.deepEqual(requests[1].scoringParameters, ['currentLocation--0.1278,51.5074']);
+    if (subtype === 'tags') assert.deepEqual(requests[1].scoringParameters, ['preferredTags-renovation']);
     assert.equal(result.enhanced.trace.configuration.profileFunctions[0].boost, 2);
   }
 });

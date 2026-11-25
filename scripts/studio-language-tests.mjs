@@ -5,6 +5,12 @@ import { liveConfiguration } from '../config/studio-live.mjs';
 import { documentLanguages, localizedCorpus } from '../config/studio-languages.mjs';
 import { documents, topics } from '../config/studio-corpus.mjs';
 import { buildStudio } from './generate-studio.mjs';
+import { readFileSync } from 'node:fs';
+
+// The localized corpus queries translate the original English gold presets (first four per scenario).
+const goldFile = JSON.parse(readFileSync(new URL('../config/studio-gold.json', import.meta.url), 'utf8'));
+const goldPresetQueries = id => { const curated = goldFile.filter(entry => entry.scenarioId === id); const presets = curated.slice(0, 4);
+  if (id === 'S05') presets[2] = curated.find(entry => entry.category === 'exact'); return presets.map(entry => entry.query); };
 
 const numbers = text => (text.match(/\d+(?:[.,]\d+)?/g) || []).map(value => value.replace(',', '.')).sort();
 
@@ -107,12 +113,13 @@ test('all five catalogs preserve eleven scenarios and switch all curated example
       assert.ok(catalog.every(scenario => scenario.sample.available === false));
       assert.match(local.support.find(item => item.id === 'INC-2026-017').content, /LOT-2407-A/);
       assert.match(local.support.find(item => item.id === 'INC-2026-017').content, /DRILL-1002/);
-      assert.equal(catalog[0].sampleQuery, local.queries.S01[0].query);
+      // The prefilled query is the first showcase preset (config/studio-presets.json), verified on Live.
+      assert.equal(catalog[0].sampleQuery, catalog[0].demoPresets[0].query);
       for (const [id, presets] of Object.entries(local.queries)) {
         if (id !== 'S11') {
           assert.ok(presets.every(preset => preset.query === preset.label), `${code}:${id} must submit its translated query, not only display its label`);
           presets.forEach((preset, index) => assert.deepEqual(numbers(preset.query),
-            numbers(english.find(scenario => scenario.id === id).demoPresets[index].query), `${code}:${id} preset ${index}`));
+            numbers(goldPresetQueries(id)[index]), `${code}:${id} preset ${index}`));
         }
         else {
           assert.equal(presets[0].query, '');

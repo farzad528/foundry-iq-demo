@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { publicCatalog } from '../config/knowledge-bases.mjs';
 import { archiveFiles } from './source-files.mjs';
 import { illustrationPng } from './generate-studio.mjs';
+import { studioScenarios } from '../lib/studio.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 process.chdir(root);
@@ -113,6 +114,17 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (missingSamples.length && process.env.STUDIO_RECORDED_OPTIONAL !== '1') throw new Error(`Recorded Sample coverage is incomplete: ${missingSamples.join(', ')}`);
   if (missingSamples.length) process.stdout.write(`WARNING: development build without complete recorded Sample coverage (${missingSamples.length} gaps).\n`);
   if (/requestId|"runId"|api-key/i.test(JSON.stringify(recorded))) throw new Error('Recorded Sample data must not contain request IDs or credentials.');
+  const recordedText = JSON.stringify(recorded);
+  if (/"request-id":"(?!removed)/.test(recordedText) || /search\.windows\.net/.test(recordedText.split('<your-search-service>.search.windows.net').join(''))) {
+    throw new Error('Recorded Sample API logs must use the host placeholder and contain no request IDs.');
+  }
+  // "Why AFTER wins" notes: one curated note per preset per language, written from the recorded Live results.
+  const notes = existsSync('config/studio-notes.json') ? JSON.parse(readFileSync('config/studio-notes.json', 'utf8')) : { entries: {} };
+  const missingNotes = LANGUAGES.flatMap(language => studioScenarios({}, language).flatMap(item => item.demoPresets
+    .map(preset => `${language}|${item.id}|${(preset.query || item.imageOnlyQuery).trim()}`)))
+    .filter(key => typeof notes.entries[key] !== 'string' || !notes.entries[key].trim());
+  if (missingNotes.length && process.env.STUDIO_NOTES_OPTIONAL !== '1') throw new Error(`Why-AFTER-wins notes are missing: ${missingNotes.slice(0, 8).join(', ')}${missingNotes.length > 8 ? ' …' : ''}`);
+  if (missingNotes.length) process.stdout.write(`WARNING: development build without complete Why-AFTER-wins notes (${missingNotes.length} gaps).\n`);
   const matrix = await verifyOffline(liveConfig, attestations);
 
   rmSync(out, { recursive: true, force: true });
@@ -157,7 +169,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   write('server/private-data.mjs', '// PRIVATE server-only bindings and schema attestations. Never serve or publish.\n'
     + `export const liveConfig = ${JSON.stringify(liveConfig)};\nexport const attestations = ${JSON.stringify(attestations)};\n`);
   write('server/recorded-data.mjs', `export const recorded = ${JSON.stringify(recorded)};\n`);
-  write('server/app.mjs', "import { createVercelApp } from './lib/vercel-app.mjs';\nimport { liveConfig, attestations } from './private-data.mjs';\nimport { recorded } from './recorded-data.mjs';\n\nexport const app = createVercelApp({ liveConfig, attestations, recorded });\n");
+  write('server/notes-data.mjs', `export const notes = ${JSON.stringify(notes)};\n`);
+  write('server/app.mjs', "import { createVercelApp } from './lib/vercel-app.mjs';\nimport { liveConfig, attestations } from './private-data.mjs';\nimport { recorded } from './recorded-data.mjs';\nimport { notes } from './notes-data.mjs';\n\nexport const app = createVercelApp({ liveConfig, attestations, recorded, notes });\n");
   const entry = (route, depth, verb) => `import { app } from '${'../'.repeat(depth)}server/app.mjs';\n\nexport ${verb === 'GET' ? 'function GET' : 'function POST'}(request) {\n  return app.handle('${route}', request, process.env);\n}\n`;
   write('api/scenarios.mjs', entry('scenarios', 1, 'GET'));
   write('api/health.mjs', entry('health', 1, 'GET'));

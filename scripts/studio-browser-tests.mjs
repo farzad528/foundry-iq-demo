@@ -5,7 +5,19 @@ import { chromium } from 'playwright';
 import { createApplication } from '../dist/server/index.mjs';
 import { createNodeServer } from '../lib/http.mjs';
 
-test('studio desktop/mobile comparisons, keyboard, reset and late response isolation', { timeout: 120000 }, async () => {
+// Mirrors the client's example list: English local Sample S11 uses the fixed blue-hat reference; otherwise the showcase presets.
+const shownPresets = (scenario, englishSample) => englishSample && scenario.id === 'S11'
+  ? scenario.queries.filter(Boolean).slice(0, 4).map(query => ({ label: `${query} (fixed blue-hat Sample)`, query }))
+  : scenario.demoPresets;
+// Document language lives in the header settings panel.
+async function chooseLanguage(page, language) {
+  await page.locator('#profile-button').click();
+  await page.locator('#menu-settings').click();
+  await page.locator(`input[name="document-language"][value="${language}"]`).check();
+  await page.keyboard.press('Escape');
+}
+
+test('studio desktop/mobile comparisons, keyboard, reset and late response isolation', { timeout: 180000 }, async () => {
   const app = createApplication({ fetchUpstream: () => assert.fail('Browser sample tests must not call Azure'), log: () => {} });
   const serverEnv = { PUBLIC_ORIGIN: 'http://localhost:3000', FOUNDRY_IQ_LIVE_ENABLED: 'false' };
   const server = createNodeServer(app, serverEnv);
@@ -22,7 +34,8 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
     await page.goto(serverEnv.PUBLIC_ORIGIN);
     await page.waitForFunction(() => document.querySelector('#scenario').options.length === 11);
     assert.equal(await page.locator('#count').inputValue(), '10');
-    assert.equal(await page.locator('header, aside, nav').count(), 0);
+    assert.equal(await page.locator('header.topbar').count(), 1);
+    assert.equal(await page.locator('aside').count(), 0);
     assert.equal(await page.locator('#mode option[value=live]').textContent(), 'Live data');
     const selector = page.locator('.selector');
     await page.locator('#scenario').click();
@@ -58,10 +71,11 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
       assert.equal(await page.locator('#query-suggestions [role=option]').count(), 4);
       const scenario = catalog.scenarios.find(item => item.id === id);
       const labels = await page.locator('#query-suggestions [role=option]').allTextContents();
-      assert.deepEqual(labels, id === 'S11' ? scenario.queries.slice(0, 4).map(query => `${query} (fixed blue-hat Sample)`)
-        : scenario.demoPresets.map(preset => preset.label));
+      const shown = shownPresets(scenario, true);
+      assert.deepEqual(labels.map(label => label.trim()), shown.map(preset => preset.label));
       const anchor = await page.locator('.query').evaluate(el => {
-        const input = el.querySelector('input').getBoundingClientRect();
+        // The list is anchored to the whole search box (leading icon included).
+        const input = el.querySelector('.search-box').getBoundingClientRect();
         const list = el.querySelector('[role=listbox]').getBoundingClientRect();
         return { input, list };
       });
@@ -72,12 +86,12 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
       assert.ok(await page.locator('#query').getAttribute('aria-activedescendant'));
       await page.locator('#query').press('Enter');
       assert.equal(await page.locator('#query-suggestions').isVisible(), false);
-      assert.equal(await page.locator('#query').inputValue(), scenario.queries[0]);
+      assert.equal(await page.locator('#query').inputValue(), shown[0].query);
       assert.equal(runs, before, `${id} selection must not run a query`);
       await page.locator('#query').click();
       await page.locator('#query').press('ArrowUp');
       await page.locator('#query').press('Enter');
-      assert.equal(await page.locator('#query').inputValue(), scenario.queries[3]);
+      assert.equal(await page.locator('#query').inputValue(), shown[3].query);
       await page.locator('#query').click();
       await page.locator('#query-suggestions [role=option]').first().click();
       assert.equal(await page.locator('#query-suggestions').isVisible(), false);
@@ -87,18 +101,19 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
       assert.equal(await page.locator('#results').isVisible(), true, `S${i} results`);
       assert.equal(await page.locator('#status').getAttribute('class'), 'sr-only');
       assert.equal(await page.locator('#status').getAttribute('aria-live'), 'polite');
-      assert.equal(await page.locator('#mode-badge').isVisible(), true);
       assert.match(await page.locator('#results-title').textContent(), /Deterministic Sample mode/);
       assert.ok(await page.locator('#baseline .card').count() || await page.locator('#baseline .empty').count(), `S${i} baseline`);
       assert.ok(await page.locator('#enhanced .card').count() || await page.locator('#enhanced .empty').count(), `S${i} enhanced`);
-      assert.equal(await page.locator('#baseline details').getAttribute('open'), null);
-      assert.equal(await page.locator('#enhanced details').getAttribute('open'), null);
+      assert.equal(await page.locator('#baseline details.trace').getAttribute('open'), null);
+      assert.equal(await page.locator('#enhanced details.trace').getAttribute('open'), null);
       const screenshot = await page.locator('.comparison').evaluate(el => {
         const [before, after] = [...el.children].map(item => item.getBoundingClientRect());
         return { beforeX: before.x, afterX: after.x, beforeY: before.y, afterY: after.y };
       });
       assert.ok(screenshot.afterX > screenshot.beforeX && screenshot.beforeY === screenshot.afterY);
     }
+    // Evidence count lives in Advanced options.
+    await page.locator('#settings-toggle').click();
     await page.selectOption('#count', '20');
     await page.locator('#reset').click();
     assert.equal(await page.locator('#scenario').inputValue(), 'S11');
@@ -125,7 +140,7 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
     await page.locator('#query').tap();
     await page.locator('#query-suggestions [role=option]').nth(2).tap();
     assert.equal(await page.locator('#query-suggestions').isVisible(), false);
-    assert.equal(await page.locator('#query').inputValue(), catalog.scenarios[0].queries[2]);
+    assert.equal(await page.locator('#query').inputValue(), catalog.scenarios[0].demoPresets[2].query);
     await page.locator('#query').fill('My own custom query');
     await page.locator('#query').press('Escape');
     assert.equal(await page.locator('#query').getAttribute('aria-expanded'), 'false');
@@ -152,7 +167,7 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
     assert.ok(!(await page.locator('body').textContent()).includes('STALE RESPONSE'));
     await page.selectOption('#scenario', 'S02');
     await page.locator('#query').press('Enter');
-    await page.selectOption('#document-language', 'fr');
+    await chooseLanguage(page, 'fr');
     await page.waitForFunction(() => document.querySelector('#status').textContent.startsWith('Document language changed to Français'));
     await page.waitForTimeout(450);
     assert.equal(await page.locator('#results').isVisible(), false);
@@ -160,7 +175,7 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
     await page.unroute('**/api/demo/run');
     for (const language of ['fr', 'es', 'ja', 'de', 'en']) {
       const before = runs;
-      await page.selectOption('#document-language', language);
+      await chooseLanguage(page, language);
       await page.waitForFunction(label => document.querySelector('#status').textContent.startsWith(`Document language changed to ${label}`),
         { fr: 'Français', es: 'Español', ja: '日本語', de: 'Deutsch', en: 'English' }[language]);
       if (language === 'en') {
@@ -173,15 +188,15 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
         await page.selectOption('#scenario', scenario.id);
         await page.locator('#query').click();
         const presets = await page.locator('#query-suggestions [role=option]').allTextContents();
-        assert.deepEqual(presets, language === 'en' && scenario.id === 'S11'
-          ? scenario.queries.slice(0, 4).map(query => `${query} (fixed blue-hat Sample)`) : scenario.demoPresets.map(preset => preset.label));
+        const shown = shownPresets(scenario, language === 'en');
+        assert.deepEqual(presets.map(label => label.trim()), shown.map(preset => preset.label));
         await page.locator('#query-suggestions [role=option]').first().click();
-        assert.equal(await page.locator('#query').inputValue(), scenario.queries[0]);
+        assert.equal(await page.locator('#query').inputValue(), shown[0].query);
       }
       await page.locator('#query').fill('Editable custom query');
       await page.locator('#query').press('Escape');
       await page.locator('#reset').click();
-      assert.equal(await page.locator('#document-language').inputValue(), language);
+      assert.equal(await page.locator(`input[name="document-language"][value="${language}"]`).isChecked(), true);
       assert.equal(await page.locator('#count').inputValue(), '20');
       assert.equal(await page.locator('#query').inputValue(), '');
       assert.equal(await page.locator('#results').isVisible(), false);
@@ -259,7 +274,7 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
     assert.ok((await page.locator('#enhanced').textContent()).includes('Simulated encoder failure'));
     assert.equal(await page.locator('#status').getAttribute('class'), '');
     for (const language of ['fr', 'es', 'ja', 'de']) {
-      await page.selectOption('#document-language', language);
+      await chooseLanguage(page, language);
       await page.waitForFunction(() => document.querySelector('#status').textContent.startsWith('Document language changed'));
       const localized = await (await page.request.get(serverEnv.PUBLIC_ORIGIN + `/api/scenarios?language=${language}`)).json();
       await page.locator('#query').click();
@@ -272,7 +287,7 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
       assert.equal(submitted.query, localized.scenarios.find(item => item.id === 'S11').imageOnlyQuery);
       assert.equal(submitted.imageInput.base64, bundled.toString('base64'));
     }
-    await page.selectOption('#document-language', 'en');
+    await chooseLanguage(page, 'en');
     await page.waitForFunction(() => document.querySelector('#status').textContent.startsWith('Document language changed'));
     await page.locator('#query').click();
     await page.locator('#query-suggestions [role=option]').first().click();

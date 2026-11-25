@@ -34,14 +34,14 @@ export const liveDifferences = {
 export const customPdfDescription = 'Compare custom pre-extracted PDF pages and table rows. Azure Content Understanding is not used for this example.';
 export const liveLimits = {
   S01: 'Live searches the synthetic Zava product index for the selected document language.',
-  S02: 'Azure AI Search vectorizes the query text with its configured vectorizer; the app holds no model key.',
+  S02: 'Foundry IQ vectorizes the query text with its configured vectorizer; the app holds no model key.',
   S03: 'Both arms apply the same category and price filters.',
   S04: 'Live reranks the same hybrid candidates with the semantic ranker; only the order changes.',
   S05: 'Both arms apply the same location, stock, category and price filters.',
   S06: 'Live applies the reviewed scoring profile for the selected boost.',
   S07: 'Live uses agentic retrieval with a bounded runtime and compares evidence only; neither arm generates an answer.',
-  S08: 'The graph is a custom projection indexed in Azure AI Search, not a native graph feature.',
-  S09: 'Topics are an experimental projection indexed in Azure AI Search.',
+  S08: 'The graph is a custom projection indexed in Foundry IQ, not a native graph feature.',
+  S09: 'Topics are an experimental projection indexed in Foundry IQ.',
   S10: 'Both arms search the same bundled PDF, extracted at ingestion; new PDF uploads are not supported.',
-  S11: 'Live accepts one PNG, JPEG or WebP image up to 40 KiB per search. Azure AI Search vectorizes it with Azure Vision; the image is not stored or indexed.',
+  S11: 'Live accepts one PNG, JPEG or WebP image up to 40 KiB per search. Foundry IQ vectorizes it with Azure Vision; the image is not stored or indexed.',
 };

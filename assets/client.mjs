@@ -9,6 +9,7 @@ let objectUrl;
 let configuration;
 let activeSuggestion = -1;
 let bundledFile = false;
+let lastResult;
 const recordedSampleMode = () => element('mode').value === 'sample' && !!selectedScenario()?.sample?.recorded;
 
 const node = (tag, text, className) => {
@@ -53,41 +54,54 @@ function closeSuggestions() {
   activeSuggestion = -1;
 }
 
-function showSuggestions() {
-  const presets = presetList();
+// Presets shown in the search-bar listbox. Typing filters them; focus or click shows all of the scenario's examples.
+let visiblePresets = [];
+function showSuggestions(filter = false) {
+  const text = filter ? element('query').value.trim().toLocaleLowerCase() : '';
+  visiblePresets = presetList().filter(preset => !text || `${preset.label} ${preset.query}`.toLocaleLowerCase().includes(text));
   const list = element('query-suggestions');
-  list.replaceChildren(...presets.map((preset, index) => {
-    const option = node('button', preset.label, 'suggestion');
-    option.type = 'button';
+  list.setAttribute('aria-label', `Example queries for ${selectedScenario()?.title || 'this scenario'}`);
+  list.replaceChildren(...visiblePresets.map((preset, index) => {
+    const option = node('div', undefined, 'suggestion');
     option.id = `query-example-${index}`;
-    option.role = 'option';
-    option.tabIndex = -1;
+    option.setAttribute('role', 'option');
     option.setAttribute('aria-selected', 'false');
+    if (preset.image) {
+      const thumb = Object.assign(node('img'), { src: preset.image, alt: '', width: 28, height: 28 });
+      option.append(thumb);
+    }
+    option.append(node('span', preset.label || preset.query));
     option.addEventListener('mousedown', event => event.preventDefault());
     option.addEventListener('click', () => choosePreset(preset));
     return option;
   }));
   activeSuggestion = -1;
-  list.hidden = !presets.length;
-  element('query').setAttribute('aria-expanded', String(!!presets.length));
+  list.hidden = !visiblePresets.length;
+  element('query').setAttribute('aria-expanded', String(!list.hidden));
   element('query').removeAttribute('aria-activedescendant');
 }
+function moveSuggestion(next) {
+  const options = [...element('query-suggestions').children];
+  if (!options.length) return;
+  activeSuggestion = (next + options.length) % options.length;
+  options.forEach((option, index) => option.setAttribute('aria-selected', String(index === activeSuggestion)));
+  element('query').setAttribute('aria-activedescendant', options[activeSuggestion].id);
+  options[activeSuggestion].scrollIntoView({ block: 'nearest' });
+}
 
-async function choosePreset(preset, fromSelect = false) {
+async function choosePreset(preset) {
   invalidate();
   element('query').value = preset.query;
-  if (!fromSelect) {
-    element('query').focus({ preventScroll: true });
-    const index = presetList().findIndex(item => item.label === preset.label);
-    element('preset').value = index >= 0 ? String(index) : '';
-  }
+  // S06 examples each demonstrate one boost; choosing one selects it.
+  if (preset.boostSubtype && selectedScenario()?.id === 'S06') element('boost').value = preset.boostSubtype;
+  element('query').focus({ preventScroll: true });
   closeSuggestions();
   setStatus('Demo query selected. Click Search to compare.');
   if (!preset.image) return;
   clearFile();
   const epoch = sequence;
   element('search').disabled = true;
-  setStatus('Loading bundled synthetic image locally; no Azure request has been sent.');
+  setStatus('Loading bundled synthetic image locally; nothing has been sent to Foundry IQ.');
   try {
     if (!['/samples/zava-hat-blue.png', '/samples/zava-hat-red.png', '/samples/zava-bowl-blue.png'].includes(preset.image)) throw new Error('Unsupported bundled image.');
     const response = await fetch(preset.image);
@@ -97,9 +111,9 @@ async function choosePreset(preset, fromSelect = false) {
     await selectFile(new File([bytes], preset.image.split('/').pop(), { type: 'image/png' }), epoch, true);
     const name = selectedFile?.name;
     if (epoch === sequence && selectedFile) setStatus(recordedSampleMode()
-      ? `Bundled example image ${name} selected. Click Search to replay its recorded result; nothing is sent to Azure.`
+      ? `Bundled example image ${name} selected. Click Search to replay its recorded result; nothing is sent to Foundry IQ.`
       : element('mode').value !== 'live' ? `Bundled synthetic image ${name} selected. Switch to Live data to search with it.`
-        : selectedScenario().liveAvailable ? `Bundled synthetic image ${name} selected. Click Search to send it to Azure AI Search.`
+        : selectedScenario().liveAvailable ? `Bundled synthetic image ${name} selected. Click Search to send it to Foundry IQ.`
           : `Bundled synthetic image ${name} selected, but Live image search is currently unavailable. Switch to Sample to try the bundled examples.`);
   } catch (error) {
     if (epoch === sequence) showError(error.message);
@@ -122,6 +136,7 @@ function clearFile() {
 
 function invalidate() {
   sequence++;
+  lastResult = undefined;
   active?.abort();
   active = undefined;
   closeSuggestions();
@@ -150,12 +165,10 @@ function modeChanged() {
   element('demo-description').textContent = (mode === 'live' || recorded ? scenario?.liveDescription : scenario?.description) || '';
   element('mode-badge').hidden = true;
   element('mode-badge').textContent = recorded ? `Recorded Sample · ${recorded.recordedAt}` : 'Sample mode';
-  element('mode-chip').dataset.mode = mode;
-  element('mode-chip').textContent = mode === 'live' ? 'Live data' : 'Sample';
   element('mode-help').textContent = mode === 'live'
-    ? 'Live sends real Azure AI Search queries from the server. Failures are shown as errors; Sample results are never substituted.'
-    : recorded ? `Recorded Live responses captured on ${recorded.recordedAt}. Curated questions only; no Azure request is sent now.`
-      : 'Curated synthetic examples computed in the app. No Azure request is sent, and timings are not Azure measurements.';
+    ? 'Live sends real Foundry IQ queries from the server. Failures are shown as errors; Sample results are never substituted.'
+    : recorded ? `Recorded Live responses captured on ${recorded.recordedAt}. Curated questions only; nothing is sent to Foundry IQ now.`
+      : 'Curated synthetic examples computed in the app. Nothing is sent to Foundry IQ, and timings are not service measurements.';
   element('weight').disabled = mode === 'live';
   element('weight-field').hidden = scenario?.id !== 'S06' || !!(mode === 'sample' && recorded);
   element('query').required = !(mode === 'live' && selectedScenario()?.id === 'S11' && selectedScenario()?.liveAvailable && selectedFile);
@@ -164,13 +177,13 @@ function modeChanged() {
       : selectedScenario()?.liveAvailable ? 'Ready to search.' : selectedScenario()?.live?.reason || 'Live data is currently unavailable for this scenario.')
     : 'Curated sample mode ready.', mode === 'live' && selectedScenario()?.liveAvailable);
   element('sample-reference').hidden = selectedScenario()?.id !== 'S11' || mode !== 'sample' || !!selectedScenario()?.sample?.recorded;
-  populatePresets();
+  closeSuggestions();
   if (['S10', 'S11'].includes(scenario?.id)) element('upload-help').textContent = uploadHelp(scenario, mode);
 }
 
 function uploadHelp(scenario, mode) {
   if (scenario.id === 'S10') return 'Both arms search the same bundled product manual PDF, and citations open the exact page. Uploading new PDFs isn’t supported in this demo.';
-  if (mode === 'live' && scenario.liveAvailable) return 'PNG, JPEG or WebP up to 40 KiB, sent once to Azure AI Search, which vectorizes it with Azure Vision. Nothing is stored or indexed. Without an image, your text is matched against the image vectors (text-to-image).';
+  if (mode === 'live' && scenario.liveAvailable) return 'PNG, JPEG or WebP up to 40 KiB, sent once to Foundry IQ, which vectorizes it with Azure Vision. Nothing is stored or indexed. Without an image, your text is matched against the image vectors (text-to-image).';
   if (mode === 'live') return 'Live image search is currently unavailable for this scenario. Switch to Sample to try the bundled example images.';
   if (scenario.sample?.recorded) return 'Sample replays recorded results for the bundled example images and queries. Switch to Live data to search with your own PNG, JPEG or WebP image (up to 40 KiB).';
   return 'Sample uses the bundled blue hat illustration with curated example queries. Switch to Live data, where available, to search with your own PNG, JPEG or WebP image (up to 40 KiB).';
@@ -206,8 +219,14 @@ function sourceLink(hit) {
     pageUrl.hash = `page=${hit.page}`;
     url = pageUrl.href;
   }
-  return url ? Object.assign(node('a', 'Open synthetic source'), { href: url, target: '_blank', rel: 'noopener noreferrer' }) : node('span', 'Source link unavailable');
+  if (!url) return node('span', 'Source link unavailable', 'source-missing');
+  const name = Number.isInteger(hit.page) ? `Open source document, page ${hit.page}` : 'Open source document';
+  const link = Object.assign(node('a', undefined, 'source-link'), { href: url, target: '_blank', rel: 'noopener noreferrer', title: `${name} (opens in a new tab)` });
+  link.setAttribute('aria-label', `${name} (opens in a new tab)`);
+  link.innerHTML = OPEN_ICON;
+  return link;
 }
+const OPEN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
 
 function renderHit(hit, side, index, baselineIds) {
   const card = node('article', undefined, 'card' + (hit.thumbnailUrl ? ' image-card' : '') + (hit.page !== undefined ? ' pdf-card' : ''));
@@ -215,12 +234,19 @@ function renderHit(hit, side, index, baselineIds) {
   card.tabIndex = -1;
   const head = node('div', undefined, 'card-top');
   const originalRank = baselineIds?.indexOf(hit.id);
-  head.append(node('span', `#${hit.rank || index + 1}`, 'rank'));
+  head.append(node('span', `#${hit.rank || index + 1}`, 'rank'), sourceLink(hit));
   card.append(head);
   const image = safeUrl(hit.thumbnailUrl);
   if (image) card.append(Object.assign(node('img'), { src: image, alt: hit.title || 'Synthetic product illustration', loading: 'lazy' }));
   const content = node('div', undefined, 'hit-body');
-  content.append(node('h3', hit.title || hit.id), node('p', hit.snippet || 'No passage returned.', 'snippet'));
+  // The title opens the result details drawer; its hit area covers the card (links and disclosures stay on top).
+  const open = node('button', hit.title || hit.id, 'hit-open');
+  open.type = 'button';
+  open.setAttribute('aria-haspopup', 'dialog');
+  open.addEventListener('click', () => openDrawer(side, index, open));
+  const heading = node('h3');
+  heading.append(open);
+  content.append(heading, node('p', hit.snippet || 'No passage returned.', 'snippet'));
   const meta = node('div', undefined, 'meta');
   meta.append(node('span', hit.sourceId || hit.id || 'No source ID'));
   if (hit.page !== undefined) meta.append(node('span', `Page ${hit.page}`));
@@ -229,7 +255,7 @@ function renderHit(hit, side, index, baselineIds) {
     : `Source coordinates: ${JSON.stringify(hit.coordinates)}`));
   if (hit.score !== undefined) meta.append(node('span', `${hit.scoreType || 'Service score'}: ${Number.isFinite(hit.score) ? hit.score.toFixed(3) : hit.score}`));
   if (side === 'enhanced' && originalRank >= 0 && originalRank !== index) meta.append(node('span', `Rank ${originalRank + 1} → ${index + 1}`));
-  content.append(meta, sourceLink(hit));
+  content.append(meta);
   if (hit.coordinates?.cells) {
     const coordinates = node('details');
     coordinates.append(node('summary', 'Source cell coordinates'), node('pre', JSON.stringify(hit.coordinates, null, 2)));
@@ -244,6 +270,18 @@ function renderArm(side, arm, scenario, result) {
   const heading = node('div', undefined, 'arm-heading');
   heading.append(node('div', side === 'baseline' ? 'BEFORE' : 'AFTER', 'arm-label'),
     node('h2', arm?.label || label(scenario[side], side === 'baseline' ? 'Baseline' : 'Enhanced')));
+  if (Array.isArray(arm?.apiLog) && arm.apiLog.length) {
+    const calls = arm.apiLog.length;
+    const button = node('button', undefined, 'apilog-btn');
+    button.type = 'button';
+    button.setAttribute('aria-haspopup', 'dialog');
+    button.title = 'Show the exact Foundry IQ requests and responses for this arm';
+    // The accessible name starts with the visible text (WCAG 2.5.3) and adds hidden context.
+    button.append(node('span', 'API log'), ' ', node('span', String(calls), 'count'),
+      node('span', ` Foundry IQ call${calls === 1 ? '' : 's'} for ${side === 'baseline' ? 'BEFORE' : 'AFTER'}`, 'sr-only'));
+    button.addEventListener('click', () => openApiLog(side, button));
+    heading.append(button);
+  }
   container.replaceChildren(heading);
   if (!arm || arm.status === 'error' || arm.status === 'unavailable' || arm.status === 'failed') {
     container.append(node('p', errorText(arm?.error || 'This arm is unavailable.'), 'error'));
@@ -252,10 +290,28 @@ function renderArm(side, arm, scenario, result) {
   if (arm.error) container.append(node('p', `Partial result: ${errorText(arm.error)}`, 'error'));
   // "Insufficient evidence." is a refusal, not an answer: without hits the empty state says it; with hits, say so plainly.
   const noAnswer = arm.answer === 'Insufficient evidence.';
-  if (arm.answer && !(noAnswer && !arm.hits?.length)) {
+  // An "answer" that only concatenates the ranked snippets adds nothing beyond the results themselves.
+  const first = arm.hits?.[0];
+  // S10's AFTER answer is the extracted table row itself, so it is always shown.
+  const extractOnly = scenario.id !== 'S10' && !!first && typeof arm.answer === 'string' && arm.answer.startsWith(`[${first.id}] ${first.snippet}`);
+  if (arm.answer && !extractOnly && !(noAnswer && !arm.hits?.length)) {
     const answer = node('article', undefined, 'card');
     answer.append(node('h3', arm.answerKind === 'note' ? 'Why this arm can’t answer' : noAnswer ? 'No grounded answer' : 'Grounded answer'),
-      node('p', noAnswer ? 'The retrieved evidence doesn’t answer this question.' : arm.answer, 'snippet'));
+      node('p', noAnswer ? 'The retrieved evidence doesn’t answer this question.' : arm.answer, 'snippet answer-text'));
+    // Long answers are clamped so the ranked results stay visible; the full text is one click away.
+    if (!noAnswer && arm.answer.length > 220) {
+      const text = answer.querySelector('.answer-text');
+      text.classList.add('clamped');
+      const more = node('button', 'Show full answer', 'link-btn');
+      more.type = 'button';
+      more.setAttribute('aria-expanded', 'false');
+      more.addEventListener('click', () => {
+        const expanded = text.classList.toggle('clamped') === false;
+        more.textContent = expanded ? 'Show less' : 'Show full answer';
+        more.setAttribute('aria-expanded', String(expanded));
+      });
+      answer.append(more);
+    }
     const citations = node('div', undefined, 'citations');
     (arm.citations || []).forEach((citation, i) => {
       const id = typeof citation === 'string' ? citation : citation.sourceId || citation.id || citation.referenceId;
@@ -267,18 +323,31 @@ function renderArm(side, arm, scenario, result) {
         citations.append(link);
       } else citations.append(node('span', `Unresolved citation: ${id || i + 1}`));
     });
+    // Four citations stay visible; the rest are one click away so rankings remain above the fold.
+    if (citations.children.length > 4) {
+      const hidden = [...citations.children].slice(4);
+      hidden.forEach(item => { item.hidden = true; });
+      const more = node('button', `+${hidden.length} more`, 'link-btn');
+      more.type = 'button';
+      more.setAttribute('aria-expanded', 'false');
+      more.setAttribute('aria-label', `Show ${hidden.length} more citations`);
+      more.addEventListener('click', () => { hidden.forEach(item => { item.hidden = false; }); more.remove(); });
+      citations.append(more);
+    }
     if (!noAnswer) answer.append(citations);
     container.append(answer);
   }
   if (arm.graph?.edges) {
+    const details = node('details', undefined, 'graph-details');
     const graph = node('div', undefined, 'graph');
     arm.graph.edges.forEach(edge => graph.append(node('span', `${edge.from} → ${edge.to} · ${edge.sourceId || 'source unavailable'}`)));
-    container.append(graph);
+    details.append(node('summary', `Graph path · ${arm.graph.edges.length} sourced edge${arm.graph.edges.length === 1 ? '' : 's'}`), graph);
+    container.append(details);
   }
   if (arm.topics?.length) {
     for (const topic of arm.topics) {
       const card = node('article', undefined, 'card');
-      card.append(node('h3', topic.title || topic.id), node('p', topic.summary || '', 'snippet'));
+      card.append(node('h3', topic.title || topic.id), node('p', topic.summary || '', 'snippet clamped'));
       card.append(node('p', `Experimental · ${topic.id || topic.topicId} · revision ${topic.revision || topic.version} · ${topic.accessScope || 'scope unavailable'} · refreshed ${topic.lastRefreshedAt || topic.updatedAt || 'unavailable'}`, 'meta'));
       card.append(node('p', `Source IDs: ${(topic.sourceDocumentIds || []).join(', ') || 'unavailable'}`, 'meta'));
       container.append(card);
@@ -302,8 +371,13 @@ function renderArm(side, arm, scenario, result) {
 }
 
 function renderResults(result, scenario) {
-  const sampleLabel = result.recorded ? ` · Recorded Sample (captured ${result.recorded.recordedAt})` : ' · Deterministic Sample mode';
-  element('results-title').textContent = `Search results for “${result.query}”${result.mode === 'sample' ? sampleLabel : ''} · ${element('count').value} supporting evidence maximum per arm`;
+  lastResult = result;
+  const sampleLabel = result.recorded ? `Recorded Sample (captured ${result.recorded.recordedAt})` : 'Deterministic Sample mode';
+  element('results-title').replaceChildren(node('span', `Results for “${result.query}”`), ' ',
+    node('span', `${result.mode === 'sample' ? `${sampleLabel} · ` : ''}up to ${element('count').value} per arm`, 'results-meta'));
+  const note = element('why-note');
+  note.hidden = !result.note?.text;
+  if (result.note?.text) note.replaceChildren(node('strong', 'Why AFTER wins'), node('span', result.note.text), node('span', result.note.source, 'note-source'));
   renderArm('baseline', result.baseline, scenario, result);
   renderArm('enhanced', result.enhanced, scenario, result);
   element('metrics').replaceChildren();
@@ -408,7 +482,7 @@ async function run(event) {
       element('search').textContent = 'Searching…';
       setStatus('Running both comparison arms…');
     }
-    const slow = setTimeout(() => { if (id === sequence) setStatus('Still working… the first Live query after a quiet period can take up to 30 seconds while Azure warms up.'); }, 6000);
+    const slow = setTimeout(() => { if (id === sequence) setStatus('Still working… the first Live query after a quiet period can take up to 30 seconds while the service warms up.'); }, 6000);
     let response;
     try {
       response = await fetch('/api/demo/run', {
@@ -444,27 +518,26 @@ element('mode').addEventListener('change', modeChanged);
 element('count').addEventListener('change', () => { invalidate(); setStatus('Result count changed. Search again to apply.'); });
 element('boost').addEventListener('change', () => { invalidate(); setStatus('Boost changed. Search again to apply.'); });
 element('weight').addEventListener('change', () => { invalidate(); setStatus('Weight changed. Search again to apply.'); });
-element('query').addEventListener('focus', showSuggestions);
-element('query').addEventListener('click', showSuggestions);
-element('query').addEventListener('input', () => { invalidate(); element('preset').value = ''; showSuggestions(); setStatus('Query changed. Search to compare.'); });
+element('query').addEventListener('focus', () => showSuggestions());
+element('query').addEventListener('click', () => { if (element('query-suggestions').hidden) showSuggestions(); });
+element('query').addEventListener('input', () => { invalidate(); showSuggestions(true); setStatus('Query changed. Search to compare.'); });
 element('query').addEventListener('keydown', event => {
   const list = element('query-suggestions');
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault();
     if (list.hidden) showSuggestions();
-    const options = [...list.children];
-    if (!options.length) return;
-    activeSuggestion = (activeSuggestion + (event.key === 'ArrowDown' ? 1 : activeSuggestion < 0 ? 0 : -1) + options.length) % options.length;
-    options.forEach((option, index) => option.setAttribute('aria-selected', String(index === activeSuggestion)));
-    element('query').setAttribute('aria-activedescendant', options[activeSuggestion].id);
-    options[activeSuggestion].scrollIntoView({ block: 'nearest' });
+    moveSuggestion(event.key === 'ArrowDown' ? activeSuggestion + 1 : activeSuggestion < 0 ? -1 : activeSuggestion - 1);
+  } else if ((event.key === 'Home' || event.key === 'End') && !list.hidden && activeSuggestion >= 0) {
+    event.preventDefault();
+    moveSuggestion(event.key === 'Home' ? 0 : list.children.length - 1);
   } else if (event.key === 'Enter' && !list.hidden && activeSuggestion >= 0) {
     event.preventDefault();
-    void choosePreset(presetList()[activeSuggestion]);
-  } else if (['Escape', 'Tab', 'Enter'].includes(event.key)) {
-    if (event.key === 'Escape') event.preventDefault();
+    void choosePreset(visiblePresets[activeSuggestion]);
+  } else if (event.key === 'Escape') {
+    // Never the native search-field clear: Escape only closes the list.
+    event.preventDefault();
     closeSuggestions();
-  }
+  } else if (['Tab', 'Enter'].includes(event.key)) closeSuggestions();
 });
 document.addEventListener('pointerdown', event => {
   if (!event.target.closest('.query')) closeSuggestions();
@@ -519,7 +592,7 @@ async function selectFile(file, epoch, bundled = false) {
     element('file-preview').src = objectUrl;
     element('file-preview').hidden = false;
   }
-  if (recordedBundled) setStatus(`Bundled example ${file.name} selected. Recorded Sample replays its recorded Live result; nothing is sent to Azure.`);
+  if (recordedBundled) setStatus(`Bundled example ${file.name} selected. Recorded Sample replays its recorded Live result; nothing is sent to Foundry IQ.`);
   else if (compatible) setStatus(`${file.name} (${Math.ceil(file.size / 1024)} KiB) ready as an ephemeral query reference; not uploaded or indexed.`);
   else showError(scenarioId === 'S10' ? `Uploading new PDFs isn’t supported in this demo, so ${file.name} won’t be searched. Remove it to search the bundled manual.`
     : file.size > 40960 ? `${file.name} is ${Math.ceil(file.size / 1024)} KiB. Live image search accepts images up to 40 KiB. Nothing was sent.`
@@ -579,16 +652,216 @@ document.addEventListener('keydown', event => {
     element('query').select();
   }
 });
-// Native preset dropdown directly below the query field (four curated examples per scenario).
-function populatePresets() {
-  const select = element('preset');
-  const placeholder = node('option', 'Choose one of the examples…');
-  placeholder.value = '';
-  select.replaceChildren(placeholder, ...presetList().map((preset, index) => Object.assign(node('option', preset.label), { value: String(index) })));
-  select.value = '';
+
+// ---------- Result details drawer and API log (native modal dialogs) ----------
+const armName = side => side === 'baseline' ? 'BEFORE' : 'AFTER';
+const pretty = value => JSON.stringify(value, null, 2) ?? '';
+const FOCUSABLE = 'button:not([disabled]), [href], summary, [tabindex]:not([tabindex="-1"])';
+function setupDialog(dialog) {
+  dialog.addEventListener('close', () => {
+    const opener = dialog.returnFocus;
+    dialog.returnFocus = undefined;
+    if (opener?.isConnected) opener.focus({ preventScroll: true });
+  });
+  // Clicks on the backdrop (outside the sheet) close it.
+  dialog.addEventListener('click', event => {
+    if (event.target !== dialog) return;
+    const box = dialog.getBoundingClientRect();
+    if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.close();
+  });
+  // Explicit focus trap: Tab and Shift+Tab cycle inside the dialog.
+  dialog.addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    const items = [...dialog.querySelectorAll(FOCUSABLE)].filter(item => item.getClientRects().length && !item.closest('[hidden]'));
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+  });
 }
-element('preset').addEventListener('change', () => {
-  const preset = presetList()[Number(element('preset').value)];
-  if (element('preset').value !== '' && preset) void choosePreset(preset, true);
-});
+function showDialog(dialog, opener, focusTarget) {
+  dialog.returnFocus = opener;
+  if (!dialog.open) dialog.showModal();
+  (focusTarget || dialog.querySelector('.sheet-head .icon-btn')).focus({ preventScroll: true });
+}
+function copyButton(label, text, status) {
+  const button = node('button', label, 'copy-btn');
+  button.type = 'button';
+  button.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(text()); status.textContent = `${label}: copied to the clipboard.`; button.textContent = 'Copied'; }
+    catch { status.textContent = 'Copy failed. Select the text and copy it manually.'; }
+    setTimeout(() => { button.textContent = label; }, 1800);
+  });
+  return button;
+}
+function codeBlock(text, name) {
+  const pre = node('pre', text, 'code');
+  pre.tabIndex = 0;
+  pre.setAttribute('aria-label', name);
+  return pre;
+}
+function definition(list, term, value) {
+  if (value === undefined || value === null || value === '') return;
+  list.append(node('dt', term));
+  const detail = node('dd');
+  if (value instanceof Node) detail.append(value); else detail.textContent = String(value);
+  list.append(detail);
+}
+function section(title, ...children) {
+  const box = node('section', undefined, 'sheet-section');
+  box.append(node('h3', title), ...children.filter(Boolean));
+  return box;
+}
+const sameDocument = (a, b) => a.id === b.id || (a.sourceId && a.sourceId === b.sourceId && a.id === b.id);
+function vectorUse(arm) {
+  const queries = (arm.apiLog || []).flatMap(entry => entry.request?.body?.vectorQueries || []);
+  const configuration = arm.trace?.configuration || {};
+  return queries.map(query => ({ field: query.fields, kind: query.kind,
+    dimensions: query.fields === (configuration.imageEncoder?.field || 'imageVector') ? configuration.imageEncoder?.dimensions : configuration.embedding?.dimensions }));
+}
+function openDrawer(side, index, opener) {
+  const result = lastResult;
+  const arm = result?.[side];
+  const hit = arm?.hits?.[index];
+  if (!hit) return;
+  const otherSide = side === 'baseline' ? 'enhanced' : 'baseline';
+  const otherIndex = (result[otherSide]?.hits || []).findIndex(other => sameDocument(other, hit));
+  const configuration = arm.trace?.configuration || {};
+  const document_ = hit.document || {};
+  element('drawer-eyebrow').textContent = `${armName(side)} · #${hit.rank || index + 1} · ${arm.label || label(selectedScenario()?.[side], armName(side))}`;
+  element('drawer-title').textContent = hit.title || hit.id;
+  const status = node('p', undefined, 'sr-only');
+  status.setAttribute('role', 'status');
+
+  const overview = node('dl', undefined, 'facts');
+  definition(overview, 'Document key', hit.id);
+  if (hit.sourceId && hit.sourceId !== hit.id) definition(overview, 'Parent document', hit.sourceId);
+  definition(overview, 'Index', configuration.index);
+  definition(overview, 'Language', hit.language || document_.language || configuration.language || 'en');
+  if (Number.isInteger(hit.page)) definition(overview, 'PDF location', `Page ${hit.page}${Number.isInteger(hit.row) ? `, table row ${hit.row}` : ''}`);
+  const source = safeUrl(hit.url);
+  if (source) {
+    const link = Object.assign(node('a', new URL(source).pathname), { href: source, target: '_blank', rel: 'noopener noreferrer' });
+    definition(overview, 'Source', link);
+  }
+  definition(overview, 'License', document_.license || 'Synthetic demo content (MIT License, this repository)');
+  definition(overview, 'Published or updated', document_.publishedAt || document_.updatedAt || document_.lastRefreshedAt || 'Not recorded in the index');
+
+  const ranking = node('dl', undefined, 'facts');
+  const before = side === 'baseline' ? index : otherIndex;
+  const after = side === 'enhanced' ? index : otherIndex;
+  definition(ranking, 'BEFORE rank', before >= 0 ? `#${before + 1}` : `Not in BEFORE's top ${result.baseline?.hits?.length || 0}`);
+  definition(ranking, 'AFTER rank', after >= 0 ? `#${after + 1}` : `Not in AFTER's top ${result.enhanced?.hits?.length || 0}`);
+  definition(ranking, 'Change', before >= 0 && after >= 0
+    ? before === after ? 'Same position in both arms' : `${before > after ? 'Up' : 'Down'} ${Math.abs(before - after)} in AFTER`
+    : after >= 0 ? 'Found only by AFTER' : 'Found only by BEFORE');
+  const scores = node('dl', undefined, 'facts');
+  definition(scores, '@search.score', hit.search?.score ?? hit.score);
+  definition(scores, '@search.rerankerScore', hit.search?.rerankerScore);
+  if (hit.scoreType) definition(scores, 'Score type', hit.scoreType);
+  if (hit.search?.captions) definition(scores, 'Captions', codeBlock(pretty(hit.search.captions), 'Semantic captions'));
+  if (hit.search?.highlights) definition(scores, 'Highlights', codeBlock(pretty(hit.search.highlights), 'Highlights'));
+  if (!scores.children.length) definition(scores, 'Scores', 'This arm does not expose comparable scores for this result.');
+
+  const retrieval = node('dl', undefined, 'facts');
+  definition(retrieval, 'Retrieval', label(configuration.mechanism || selectedScenario()?.[side], configuration.mechanism));
+  definition(retrieval, 'Search API version', configuration.searchApiVersion);
+  if (configuration.scoringProfile) definition(retrieval, 'Scoring profile', `${configuration.scoringProfile}${configuration.scoringParameters?.length ? ` (${configuration.scoringParameters.join(', ')})` : ''}`);
+  if (configuration.synonymMaps?.length) definition(retrieval, 'Synonym expansion', `Synonym map ${configuration.synonymMaps.join(', ')} applied to keyword matching on title and content`);
+  if (configuration.semanticConfiguration) definition(retrieval, 'Semantic configuration', configuration.semanticConfiguration);
+  for (const use of vectorUse(arm)) definition(retrieval, 'Vector field', `${use.field}${use.dimensions ? ` · ${use.dimensions} dimensions` : ''} · ${use.kind} query (vector values are never shown)`);
+  if (configuration.agenticSearch) definition(retrieval, 'Agentic retrieval', `${configuration.agenticSearch.subQueryCount} sub-queries · ${configuration.agenticSearch.terminationReason}`);
+
+  const related = [];
+  const edges = (arm.graph?.edges || []).filter(edge => edge.sourceId === hit.sourceId || edge.sourceId === hit.id);
+  if (edges.length) related.push(section('Graph path', node('p', edges.map(edge => `${edge.from} —${edge.relation || 'links to'}→ ${edge.to}`).join('\n'), 'path')));
+  const topics = (arm.topics || []).filter(topic => (topic.sourceDocumentIds || []).includes(hit.sourceId) || (topic.sourceDocumentIds || []).includes(hit.id));
+  if (topics.length) related.push(section('Topic', ...topics.map(topic => node('p', `${topic.title || topic.id} · revision ${topic.revision ?? '?'} (experimental)`))));
+  if (hit.coordinates?.cells) related.push(section('Table cell coordinates', codeBlock(pretty(hit.coordinates), 'Table cell coordinates')));
+
+  const fieldsList = node('dl', undefined, 'facts fields');
+  const allFields = { ...document_, content: hit.snippet };
+  for (const [name, value] of Object.entries(allFields)) definition(fieldsList, name, typeof value === 'string' ? value : JSON.stringify(value));
+  const raw = { ...(hit.search?.score !== undefined ? { '@search.score': hit.search.score } : {}),
+    ...(hit.search?.rerankerScore !== undefined ? { '@search.rerankerScore': hit.search.rerankerScore } : {}),
+    ...(hit.search?.captions ? { '@search.captions': hit.search.captions } : {}), ...(hit.search?.highlights ? { '@search.highlights': hit.search.highlights } : {}),
+    ...(Object.keys(document_).length ? allFields : hit) };
+  const rawSection = section('Raw hit JSON', copyButton('Copy JSON', () => pretty(raw), status), codeBlock(pretty(raw), 'Raw hit JSON'));
+  element('drawer-body').replaceChildren(status, section('Document', overview), section('Ranking', ranking), section('Scores', scores),
+    section('Retrieval', retrieval), ...related, section('Retrievable fields', fieldsList), rawSection);
+  element('drawer-body').scrollTop = 0;
+  showDialog(element('drawer'), opener);
+}
+function openApiLog(side, opener) {
+  const result = lastResult;
+  const log = result?.[side]?.apiLog || [];
+  if (!log.length) return;
+  element('apilog-eyebrow').textContent = `${armName(side)} · ${result[side].label || label(selectedScenario()?.[side], armName(side))}`;
+  element('apilog-title').textContent = `API log · ${log.length} Foundry IQ call${log.length === 1 ? '' : 's'}`;
+  element('apilog-note').textContent = result.recorded
+    ? `Recorded Sample: these calls were captured from Live on ${result.recorded.recordedAt} and replayed without sending a request. Request IDs were removed.`
+    : 'Live calls made by this server for this arm. The service host is a placeholder and the query key is never sent to your browser.';
+  const tabs = element('apilog-tabs');
+  const panels = element('apilog-panels');
+  const status = node('p', undefined, 'sr-only');
+  status.setAttribute('role', 'status');
+  const select = (index, focus = false) => {
+    [...tabs.children].forEach((tab, i) => { tab.setAttribute('aria-selected', String(i === index)); tab.tabIndex = i === index ? 0 : -1; });
+    [...panels.children].forEach((panel, i) => { if (panel.getAttribute('role') === 'tabpanel') panel.hidden = Number(panel.dataset.index) !== index; });
+    if (focus) tabs.children[index].focus();
+  };
+  tabs.replaceChildren(...log.map((entry, index) => {
+    const path = (() => { try { return new URL(entry.url.replace('<your-search-service>', 'service')).pathname.split('/').slice(-2).join('/'); } catch { return 'call'; } })();
+    const tab = node('button', `${index + 1} · ${path}${entry.shared ? ' · shared' : ''}`, 'tab');
+    tab.type = 'button';
+    tab.id = `apilog-tab-${index}`;
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-controls', `apilog-panel-${index}`);
+    tab.addEventListener('click', () => select(index));
+    return tab;
+  }));
+  tabs.onkeydown = event => {
+    const current = [...tabs.children].findIndex(tab => tab.getAttribute('aria-selected') === 'true');
+    const next = { ArrowRight: current + 1, ArrowLeft: current - 1, Home: 0, End: log.length - 1 }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    select((next + log.length) % log.length, true);
+  };
+  panels.replaceChildren(status, ...log.map((entry, index) => {
+    const panel = node('div', undefined, 'apilog-panel');
+    panel.id = `apilog-panel-${index}`;
+    panel.dataset.index = String(index);
+    panel.setAttribute('role', 'tabpanel');
+    panel.setAttribute('aria-labelledby', `apilog-tab-${index}`);
+    const request = node('section', undefined, 'apilog-side');
+    const endpoint = node('p', undefined, 'endpoint');
+    endpoint.append(node('span', entry.method, 'method'), node('code', entry.url));
+    const requestText = `${entry.method} ${entry.url}\n\n${pretty(entry.request?.body)}`;
+    request.append(node('h3', 'Request'), endpoint,
+      codeBlock(Object.entries(entry.request?.headers || {}).map(([name, value]) => `${name}: ${value}`).join('\n'), `Request ${index + 1} headers`),
+      node('div', undefined, 'code-head'), codeBlock(pretty(entry.request?.body), `Request ${index + 1} body`));
+    request.querySelector('.code-head').append(node('span', 'Body'), copyButton('Copy request', () => requestText, status));
+    const response = node('section', undefined, 'apilog-side');
+    const summary = node('p', undefined, 'endpoint');
+    const ok = entry.response?.status >= 200 && entry.response?.status < 300;
+    summary.append(node('span', entry.response?.status ? `HTTP ${entry.response.status}` : 'No response', `status ${ok ? 'ok' : 'bad'}`),
+      node('span', Number.isFinite(entry.response?.latencyMs) ? `${entry.response.latencyMs} ms measured` : '', 'latency'));
+    if (entry.response?.error) summary.append(node('span', entry.response.error, 'latency'));
+    const headerText = Object.entries(entry.response?.headers || {}).map(([name, value]) => `${name}: ${value}`).join('\n');
+    const headerHead = node('div', undefined, 'code-head');
+    headerHead.append(node('span', 'Headers'), copyButton('Copy headers', () => headerText, status));
+    const bodyHead = node('div', undefined, 'code-head');
+    bodyHead.append(node('span', 'Body'), copyButton('Copy body', () => pretty(entry.response?.body), status));
+    response.append(node('h3', 'Response'), summary, headerHead, codeBlock(headerText || '(none)', `Response ${index + 1} headers`),
+      bodyHead, codeBlock(entry.response?.body === undefined ? '(no body)' : pretty(entry.response.body), `Response ${index + 1} body`));
+    panel.append(request, response);
+    return panel;
+  }));
+  select(0);
+  showDialog(element('apilog'), opener, tabs.children[0]);
+}
+setupDialog(element('drawer'));
+setupDialog(element('apilog'));
+element('drawer-close').addEventListener('click', () => element('drawer').close());
+element('apilog-close').addEventListener('click', () => element('apilog').close());
 await loadScenarios();

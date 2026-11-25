@@ -1,10 +1,10 @@
 export const archiveFiles = Object.freeze([
-  'page.html', 'server.template.mjs', 'package.json', 'package-lock.json', 'README.md', 'AGENTS.md', '.env.example', '.gitignore', 'LICENSE',
+  'page.html', 'server.template.mjs', 'package.json', 'package-lock.json', 'README.md', 'docs/OPERATIONS.md', 'docs/images/foundry-iq-demo-agentic-search.png', 'AGENTS.md', '.env.example', '.gitignore', 'LICENSE',
   'config/scenarios.json', 'config/knowledge-bases.mjs',
   'config/studio-corpus.mjs', 'config/studio-scenarios.mjs', 'config/studio-live.mjs',
   'config/studio-capabilities.json', 'config/studio-gold.json', 'config/studio-extraction.json',
   'config/studio-live.example.json',
-  'config/studio-languages.mjs', 'config/studio-localized.json', 'config/studio-recorded.json',
+  'config/studio-languages.mjs', 'config/studio-localized.json', 'config/studio-recorded.json', 'config/studio-presets.json', 'config/studio-notes.json',
   'lib/protocol.mjs', 'lib/normalize.mjs', 'lib/quota.mjs', 'lib/http.mjs', 'lib/studio.mjs', 'lib/search-adapter.mjs', 'lib/vercel-app.mjs',
   'assets/client.mjs', 'assets/source-icons.mjs', 'assets/blob.svg', 'assets/search.svg', 'assets/web.svg', 'assets/fabric.svg', 'assets/sharepoint.svg', 'assets/source.svg', 'assets/foundry.svg', 'assets/PROVENANCE.md',
   'assets/styles.css', 'assets/theme.js', 'assets/header.mjs', 'assets/about.mjs', 'assets/favicon-32.png', 'assets/apple-touch-icon.png', 'assets/favicon.ico', 'about.html', '404.html',

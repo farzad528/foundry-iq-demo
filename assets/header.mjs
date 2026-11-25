@@ -46,7 +46,7 @@ export function initHeader({ onLanguageChange } = {}) {
   };
 
   element('share').addEventListener('click', async () => {
-    const data = { title: 'Foundry IQ Demo Studio', text: 'Compare Azure AI Search and Foundry IQ retrieval side by side.', url: SHARE_URL };
+    const data = { title: 'Foundry IQ Demo Studio', text: 'Compare Foundry IQ retrieval patterns side by side with real queries and citations.', url: SHARE_URL };
     if (navigator.share && (!navigator.canShare || navigator.canShare(data))) {
       try { await navigator.share(data); return; } catch (error) { if (error?.name === 'AbortError') return; }
     }
