@@ -52,13 +52,17 @@ App Service path above is unchanged.
 ```powershell
 $env:STUDIO_PRIVATE_BINDINGS = '<private>\studio-live-config.json'
 $env:STUDIO_PRIVATE_ATTESTATIONS = '<private>\search-schema-attestations.json'
+$env:STUDIO_PRIVATE_GRAPH = '<private>\native-graph-binding.json'
 npm run build:vercel   # writes dist/vercel; no Azure calls
 ```
 
 The build does the following:
 
 - Compiles the private bindings and ETag-pinned schema attestations into
-  `server/private-data.mjs`, which only the Functions import. They are never
+  `server/private-data.mjs`, which only the Functions import. S08/S09 are bound
+  from `native-graph-binding.json` (content, graph and topic index names, the
+  semantic configuration, vector field and a 10-second per-call timeout) in every
+  language; their ETags come from the attestations. They are never
   copied to `public/` or the source ZIP.
 - Compiles `config/studio-recorded.json` (recorded Sample) into the server bundle.
 - Checks all 55 scenario/language pairs offline against the attested schemas.
@@ -101,6 +105,29 @@ message that never includes the value. Sample results are never substituted.
   both with the same Azure Vision multimodal model (`2023-04-15`, 1,024
   dimensions) used for the corpus. Images are bounded to 40 KiB, sent once and
   never stored.
+- **S08** compares plain retrieval (hybrid search with the semantic ranker on the
+  native graph's content index) with native Foundry IQ entity-graph search:
+  `POST /indexes('{graph}')/docs/search.graph` (API `2026-11-01-preview`) with
+  hydrated provenance. GQL comes only from the server-side allowlist in
+  `config/studio-graph.json`, matched to the four curated questions; the browser
+  can never send GQL. Each row is a path, drawn as entity —relationship→ entity
+  and cited by the passages its edges were extracted from (provenance is per row;
+  edge IDs don't name the relationship). A statement that expects no rows proves
+  absence (for example, no drill → battery → CELL-X10 path). Free-text questions
+  run plain retrieval only and say that graph traversal runs on the curated
+  questions; writing GQL from free text would need a model.
+- **S09** runs the same hybrid search in both arms without the semantic ranker
+  (reranking would undo diversification): BEFORE with `topicGraph: none`, AFTER
+  with `topicGraph: balanced`. AFTER also reads the theme hierarchy from the native
+  topic index (`HasRootTopic`, `HasSubTopic`, `prop:*` rows). Both arms show
+  "Themes covered: n of 4" from the precomputed passage-to-topic assignment; a
+  topic-generation change fails visibly instead of mislabeling results.
+- S08/S09 use the English Zava graph (`zava-retail-en`) in every language, with
+  a visible note. Graph and topic calls are ordinary Search reads with the query
+  key, a 10-second per-call timeout and no retries. Their public content (questions,
+  GQL, gold answers, topic hierarchy) is in `config/studio-graph.json`, copied from
+  the graph session's runtime contract (`graph-evidence/runtime-contract`, commit
+  `c9e2b51`); index names stay in the private binding.
 - **Sample** is labeled in every language and replays **recorded** Live responses
   for every curated example (4 per scenario, 220 in total), with request IDs
   removed and the capture date shown. This includes S10 page/row cell polygons
@@ -125,9 +152,10 @@ The search card has an example picker. Press `/` to focus it. Evidence count,
 execution mode and boost settings are under **Advanced options**.
 
 **How it works.** The server sends only `POST /indexes/{attested index}/docs/search`
-with the query key. A guard rejects every other origin, path, method and API
-version. The preview API is allowed only for the S07 support indexes and the S11
-image indexes. Schema and ETag checks use the bundled attestations instead of
+and, for S08, `POST /indexes('{attested graph index}')/docs/search.graph`, with
+the query key. A guard rejects every other origin, path, method and API version;
+graph indexes accept graph queries only. The preview API is allowed only for the
+S07 support indexes, the S11 image indexes and the S08/S09 content and topic indexes. Schema and ETag checks use the bundled attestations instead of
 runtime Get Index calls, so a query key is sufficient. The vectorizers are:
 
 - **Text:** `zava-text-vectorizer` (`azureOpenAI`, `text-embedding-3-small`,
@@ -141,8 +169,10 @@ identity override.
 **Stateless limits.** The build enforces these limits:
 
 - Requests are limited to 64 KiB, questions to 8,000 characters and top-K to 5/10/20/50.
-- A comparison can make at most 4 Search calls. Each call has a 45-second
-  timeout, and the whole comparison has a 55-second budget. Functions stop at 60 seconds.
+- A comparison can make at most 4 Search calls (S08's false-premise question uses
+  all 4: one plain retrieval plus three graph statements). Each call has a
+  45-second timeout (10 seconds for S08/S09), and the whole comparison has a
+  55-second budget. Functions stop at 60 seconds.
 - There are no automatic retries.
 - Each instance allows at most 8 live comparisons in flight (best effort).
 - The Vercel Firewall rule "Rate limit live demo API" allows 30 requests per
@@ -156,7 +186,10 @@ identity override.
 Unknown paths return the static, CSP-clean `404.html` (theme-aware, links back
 to the demo). Technical details intentionally show index and binding names as
 provenance. Every API payload is redacted for the query key, the Search
-hostname, credentialed URLs and server file paths.
+hostname, credentialed URLs and server file paths. The native graph's passage,
+chunk and edge IDs are base64-encoded storage URLs; the API log shows each as a
+short stable hash (`[id 1a2b3c4d5e]`), and results show the parsed source ID
+instead.
 
 The first vector query after a quiet period can take about 20–25 seconds while
 the Search-to-model path warms up. The UI says so after 6 seconds.
@@ -173,6 +206,14 @@ the Search-to-model path warms up. The UI says so after 6 seconds.
 SKU, replicas, partitions, authentication and networking are unchanged. The
 earlier `Cognitive Services OpenAI User` grant on `ai-foundryiq-customer-demos`
 already existed.
+
+Native S08/S09 made **no Azure changes**. The Zava content, graph and topic
+indexes (`fiq-zava-…`) were created by the separate Foundry IQ graph session.
+This build only read their definitions (`GET`, in-memory admin key) to pin their
+ETags in the private attestations. To roll back S08/S09, set
+`LIVE_DISABLED_SCENARIOS=S08,S09` and redeploy, or promote the previous
+deployment. If the graph or topic indexes are rebuilt, their names and ETags
+change: re-run the attestation and binding step, then re-record S08/S09.
 
 **Trade-offs accepted for this personal demo:**
 
@@ -298,8 +339,9 @@ not routed back to the old KB or classic Search; the other ten paths are unchang
 *Superseded:* the owner later approved paid Standard Knowledge Retrieval, and S07
 now runs Live as an evidence-only comparison (see
 [Personal Vercel deployment](#personal-vercel-deployment-search-only-live)).
-S08 remains **custom**, and S09 **experimental**; neither becomes a native
-graph/topic feature. All eleven retain explicit Sample behavior with no silent
+S08 and S09 now use the native Foundry IQ entity graph and topic graph (see
+[Personal Vercel deployment](#personal-vercel-deployment-search-only-live)); the
+earlier custom projection was removed. All eleven retain explicit Sample behavior with no silent
 live fallback. These are scoped local canaries, not production-hosting,
 all-query/permutation, billed-cost or native-graph acceptance.
 
@@ -312,8 +354,8 @@ all-query/permutation, billed-cost or native-graph acceptance.
 | S05 Retail | Search `2025-09-01`; filters/facets/merchandising | Identical mandatory London stock/location/price filters | Actual Azure comparison/facets succeeded |
 | S06 Boosting | Search `2025-09-01`; isolated scoring profile | Schema-checked freshness/magnitude/distance/tags/availability profiles | Actual default-profile comparison succeeded; not all profile permutations live-tested |
 | S07 Agentic | [Documents Search `2026-11-01-preview`](https://learn.microsoft.com/en-us/rest/api/searchservice/documents/search-post?view=rest-searchservice-2026-11-01-preview&tabs=HTTP#querytype), `queryType: "agentic"`; hosted Microsoft Retriever 1 | Same public-scoped support index as baseline; **Standard Knowledge Retrieval** (distinct from S1 SKU) | Actual canary **402**, request `2a040f30-d7d2-420d-9d73-7732f1086897`; paid-plan approval pending. No KB/classic fallback |
-| S08 Graph | Actual Search evidence plus Azure-indexed **custom** BOM edges | Source-ID joins, public scope/version; no native graph claim | Custom index baseline/treatment succeeded; deliberately not an agentic-KB baseline |
-| S09 Topics | Azure-indexed **experimental** topic/entry projection | Topic search followed by exact public source-ID expansion, scope/version/freshness | Actual projection retrieval succeeded; not native materialization |
+| S08 Graph | Native entity-graph search, `docs/search.graph` `2026-11-01-preview`, hydrated provenance | Curated GQL allowlist; content, graph and topic index ETags attested 2026-11-25 | 4 curated questions verified Live in 5 languages (English graph); earlier custom projection removed |
+| S09 Topics | Native topic-balanced retrieval (`topicGraph` none vs balanced) plus topic-index themes | Same hybrid query, no semantic ranker in either arm | 4 curated questions verified Live in 5 languages (English topic graph); earlier experimental projection removed |
 | S10 Extraction | Native CU GA `2025-11-01` Read vs Layout over the same PDF, then Search | Approved East US 2 CU account; exact source hash, operation IDs, page/row/native inch polygons | Actual extraction and indexed retrieval succeeded; headers mapped ordinally from native paragraphs; new uploads unsupported |
 | S11 Images | Vision `2024-02-01`, model `2023-04-15`, then Search | Approved East US ComputerVision S1; same 1024-dimensional image encoder for corpus/query | Actual binary PNG encoding and query-image retrieval succeeded; not captions/text embeddings |
 
@@ -461,9 +503,8 @@ which coalesces acquisition and refreshes valid tokens instead of launching
 Azure CLI on every model request. It never uses an expired-token fallback.
 Credential acquisition, transport failures and Azure HTTP failures have distinct
 safe messages; local correlation IDs are not presented as Azure request IDs.
-S09 searches actual indexed topics before retrieving their linked sources;
-linked policy evidence need not independently match the user's lexical terms.
-Only topics whose full provenance fits the returned evidence are displayed.
+S09 compares topic diversification off and on over the same hybrid query and
+reads the corpus themes from the native topic index.
 S07's two independent answer contexts include source titles and stable IDs,
 and share instructions to treat support cases as examples rather than assuming
 the user owns the example model/lot or already has its receipt. Eligibility
@@ -478,8 +519,8 @@ zero alternative eligible products.
 | `zava-studio-support` | 11 | Public synthetic evidence; real text vectors; restricted/retired records excluded |
 | `zava-studio-pdf-basic` | 2 | Canonical original PDF pages |
 | `zava-studio-pdf-layout` | 2 | Same PDF, exact table rows/page coordinates |
-| `zava-studio-graph` | 11 | Sourced stable-ID custom BOM edges |
-| `zava-studio-topics` | 1 | Versioned experimental topic with sourced entries |
+| `zava-studio-graph` | 11 | Earlier custom BOM edges; no longer bound (S08 uses the native graph) |
+| `zava-studio-topics` | 1 | Earlier experimental topic; no longer bound (S09 uses the native topic graph) |
 | `zava-studio-images` | 3 | Actual gallery metadata only; no image vectors |
 | `zava-studio-pdf-cu-basic` | 2 | Actual CU Read page text from the same PDF |
 | `zava-studio-pdf-cu-layout` | 2 | Actual CU Layout rows, page 2 and native inch cell polygons |
@@ -580,9 +621,9 @@ independent evidence contexts, never a shared prompt containing both arms.
 The verified gpt-5.1 binding uses `max_completion_tokens`, `reasoning_effort:
 "none"` and identical instructions for both arms. Entra with the injected
 provider is supported instead of `STUDIO_ANSWER_API_KEY`.
-S08/S09 explicitly bind
-`customDatasetVersion` and the actual `projectionIndex`/`projectionIndexETag`.
-S08's verified `graphRetrieval: "index"` is not an agentic KB baseline.
+S08/S09 bind a `nativeGraph` object: dataset, language, preview API version,
+vector field, per-call timeout, and the graph index (S08, with its semantic
+configuration) or topic index (S09), each with its ETag.
 S10 pins distinct basic/standard index ETags and
 the canonical source hash/extraction versions. Native bindings also pin API,
 Read/Layout analyzer IDs and two executed operation UUIDs; each returned document

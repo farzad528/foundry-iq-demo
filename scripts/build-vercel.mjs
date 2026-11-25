@@ -19,14 +19,30 @@ const IMAGE_VECTORIZER = 'zava-image-vectorizer';
 const AGENTIC_MAX_RUNTIME_SECONDS = 10;
 const LANGUAGES = ['en', 'fr', 'es', 'ja', 'de'];
 
-export function transformBindings(bindings, attestations) {
+export function transformBindings(bindings, attestations, graph) {
   const etags = new Map(attestations.entries.map(entry => [entry.index, entry.etag]));
   const next = structuredClone(bindings);
   const used = new Set();
   const changed = new Set(attestations.capture?.vectorizerUpdate?.changedIndexes || []);
+  const attested = name => {
+    const etag = etags.get(name);
+    if (!etag) throw new Error(`No schema attestation for bound index ${name}.`);
+    used.add(name);
+    return etag;
+  };
   const visit = scenarios => {
     for (const [id, config] of Object.entries(scenarios)) {
-      for (const [nameKey, etagKey] of [['index', 'indexETag'], ['standardIndex', 'standardIndexETag'], ['projectionIndex', 'projectionIndexETag']]) {
+      if (['S08', 'S09'].includes(id)) {
+        // Native Foundry IQ entity graph (S08) and topic graph (S09) on the English Zava dataset, in every language.
+        if (!graph) throw new Error('S08/S09 require the private native graph binding (STUDIO_PRIVATE_GRAPH).');
+        scenarios[id] = { index: graph.contentIndex, indexETag: attested(graph.contentIndex),
+          attestation: { checkedAt: graph.checkedAt, region: 'westcentralus', evidenceVersion: 'foundry-iq-graph-v1' },
+          nativeGraph: { dataset: graph.dataset, language: graph.language, apiVersion: graph.apiVersion, vectorField: graph.vectorField, timeoutMs: graph.timeoutMs,
+            ...(id === 'S08' ? { graphIndex: graph.graphIndex, graphIndexETag: attested(graph.graphIndex), semanticConfiguration: graph.semanticConfiguration }
+              : { topicIndex: graph.topicIndex, topicIndexETag: attested(graph.topicIndex) }) } };
+        continue;
+      }
+      for (const [nameKey, etagKey] of [['index', 'indexETag'], ['standardIndex', 'standardIndexETag']]) {
         if (!config[nameKey]) continue;
         const etag = etags.get(config[nameKey]);
         if (!etag) throw new Error(`No schema attestation for bound index ${config[nameKey]}.`);
@@ -100,12 +116,13 @@ const write = (path, body) => {
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const bindingsPath = process.env.STUDIO_PRIVATE_BINDINGS;
   const attestationsPath = process.env.STUDIO_PRIVATE_ATTESTATIONS;
-  if (!bindingsPath || !attestationsPath || !existsSync(bindingsPath) || !existsSync(attestationsPath)) {
-    throw new Error('Set STUDIO_PRIVATE_BINDINGS and STUDIO_PRIVATE_ATTESTATIONS to the private studio-live-config.json and search-schema-attestations.json files.');
+  const graphPath = process.env.STUDIO_PRIVATE_GRAPH;
+  if (![bindingsPath, attestationsPath, graphPath].every(path => path && existsSync(path))) {
+    throw new Error('Set STUDIO_PRIVATE_BINDINGS, STUDIO_PRIVATE_ATTESTATIONS and STUDIO_PRIVATE_GRAPH to the private studio-live-config.json, search-schema-attestations.json and native-graph-binding.json files.');
   }
   const bindings = JSON.parse(readFileSync(bindingsPath, 'utf8'));
   const fullAttestations = JSON.parse(readFileSync(attestationsPath, 'utf8'));
-  const { config: liveConfig, used } = transformBindings(bindings, fullAttestations);
+  const { config: liveConfig, used } = transformBindings(bindings, fullAttestations, JSON.parse(readFileSync(graphPath, 'utf8')));
   const attestations = reduceAttestations(fullAttestations, used);
   // Recorded Sample (verified Live responses, request IDs removed) must cover every scenario in every language.
   const recorded = existsSync('config/studio-recorded.json') ? JSON.parse(readFileSync('config/studio-recorded.json', 'utf8')) : { entries: {} };
@@ -161,7 +178,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   for (const [file, index] of [['zava-hat-blue.png', 0], ['zava-hat-red.png', 1], ['zava-bowl-blue.png', 3]]) write(`public/samples/${file}`, illustrationPng(index));
 
   // Server-only modules and private data.
-  for (const path of ['lib/protocol.mjs', 'lib/normalize.mjs', 'lib/studio.mjs', 'lib/search-adapter.mjs', 'lib/vercel-app.mjs',
+  for (const path of ['lib/protocol.mjs', 'lib/normalize.mjs', 'lib/studio.mjs', 'lib/native-graph.mjs', 'lib/search-adapter.mjs', 'lib/vercel-app.mjs',
     ...archiveFiles.filter(path => /^config\/studio-(?!live\.example|recorded).*\.(?:mjs|json)$/.test(path))]) {
     mkdirSync(dirname(join(out, 'server', path)), { recursive: true });
     copyFileSync(path, join(out, 'server', path));
@@ -193,7 +210,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
 
   // Public output must not contain private bindings, attestations, server modules or credential-shaped values.
   const findings = scanPublic(join(out, 'public'), [
-    ['private bindings marker', /indexETag|projectionIndexETag|corpusHash|evidenceVersion/],
+    ['private bindings marker', /indexETag|corpusHash|evidenceVersion|fiq-zava-[0-9a-f]{8}/i],
     ['attestation marker', /INTERNAL deployment metadata|"etag"\s*:|search-schema-attestations/],
     ['server environment name', /AZURE_SEARCH_QUERY_KEY|AZURE_SEARCH_API_KEY|LIVE_ENABLED/],
     ['credential-shaped value', /\bapi-key\s*[:=]\s*["'][A-Za-z0-9]{20,}|Bearer\s+[A-Za-z0-9._-]{20,}|AccountKey=|SharedAccessSignature|sig=[A-Za-z0-9%]{20,}/],

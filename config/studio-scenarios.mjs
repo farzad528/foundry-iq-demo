@@ -6,8 +6,8 @@ export const scenarios = [
   ['S05', 'Retail search', '18V cordless drill, available in London, under £200', 'lexical', 'retail', 'productCards', 'Identical London, in-stock, drill and under-£200 filters, with facets over the filtered set.'],
   ['S06', 'Document boosting', 'Best cordless drill for renovation', 'hybrid', 'boost', 'rankChangeCards', 'The same candidates with and without a first-stage boost.'],
   ['S07', 'Agentic search', 'My drill battery stopped charging after 45 days. Can I return it?', 'singlePass', 'planned', 'groundedAnswer', 'Single-pass retrieval vs agentic retrieval that can issue follow-up sub-queries, with the same extraction rules for both arms.'],
-  ['S08', 'Agentic + graph search', 'Which drill models could be affected by supplier battery defect B-17?', 'documents', 'graph', 'graphAnswer', 'Source documents vs a custom, sourced bill-of-materials graph traversal (not a native graph feature).'],
-  ['S09', 'Topics + entries', 'What do we know about recurring battery failures?', 'documents', 'topic', 'topicPanel', 'Source documents vs an experimental, versioned topic projection (not a native topic feature).'],
+  ['S08', 'Entity graph search', 'Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?', 'documents', 'graph', 'graphAnswer', 'Passages from plain retrieval vs cited relationship paths from the native Foundry IQ entity graph.'],
+  ['S09', 'Topic graph search', 'What should a new Zava store associate know?', 'documents', 'topic', 'topicPanel', 'The same hybrid search with topic diversification off vs on, plus the corpus themes from the native Foundry IQ topic graph.'],
   ['S10', 'Content Understanding', 'What is the maximum concrete drilling diameter of model DCD796?', 'basic', 'layout', 'pdfEvidence', 'The same bundled PDF: flattened page text vs row-aware table extraction.'],
   ['S11', 'Multimodal image search', 'Find visually similar hats or products', 'metadata', 'image', 'imageGallery', 'Text-only product metadata vs image similarity for the bundled blue hat illustration.'],
 ].map(([id, title, sampleQuery, baseline, enhanced, renderer, difference]) => ({
@@ -26,11 +26,13 @@ export const liveDifferences = {
   S05: 'Find eligible products with inventory, location and price filters, plus facets.',
   S06: 'Compare isolated freshness, price, distance, tag and availability boosts.',
   S07: 'Compare single-pass hybrid retrieval with agentic retrieval on the same support index. Evidence only: compare the documents and citations; neither arm generates an answer.',
-  S08: 'Trace sourced component and lot relationships with a custom bill-of-materials graph, not a native graph feature.',
-  S09: 'Explore versioned topics and their source evidence. Experimental; not a native topic feature.',
+  S08: 'Compare plain retrieval (hybrid search with the semantic ranker) with native Foundry IQ entity-graph search: curated questions return cited relationship paths, including proof that a path does not exist.',
+  S09: 'Compare the same hybrid search with topic diversification off and on, and see the corpus themes from the native Foundry IQ topic graph.',
   S10: 'Compare Read and Layout processing of the same PDF, with page and table-row citations. Extraction ran at ingestion.',
   S11: 'Compare keyword matching with Azure Vision image similarity: use an image, or describe the item in text.',
 };
+// The native S08/S09 graphs exist only for English Zava; other languages use them with this note.
+export const englishGraphNote = 'The native graph is built from the English Zava content, so these questions and results are in English.';
 export const customPdfDescription = 'Compare custom pre-extracted PDF pages and table rows. Azure Content Understanding is not used for this example.';
 export const liveLimits = {
   S01: 'Live searches the synthetic Zava product index for the selected document language.',
@@ -40,8 +42,8 @@ export const liveLimits = {
   S05: 'Both arms apply the same location, stock, category and price filters.',
   S06: 'Live applies the reviewed scoring profile for the selected boost.',
   S07: 'Live uses agentic retrieval with a bounded runtime and compares evidence only; neither arm generates an answer.',
-  S08: 'The graph is a custom projection indexed in Foundry IQ, not a native graph feature.',
-  S09: 'Topics are an experimental projection indexed in Foundry IQ.',
+  S08: 'Graph traversal runs on the four curated questions; other questions show plain retrieval only. The graph is built from the English Zava content.',
+  S09: 'Both arms run the same hybrid search without the semantic ranker; only topic diversification differs. Themes come from the English Zava topic graph.',
   S10: 'Both arms search the same bundled PDF, extracted at ingestion; new PDF uploads are not supported.',
   S11: 'Live accepts one PNG, JPEG or WebP image up to 40 KiB per search. Foundry IQ vectorizes it with Azure Vision; the image is not stored or indexed.',
 };

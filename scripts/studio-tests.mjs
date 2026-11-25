@@ -168,10 +168,13 @@ function liveEnv(id = 'S01', patch = {}) {
     ...(id === 'S11' ? { image: { provider: 'azureVision', field: 'imageVector', profile: 'image-profile',
       model: 'azure-vision-multimodal', modelVersion: '2023-04-15', dimensions: 1024,
       corpus: { model: 'azure-vision-multimodal', modelVersion: '2023-04-15', dimensions: 1024, manifestHash: 'a'.repeat(64) } } } : {}),
-    ...(id === 'S08' ? { kb: 'zava-kb', kbETag: '"kb1"', sources: [{ name: 'zava-source', kind: 'searchIndex' }] } : {}),
+    ...(id === 'S08' ? { nativeGraph: { dataset: 'zava-retail-en', language: 'en', apiVersion: AGENTIC_SEARCH_API_VERSION, vectorField: 'snippet_vector', timeoutMs: 10000,
+      graphIndex: 'zava-graph', graphIndexETag: '"g1"', semanticConfiguration: 'zava-semantic' } } : {}),
+    ...(id === 'S09' ? { nativeGraph: { dataset: 'zava-retail-en', language: 'en', apiVersion: AGENTIC_SEARCH_API_VERSION, vectorField: 'snippet_vector', timeoutMs: 10000,
+      topicIndex: 'zava-topics', topicIndexETag: '"t1"' } } : {}),
     ...(id === 'S07' ? { agentic: { apiVersion: AGENTIC_SEARCH_API_VERSION, maxRuntimeInSeconds: 30, knowledgeRetrievalPlan: 'standard' },
       answer: { deployment: 'answer-deployment', modelVersion: '1', instructionsVersion: 'studio-grounded-answer-v1' } } : {}),
-    ...(['S08', 'S09'].includes(id) ? { customDatasetVersion: datasetVersion } : {}), ...patch };
+    ...patch };
   return { FOUNDRY_IQ_LIVE_ENABLED: 'true', AZURE_SEARCH_ENDPOINT: 'https://zava-demo.search.windows.net',
     AZURE_SEARCH_API_KEY: 'private-search-key', STUDIO_ANSWER_ENDPOINT: 'https://zava-demo.openai.azure.com',
     STUDIO_ANSWER_API_KEY: 'private-answer-key',
@@ -335,28 +338,6 @@ function agenticResponse(terminationReason = 'modelStopped') {
     subQueries: [{ iteration: 1, search: 'synthetic public evidence' }],
     usage: { agenticPlanningTokens: 12, reasoningTokens: 34 } } } };
 }
-test('executable custom Graph/Topic adapters require live source IDs and public provenance', async () => {
-  const handler = async (url, request) => {
-    if (request.method === 'GET') return url.includes('knowledgebases') ? response({ name: 'zava-kb', knowledgeSources: [{ name: 'zava-source' }] }, '"kb1"') : response(indexSchema(), '"v1"');
-    return response(kbResponse());
-  };
-  const helpers = harness(liveEnv('S08'), handler);
-  const result = await liveRun('S08', helpers);
-  assert.equal(result.executionStatus, 'success');
-  assert.equal(result.enhanced.graph.adapter, 'custom-synthetic-sourced-BOM');
-  assert.equal(helpers.attempts.length, 4);
-  assert.equal(helpers.releases.length, 4);
-  const topicHelpers = harness(liveEnv('S09'), async (url, request) => request.method === 'GET' ? response(indexSchema(), '"v1"')
-    : response({ value: ['INC-2026-017', 'SUP-BUL-017', 'POL-RECALL-v2'].map(id => searchDoc(id, documents.find(d => d.id === id).snippet)) }));
-  assert.equal((await liveRun('S09', topicHelpers)).enhanced.topics[0].revision, '2');
-  const missing = harness(liveEnv('S08'), async (url, request) => {
-    const data = await handler(url, request);
-    if (request.method === 'GET') return data;
-    const payload = kbResponse(); payload.references[0].sourceData.scope = 'procurement';
-    return response(payload);
-  });
-  assert.equal((await liveRun('S08', missing)).executionStatus, 'error');
-});
 test('S07 uses exact SAME answer model/instructions, controlled retrieval and checked citations', async () => {
   const helpers = harness(liveEnv('S07'), async (url, request) => {
     if (request.method === 'GET') return url.includes('knowledgebases') ? response({ name: 'zava-kb', knowledgeSources: [{ name: 'zava-source' }] }, '"kb1"') : response(indexSchema(), '"v1"');
@@ -963,54 +944,4 @@ test('verified schema cache reuses only matching resource config and expires wit
   await liveRun('S01', { ...helpers, schemaCache: cache }, 'DCD796 drill');
   assert.equal(helpers.calls.filter(call => call.request.method === 'GET').length, 2);
   assert.equal(helpers.attempts.length, 8);
-});
-
-test('custom graph uses actual indexed edges and verified Azure source IDs, never unrelated fixture linkage', async () => {
-  const helpers = harness(liveEnv('S08', { graphRetrieval: 'index', projectionIndex: 'zava-graph', projectionIndexETag: '"g1"' }), async (url, request) => {
-    if (request.method === 'GET') {
-      const schema = indexSchema();
-      if (url.includes('zava-graph')) {
-        schema.name = 'zava-graph';
-        schema.fields.push(...['sourceId', 'datasetVersion', 'from', 'relation', 'to'].map(name => ({ name, type: 'Edm.String', filterable: true })));
-      }
-      return response(schema, url.includes('zava-graph') ? '"g1"' : '"v1"');
-    }
-    if (url.includes('zava-graph')) return response({ value: graph.map(edge => ({ ...edge, datasetVersion })) });
-    return response({ value: ['INC-2026-017', 'BOM-2026-01', 'SUP-BUL-017'].map(id => searchDoc(id)) });
-  });
-  const result = await liveRun('S08', helpers);
-  assert.equal(result.executionStatus, 'success');
-  assert.equal(result.enhanced.graph.adapter, 'custom-Azure-indexed-sourced-BOM');
-  assert.equal(result.enhanced.graph.edges.length, graph.length);
-  assert.ok(result.enhanced.answer.includes('DRILL-1001'));
-  assert.ok(!result.enhanced.answer.includes('DRILL-1002'));
-  assert.equal(result.baseline.label, 'Search evidence only');
-  assert.equal(result.enhanced.trace.configuration.projection.requestId, 'real-service-request');
-  assert.equal(helpers.attempts.length, 5);
-});
-
-test('experimental topics expand actual linked sources even when a source does not match the query', async () => {
-    const helpers = harness(liveEnv('S09', { projectionIndex: 'zava-topics', projectionIndexETag: '"t1"' }), async (url, request) => {
-      if (request.method === 'GET') {
-        const schema = indexSchema();
-        if (url.includes('zava-topics')) {
-          schema.name = 'zava-topics';
-          schema.fields.push({ name: 'datasetVersion', type: 'Edm.String', filterable: true },
-            { name: 'sourceDocumentIds', type: 'Collection(Edm.String)', filterable: true });
-        }
-        return response(schema, url.includes('zava-topics') ? '"t1"' : '"v1"');
-      }
-      if (url.includes('zava-topics')) return response({ value: [{
-        id: 'real-topic', title: 'Supplier component topic', summary: 'Qualified recall guidance',
-        scope: 'public', datasetVersion, sourceDocumentIds: ['SUP-BUL-017', 'POL-RECALL-v2'],
-      }] });
-      const payload = JSON.parse(request.body);
-      return response({ value: (payload.search === '*' ? ['SUP-BUL-017', 'POL-RECALL-v2'] : ['SUP-BUL-017']).map(id => searchDoc(id)) });
-    });
-    const result = await liveRun('S09', helpers, 'Are all SUP-017 parts defective?');
-    assert.equal(result.executionStatus, 'success');
-    assert.deepEqual(result.baseline.hits.map(hit => hit.id), ['SUP-BUL-017']);
-    assert.deepEqual(result.enhanced.hits.map(hit => hit.id), ['SUP-BUL-017', 'POL-RECALL-v2']);
-    assert.equal(result.enhanced.topics[0].id, 'real-topic');
-    assert.equal(helpers.attempts.length, 5);
 });

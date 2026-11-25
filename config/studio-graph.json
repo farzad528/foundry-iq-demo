@@ -1,0 +1,607 @@
+{
+ "version": 1,
+ "provenance": "Copied from the Foundry IQ graph session runtime contract (graph-evidence/runtime-contract/presets/zava-retail-en.json, commit c9e2b51), verified live with the Search query key on 2026-11-25.",
+ "dataset": "zava-retail-en",
+ "title": "Zava Retail product safety and support (fictional, English)",
+ "language": "en",
+ "apiVersion": "2026-11-01-preview",
+ "sourcePattern": "Source ID: (\\S+)",
+ "sourceUrls": {
+  "BAT-18V-A": "/samples/zava-support.md",
+  "BAT-18V-B": "/samples/zava-support.md",
+  "BOM-2026-01": "/samples/zava-support.md",
+  "BOWL-001": "/samples/zava-catalog.csv",
+  "CASE-001": "/samples/zava-support.md",
+  "CASE-002": "/samples/zava-support.md",
+  "DRILL-1001": "/samples/zava-support.md",
+  "DRILL-1002": "/samples/zava-support.md",
+  "DRILL-1003": "/samples/zava-catalog.csv",
+  "DRILL-1004": "/samples/zava-catalog.csv",
+  "DRILL-1005": "/samples/zava-catalog.csv",
+  "DRILL-1006": "/samples/zava-catalog.csv",
+  "DRILL-1007": "/samples/zava-catalog.csv",
+  "HAT-001": "/samples/zava-catalog.csv",
+  "HAT-002": "/samples/zava-catalog.csv",
+  "INC-2026-017": "/samples/zava-support.md",
+  "MAN-CHARGE-1001": "/samples/zava-support.md",
+  "MAN-DRILL-1001": "/samples/zava-support.md",
+  "POL-DEF-2026-02": "/samples/zava-support.md",
+  "POL-RECALL-v2": "/samples/zava-support.md",
+  "POL-RET-2026-01": "/samples/zava-support.md",
+  "SUP-BUL-017": "/samples/zava-support.md",
+  "WAR-BAT-2026-01": "/samples/zava-support.md"
+ },
+ "topics": {
+  "leafOfSource": {
+   "HAT-001": "topic:5",
+   "DRILL-1007": "topic:4",
+   "SUP-BUL-017": "topic:2",
+   "CASE-002": "topic:3",
+   "BAT-18V-A": "topic:2",
+   "DRILL-1004": "topic:4",
+   "HAT-002": "topic:5",
+   "POL-RET-2026-01": "topic:3",
+   "INC-2026-017": "topic:2",
+   "DRILL-1001": "topic:4",
+   "CASE-001": "topic:3",
+   "DRILL-1003": "topic:4",
+   "BOM-2026-01": "topic:2",
+   "MAN-DRILL-1001": "topic:4",
+   "DRILL-1002": "topic:4",
+   "MAN-CHARGE-1001": "topic:2",
+   "POL-DEF-2026-02": "topic:3",
+   "DRILL-1005": "topic:4",
+   "POL-RECALL-v2": "topic:3",
+   "DRILL-1006": "topic:4",
+   "WAR-BAT-2026-01": "topic:2",
+   "BOWL-001": "topic:5",
+   "BAT-18V-B": "topic:2"
+  },
+  "leaves": [
+   {
+    "id": "topic:4",
+    "title": "18V cordless home drills",
+    "parent": "topic:1",
+    "proportion": 0.34782608695652173
+   },
+   {
+    "id": "topic:2",
+    "title": "Zava 18V batteries and incident",
+    "parent": "topic:0",
+    "proportion": 0.30434782608695654
+   },
+   {
+    "id": "topic:3",
+    "title": "Defective Battery Assessment Cases",
+    "parent": "topic:0",
+    "proportion": 0.21739130434782608
+   },
+   {
+    "id": "topic:5",
+    "title": "Zava blue and red hats",
+    "parent": "topic:1",
+    "proportion": 0.13043478260869565
+   }
+  ],
+  "hierarchy": [
+   {
+    "id": "topic:0",
+    "title": "Zava 18V battery assessment",
+    "level": 0,
+    "proportion": 0.5217391304347826,
+    "children": [
+     "topic:2",
+     "topic:3"
+    ]
+   },
+   {
+    "id": "topic:1",
+    "title": "Zava drills and bucket hats",
+    "level": 0,
+    "proportion": 0.4782608695652174,
+    "children": [
+     "topic:4",
+     "topic:5"
+    ]
+   },
+   {
+    "id": "topic:4",
+    "title": "18V cordless home drills",
+    "level": 1,
+    "proportion": 0.34782608695652173,
+    "children": [],
+    "parent": "topic:1"
+   },
+   {
+    "id": "topic:2",
+    "title": "Zava 18V batteries and incident",
+    "level": 1,
+    "proportion": 0.30434782608695654,
+    "children": [],
+    "parent": "topic:0"
+   },
+   {
+    "id": "topic:3",
+    "title": "Defective Battery Assessment Cases",
+    "level": 1,
+    "proportion": 0.21739130434782608,
+    "children": [],
+    "parent": "topic:0"
+   },
+   {
+    "id": "topic:5",
+    "title": "Zava blue and red hats",
+    "level": 1,
+    "proportion": 0.13043478260869565,
+    "children": [],
+    "parent": "topic:1"
+   }
+  ]
+ },
+ "s08": [
+  {
+   "id": "zava-s08-recall-exposure",
+   "kind": "multi-hop",
+   "question": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+   "gold": {
+    "answer": "DRILL-1001 uses BAT-18V-A, which contains CELL-B17 from SUP-017. INC-2026-017 affects CELL-B17 in LOT-2407-A and LOT-2407-B, and current recall guidance POL-RECALL-v2 applies to both lots (isolate, stop use, contact support).",
+    "entities": [
+     "DRILL-1001",
+     "BAT-18V-A",
+     "CELL-B17",
+     "SUP-017",
+     "INC-2026-017",
+     "LOT-2407-A",
+     "LOT-2407-B",
+     "POL-RECALL-v2"
+    ],
+    "sources": [
+     "BOM-2026-01",
+     "INC-2026-017",
+     "POL-RECALL-v2"
+    ],
+    "distractors": [
+     "DRILL-1002",
+     "BAT-18V-B",
+     "CASE-002"
+    ]
+   },
+   "whyAfterWins": "One graph query returns the full drill → battery → cell → supplier → incident → lots → recall-policy chain as two exact rows, with every hop cited, instead of passages the reader must join.",
+   "statements": [
+    {
+     "label": "Product → battery → cell → supplier, incident, lots and recall policy in one pattern",
+     "expectRows": ">0",
+     "gql": "MATCH (d:`Product`)-[:`usesBattery`]->(bp:`BatteryPack`)-[:`containsCell`]->(c:`Cell`)-[:`suppliedBy`]->(s:`Supplier`), (i:`Incident`)-[:`affectsComponent`]->(c), (c)-[:`producedInLot`]->(l:`Lot`), (p:`Policy`)-[:`policyAppliesToLot`]->(l) RETURN d.name AS drill, bp.name AS battery, c.name AS cell, s.name AS supplier, i.name AS incident, l.name AS lot, p.name AS policy ORDER BY lot LIMIT 20"
+    }
+   ],
+   "verified": [
+    {
+     "label": "Product → battery → cell → supplier, incident, lots and recall policy in one pattern",
+     "rows": [
+      {
+       "drill": "DRILL-1001",
+       "battery": "BAT-18V-A",
+       "cell": "CELL-B17",
+       "supplier": "SUP-017",
+       "incident": "INC-2026-017",
+       "lot": "LOT-2407-A",
+       "policy": "POL-RECALL-v2"
+      },
+      {
+       "drill": "DRILL-1001",
+       "battery": "BAT-18V-A",
+       "cell": "CELL-B17",
+       "supplier": "SUP-017",
+       "incident": "INC-2026-017",
+       "lot": "LOT-2407-B",
+       "policy": "POL-RECALL-v2"
+      }
+     ],
+     "citations": [
+      "BOM-2026-01",
+      "POL-RECALL-v2",
+      "BAT-18V-A",
+      "DRILL-1001",
+      "INC-2026-017",
+      "CASE-001",
+      "SUP-BUL-017"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "zava-s08-case-recall",
+   "kind": "multi-hop",
+   "question": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+   "gold": {
+    "answer": "CASE-001 (DRILL-1001) records LOT-2407-A. Current recall guidance POL-RECALL-v2 isolates LOT-2407-A, and INC-2026-017 affects that lot. CASE-002 is on LOT-2501-C and is not covered.",
+    "entities": [
+     "CASE-001",
+     "DRILL-1001",
+     "LOT-2407-A",
+     "POL-RECALL-v2",
+     "INC-2026-017"
+    ],
+    "sources": [
+     "CASE-001",
+     "POL-RECALL-v2",
+     "INC-2026-017"
+    ],
+    "distractors": [
+     "CASE-002"
+    ]
+   },
+   "whyAfterWins": "No single document links a support case to the recall; the graph joins CASE-001's lot to the recall policy and incident, and excludes CASE-002, which plain search returns alongside it.",
+   "statements": [
+    {
+     "label": "Support case → lot ← recall policy, and incident → same lot",
+     "expectRows": ">0",
+     "gql": "MATCH (c:`SupportCase`)-[:`caseLot`]->(l:`Lot`)<-[:`policyAppliesToLot`]-(p:`Policy`), (i:`Incident`)-[:`affectsLot`]->(l), (c)-[:`caseProduct`]->(d:`Product`) RETURN c.name AS supportCase, d.name AS product, l.name AS lot, p.name AS policy, i.name AS incident LIMIT 20"
+    }
+   ],
+   "verified": [
+    {
+     "label": "Support case → lot ← recall policy, and incident → same lot",
+     "rows": [
+      {
+       "supportCase": "CASE-001",
+       "product": "DRILL-1001",
+       "lot": "LOT-2407-A",
+       "policy": "POL-RECALL-v2",
+       "incident": "INC-2026-017"
+      }
+     ],
+     "citations": [
+      "CASE-001",
+      "POL-RECALL-v2",
+      "INC-2026-017"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "zava-s08-warranty-exclusion",
+   "kind": "multi-hop",
+   "question": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+   "gold": {
+    "answer": "CASE-002 reports water damage on DRILL-1002, and WAR-BAT-2026-01 explicitly excludes water damage.",
+    "entities": [
+     "CASE-002",
+     "water damage",
+     "WAR-BAT-2026-01",
+     "DRILL-1002"
+    ],
+    "sources": [
+     "CASE-002",
+     "WAR-BAT-2026-01"
+    ],
+    "distractors": [
+     "CASE-001"
+    ]
+   },
+   "whyAfterWins": "The warranty and the case never mention each other; the graph connects them through the shared 'water damage' failure mode and returns exactly one cited case, CASE-002.",
+   "statements": [
+    {
+     "label": "Warranty exclusion ← shared failure mode ← support case → product",
+     "expectRows": ">0",
+     "gql": "MATCH (w:`Warranty`)-[:`warrantyExcludes`]->(f:`FailureMode`)<-[:`caseFailure`]-(c:`SupportCase`)-[:`caseProduct`]->(p:`Product`) RETURN w.name AS warranty, f.name AS excludedFailure, c.name AS supportCase, p.name AS product LIMIT 20"
+    }
+   ],
+   "verified": [
+    {
+     "label": "Warranty exclusion ← shared failure mode ← support case → product",
+     "rows": [
+      {
+       "warranty": "WAR-BAT-2026-01",
+       "excludedFailure": "water damage",
+       "supportCase": "CASE-002",
+       "product": "DRILL-1002"
+      }
+     ],
+     "citations": [
+      "WAR-BAT-2026-01",
+      "CASE-002"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "zava-s08-false-premise-x10",
+   "kind": "false-premise",
+   "question": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+   "gold": {
+    "answer": "The premise is false. Supplier bulletin SUP-BUL-017 states CELL-X10 is unaffected, no Zava battery pack contains CELL-X10, and the recall covers only CELL-B17 lots LOT-2407-A and LOT-2407-B.",
+    "entities": [
+     "SUP-BUL-017",
+     "CELL-X10",
+     "CELL-B17",
+     "LOT-2407-A",
+     "LOT-2407-B",
+     "POL-RECALL-v2"
+    ],
+    "sources": [
+     "SUP-BUL-017",
+     "POL-RECALL-v2"
+    ],
+    "distractors": []
+   },
+   "whyAfterWins": "The graph refutes the premise with a cited 'confirmsUnaffected' edge and proves no drill → battery → CELL-X10 path exists; plain search can only show passages, never the absence of a path.",
+   "statements": [
+    {
+     "label": "Premise check: what the supplier bulletin says about CELL-X10",
+     "expectRows": ">0",
+     "gql": "MATCH (b:`SupplierBulletin`)-[:`confirmsUnaffected`]->(c:`Cell`) WHERE c.name = 'CELL-X10' RETURN b.name AS bulletin, c.name AS unaffectedCell LIMIT 5"
+    },
+    {
+     "label": "Any drill → battery → CELL-X10 path (expected: none)",
+     "expectRows": 0,
+     "gql": "MATCH (d:`Product`)-[:`usesBattery`]->(bp:`BatteryPack`)-[:`containsCell`]->(c:`Cell`) WHERE c.name = 'CELL-X10' RETURN d.name AS drill, bp.name AS battery LIMIT 5"
+    },
+    {
+     "label": "What the recall actually covers: confirmed defective cell → lots ← policy",
+     "expectRows": ">0",
+     "gql": "MATCH (b:`SupplierBulletin`)-[:`confirmsDefectIn`]->(c:`Cell`)-[:`producedInLot`]->(l:`Lot`)<-[:`policyAppliesToLot`]-(p:`Policy`) RETURN b.name AS bulletin, c.name AS defectiveCell, l.name AS lot, p.name AS policy LIMIT 10"
+    }
+   ],
+   "verified": [
+    {
+     "label": "Premise check: what the supplier bulletin says about CELL-X10",
+     "rows": [
+      {
+       "bulletin": "SUP-BUL-017",
+       "unaffectedCell": "CELL-X10"
+      }
+     ],
+     "citations": [
+      "SUP-BUL-017"
+     ]
+    },
+    {
+     "label": "Any drill → battery → CELL-X10 path (expected: none)",
+     "rows": [],
+     "citations": []
+    },
+    {
+     "label": "What the recall actually covers: confirmed defective cell → lots ← policy",
+     "rows": [
+      {
+       "bulletin": "SUP-BUL-017",
+       "defectiveCell": "CELL-B17",
+       "lot": "LOT-2407-B",
+       "policy": "POL-RECALL-v2"
+      },
+      {
+       "bulletin": "SUP-BUL-017",
+       "defectiveCell": "CELL-B17",
+       "lot": "LOT-2407-A",
+       "policy": "POL-RECALL-v2"
+      }
+     ],
+     "citations": [
+      "POL-RECALL-v2",
+      "BAT-18V-A",
+      "SUP-BUL-017"
+     ]
+    }
+   ]
+  }
+ ],
+ "s09": [
+  {
+   "id": "zava-s09-themes",
+   "kind": "corpus-themes",
+   "question": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+   "gold": {
+    "answer": "Two broad themes: 18V battery assessment (52% of passages: batteries and the B-17 incident; defective-battery assessment cases and policies) and drills and hats (48%: cordless home drills; hats and a bowl).",
+    "entities": [],
+    "sources": []
+   },
+   "whyAfterWins": "Topic Graph answers the corpus-wide question directly with named themes, sub-themes and their share of the corpus; plain search can only return five passages and cannot measure coverage.",
+   "verified": {
+    "hierarchy": [
+     {
+      "id": "topic:0",
+      "title": "Zava 18V battery assessment",
+      "level": 0,
+      "proportion": 0.5217391304347826,
+      "children": [
+       "topic:2",
+       "topic:3"
+      ]
+     },
+     {
+      "id": "topic:1",
+      "title": "Zava drills and bucket hats",
+      "level": 0,
+      "proportion": 0.4782608695652174,
+      "children": [
+       "topic:4",
+       "topic:5"
+      ]
+     },
+     {
+      "id": "topic:4",
+      "title": "18V cordless home drills",
+      "level": 1,
+      "proportion": 0.34782608695652173,
+      "children": [],
+      "parent": "topic:1"
+     },
+     {
+      "id": "topic:2",
+      "title": "Zava 18V batteries and incident",
+      "level": 1,
+      "proportion": 0.30434782608695654,
+      "children": [],
+      "parent": "topic:0"
+     },
+     {
+      "id": "topic:3",
+      "title": "Defective Battery Assessment Cases",
+      "level": 1,
+      "proportion": 0.21739130434782608,
+      "children": [],
+      "parent": "topic:0"
+     },
+     {
+      "id": "topic:5",
+      "title": "Zava blue and red hats",
+      "level": 1,
+      "proportion": 0.13043478260869565,
+      "children": [],
+      "parent": "topic:1"
+     }
+    ]
+   }
+  },
+  {
+   "id": "zava-s09-store-associate",
+   "kind": "facet-coverage",
+   "question": "What should a new Zava store associate know?",
+   "gold": {
+    "answer": "A useful briefing spans every area of the corpus: battery safety and the B-17 incident, assessment and recall policies, the drill range, and non-tool products such as hats.",
+    "entities": [],
+    "sources": []
+   },
+   "whyAfterWins": "Plain hybrid search fills the top results with near-duplicate drill listings; topic-balanced retrieval returns one strong passage from each area of the corpus.",
+   "verified": {
+    "off": {
+     "sources": [
+      "DRILL-1006",
+      "BAT-18V-A",
+      "DRILL-1002",
+      "DRILL-1001",
+      "DRILL-1005"
+     ],
+     "areas": [
+      "topic:4",
+      "topic:2"
+     ]
+    },
+    "on": {
+     "sources": [
+      "BAT-18V-A",
+      "DRILL-1006",
+      "HAT-002",
+      "POL-RECALL-v2",
+      "SUP-BUL-017"
+     ],
+     "areas": [
+      "topic:2",
+      "topic:4",
+      "topic:5",
+      "topic:3"
+     ]
+    }
+   }
+  },
+  {
+   "id": "zava-s09-battery-subthemes",
+   "kind": "corpus-themes",
+   "question": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+   "gold": {
+    "answer": "Battery assessment is 52% of passages, split into 18V batteries and the B-17 incident (30%: packs, bill of materials, incident, supplier bulletin, charging manual) and defective-battery assessment cases (22%: support cases, defective-goods, returns and recall policies).",
+    "focusTopic": "Zava 18V battery assessment",
+    "entities": [],
+    "sources": []
+   },
+   "whyAfterWins": "The Topic Graph already knows how the battery content splits and in what proportion; plain search returns battery passages without telling you how they group or how much of the corpus each group is.",
+   "verified": {
+    "hierarchy": [
+     {
+      "id": "topic:0",
+      "title": "Zava 18V battery assessment",
+      "level": 0,
+      "proportion": 0.5217391304347826,
+      "children": [
+       "topic:2",
+       "topic:3"
+      ]
+     },
+     {
+      "id": "topic:1",
+      "title": "Zava drills and bucket hats",
+      "level": 0,
+      "proportion": 0.4782608695652174,
+      "children": [
+       "topic:4",
+       "topic:5"
+      ]
+     },
+     {
+      "id": "topic:4",
+      "title": "18V cordless home drills",
+      "level": 1,
+      "proportion": 0.34782608695652173,
+      "children": [],
+      "parent": "topic:1"
+     },
+     {
+      "id": "topic:2",
+      "title": "Zava 18V batteries and incident",
+      "level": 1,
+      "proportion": 0.30434782608695654,
+      "children": [],
+      "parent": "topic:0"
+     },
+     {
+      "id": "topic:3",
+      "title": "Defective Battery Assessment Cases",
+      "level": 1,
+      "proportion": 0.21739130434782608,
+      "children": [],
+      "parent": "topic:0"
+     },
+     {
+      "id": "topic:5",
+      "title": "Zava blue and red hats",
+      "level": 1,
+      "proportion": 0.13043478260869565,
+      "children": [],
+      "parent": "topic:1"
+     }
+    ]
+   }
+  },
+  {
+   "id": "zava-s09-customer-asks",
+   "kind": "facet-coverage",
+   "question": "What do Zava customers ask about?",
+   "gold": {
+    "answer": "Customers ask about the products themselves (drills, hats, bowls) and about what happens when something goes wrong: defective-battery assessment, returns and recall guidance.",
+    "entities": [],
+    "sources": []
+   },
+   "whyAfterWins": "Plain hybrid search returns only product listings; topic-balanced retrieval adds the support-case and policy area that actually records what customers ask.",
+   "verified": {
+    "off": {
+     "sources": [
+      "HAT-002",
+      "BOWL-001",
+      "DRILL-1006",
+      "DRILL-1003",
+      "DRILL-1004"
+     ],
+     "areas": [
+      "topic:5",
+      "topic:4"
+     ]
+    },
+    "on": {
+     "sources": [
+      "BOWL-001",
+      "HAT-002",
+      "DRILL-1006",
+      "POL-DEF-2026-02",
+      "DRILL-1004"
+     ],
+     "areas": [
+      "topic:5",
+      "topic:4",
+      "topic:3"
+     ]
+    }
+   }
+  }
+ ]
+}

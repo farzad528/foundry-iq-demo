@@ -36,8 +36,8 @@ const armLabels = {
   vector: 'Vector similarity', hybrid: 'Hybrid retrieval', rerank: 'Semantic reranking',
   retail: 'Filtered retail + merchandising', boost: 'Scoring-profile boost',
   singlePass: 'Single-pass retrieval', planned: 'Single-index agentic retrieval',
-  documents: 'Source-document retrieval', graph: 'Custom graph-enhanced retrieval',
-  topic: 'Experimental topics + entries', basic: 'Basic text extraction', layout: 'Layout-aware extraction',
+  documents: 'Source-document retrieval', graph: 'Foundry IQ entity graph',
+  topic: 'Topic-balanced retrieval + themes', basic: 'Basic text extraction', layout: 'Layout-aware extraction',
   metadata: 'Text-only product metadata', image: 'Image-vector similarity',
 };
 const label = (value, fallback) => typeof value === 'string' ? armLabels[value] || value : value?.label || fallback;
@@ -255,6 +255,8 @@ function renderHit(hit, side, index, baselineIds) {
     : `Source coordinates: ${JSON.stringify(hit.coordinates)}`));
   if (hit.score !== undefined) meta.append(node('span', `${hit.scoreType || 'Service score'}: ${Number.isFinite(hit.score) ? hit.score.toFixed(3) : hit.score}`));
   if (side === 'enhanced' && originalRank >= 0 && originalRank !== index) meta.append(node('span', `Rank ${originalRank + 1} → ${index + 1}`));
+  if (hit.topic?.title) meta.append(node('span', `Theme: ${hit.topic.title}`, 'theme-chip'));
+  if (Number.isInteger(hit.citedBy) && hit.citedBy > 0) meta.append(node('span', `Cites ${hit.citedBy} path row${hit.citedBy === 1 ? '' : 's'}`));
   content.append(meta);
   if (hit.coordinates?.cells) {
     const coordinates = node('details');
@@ -338,6 +340,9 @@ function renderArm(side, arm, scenario, result) {
     if (!noAnswer) answer.append(citations);
     container.append(answer);
   }
+  if (arm.topicCoverage) container.append(coverageLine(arm.topicCoverage));
+  if (arm.graph?.kind === 'native') container.append(renderNativeGraph(arm, side));
+  if (arm.topics?.kind === 'native') container.append(renderThemes(arm));
   if (arm.graph?.edges) {
     const details = node('details', undefined, 'graph-details');
     const graph = node('div', undefined, 'graph');
@@ -345,7 +350,7 @@ function renderArm(side, arm, scenario, result) {
     details.append(node('summary', `Graph path · ${arm.graph.edges.length} sourced edge${arm.graph.edges.length === 1 ? '' : 's'}`), graph);
     container.append(details);
   }
-  if (arm.topics?.length) {
+  if (Array.isArray(arm.topics) && arm.topics.length) {
     for (const topic of arm.topics) {
       const card = node('article', undefined, 'card');
       card.append(node('h3', topic.title || topic.id), node('p', topic.summary || '', 'snippet clamped'));
@@ -364,7 +369,8 @@ function renderArm(side, arm, scenario, result) {
   const hits = node('div', undefined, arm.kind === 'gallery' || arm.hits?.some(hit => hit.thumbnailUrl) ? 'gallery' : '');
   const baselineIds = result.baseline?.hits?.map(hit => hit.id);
   (arm.hits || []).forEach((hit, index) => hits.append(renderHit(hit, side, index, baselineIds)));
-  if (!arm.hits?.length) hits.append(node('p', 'No matching results for this query in this arm.', 'empty'));
+  if (!arm.hits?.length && !arm.curatedOnly) hits.append(node('p', arm.graph?.kind === 'native' ? 'No cited passages were returned for these paths.' : 'No matching results for this query in this arm.', 'empty'));
+  if (arm.graph?.kind === 'native' && arm.hits?.length) container.append(node('h3', 'Cited passages', 'section-label'));
   container.append(hits);
   const trace = node('details', undefined, 'trace');
   trace.append(node('summary', 'Technical details'), node('pre', JSON.stringify({ executionMode: result.mode, status: arm.status, trace: arm.trace, usage: arm.usage, sharedComparison: result.comparison }, null, 2)));
@@ -399,6 +405,112 @@ function agenticPlan(agentic) {
   if (shown) plan.append(list);
   if (count > shown) plan.append(node('p', `${count - shown} more in the API log`, 'meta'));
   return plan;
+}
+
+// Native Foundry IQ graph rows: each row is one path, drawn as entity —relationship→ entity chains, with the passages it cites.
+function chains(hops) {
+  const out = [];
+  for (const hop of hops) {
+    const last = out.at(-1);
+    if (last && last.at(-1).to === hop.from) last.push(hop); else out.push([hop]);
+  }
+  return out;
+}
+function pathText(statement, row) {
+  if (!statement.hops?.length) return Object.entries(row.values).map(([key, value]) => `${key}: ${value}`).join(' · ');
+  return chains(statement.hops).map(chain => [row.values[chain[0].from], ...chain.map(hop => `—${hop.relation}→ ${row.values[hop.to]}`)].join(' ')).join('; ');
+}
+function entityChip(value, role) {
+  const chip = node('span', undefined, 'entity');
+  chip.append(node('span', role.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(), 'entity-role'), node('span', String(value ?? '—'), 'entity-name'));
+  return chip;
+}
+function renderPathRow(statement, row, side, arm) {
+  const item = node('li', undefined, 'graph-row');
+  const path = node('div', undefined, 'graph-path');
+  path.setAttribute('aria-label', pathText(statement, row));
+  if (statement.hops?.length) {
+    chains(statement.hops).forEach((chain, i) => {
+      const segment = node('span', undefined, 'graph-chain');
+      segment.setAttribute('aria-hidden', 'true');
+      segment.append(entityChip(row.values[chain[0].from], chain[0].from));
+      for (const hop of chain) segment.append(node('span', hop.relation, 'rel'), entityChip(row.values[hop.to], hop.to));
+      path.append(segment);
+    });
+  } else {
+    for (const [key, value] of Object.entries(row.values)) path.append(entityChip(value, key));
+  }
+  item.append(path);
+  if (row.sources?.length) {
+    const cited = node('div', undefined, 'graph-cited');
+    cited.append(node('span', 'Cited by', 'graph-cited-label'));
+    for (const id of row.sources.slice(0, 8)) {
+      const index = (arm.hits || []).findIndex(hit => hit.sourceId === id);
+      if (index >= 0) {
+        const link = node('a', id);
+        link.href = `#${side}-evidence-${index}`;
+        link.addEventListener('click', () => element(`${side}-evidence-${index}`).focus());
+        cited.append(link);
+      } else cited.append(node('span', id));
+    }
+    item.append(cited);
+  }
+  return item;
+}
+function renderNativeGraph(arm, side) {
+  const section = node('section', undefined, 'graph-native');
+  section.setAttribute('aria-label', 'Graph paths');
+  for (const statement of arm.graph.statements) {
+    const block = node('div', undefined, 'graph-statement');
+    const head = node('div', undefined, 'graph-head');
+    const count = statement.rows?.length || 0;
+    head.append(node('h3', statement.label), node('span', statement.outcome === 'absence' ? 'No path: proof of absence'
+      : statement.outcome === 'none' ? 'No relationship found' : `${count} path${count === 1 ? '' : 's'}`, `graph-outcome ${statement.outcome}`));
+    block.append(head);
+    if (statement.outcome === 'absence') block.append(node('p', 'Foundry IQ returned no rows for this pattern, so no such path exists in the graph.', 'graph-note'));
+    else if (statement.outcome === 'none') block.append(node('p', 'The graph has no relationship for this. Nothing was substituted.', 'graph-note'));
+    if (count) {
+      const list = node('ul', undefined, 'graph-rows');
+      statement.rows.slice(0, 4).forEach(row => list.append(renderPathRow(statement, row, side, arm)));
+      block.append(list);
+      if (count > 4) block.append(node('p', `+${count - 4} more rows in the API log`, 'meta'));
+    }
+    section.append(block);
+  }
+  return section;
+}
+function coverageLine(coverage) {
+  const line = node('p', undefined, 'coverage');
+  line.append(node('strong', `Themes covered: ${coverage.covered.length} of ${coverage.total}`));
+  for (const leaf of coverage.leaves) {
+    const covered = coverage.covered.includes(leaf.id);
+    const chip = node('span', `${covered ? '✓' : '–'} ${leaf.title}`, `coverage-chip${covered ? ' on' : ''}`);
+    chip.title = covered ? 'At least one result belongs to this theme' : 'No result from this theme';
+    line.append(chip);
+  }
+  return line;
+}
+function renderThemes(arm) {
+  const section = node('details', undefined, 'themes');
+  section.open = true;
+  const covered = new Set(arm.topicCoverage?.covered || []);
+  section.append(node('summary', 'Corpus themes from the Foundry IQ topic graph'));
+  const list = node('ul', undefined, 'theme-tree');
+  const bar = (topic, depth) => {
+    const item = node('li', undefined, `theme depth-${depth}${covered.has(topic.id) ? ' covered' : ''}`);
+    const pct = Number.isFinite(topic.proportion) ? Math.round(topic.proportion * 100) : null;
+    const label = node('span', topic.title, 'theme-title');
+    if (topic.description) label.title = topic.description;
+    const meter = node('span', undefined, 'theme-bar');
+    meter.setAttribute('aria-hidden', 'true');
+    meter.append(Object.assign(node('span'), { style: `width:${pct ?? 0}%` }));
+    item.append(label, meter, node('span', pct === null ? '' : `${pct}%`, 'theme-pct'));
+    list.append(item);
+    (topic.children || []).forEach(child => bar(child, depth + 1));
+  };
+  (arm.topics.hierarchy || []).forEach(root => bar(root, 0));
+  section.append(list, node('p', 'Share of passages per theme. Highlighted themes appear in these results.', 'meta'));
+  return section;
 }
 
 function renderResults(result, scenario) {
@@ -814,7 +926,11 @@ function openDrawer(side, index, opener) {
   const related = [];
   const edges = (arm.graph?.edges || []).filter(edge => edge.sourceId === hit.sourceId || edge.sourceId === hit.id);
   if (edges.length) related.push(section('Graph path', node('p', edges.map(edge => `${edge.from} —${edge.relation || 'links to'}→ ${edge.to}`).join('\n'), 'path')));
-  const topics = (arm.topics || []).filter(topic => (topic.sourceDocumentIds || []).includes(hit.sourceId) || (topic.sourceDocumentIds || []).includes(hit.id));
+  const paths = arm.graph?.kind === 'native' ? arm.graph.statements.flatMap(statement => statement.rows
+    .filter(row => row.sources.includes(hit.sourceId)).map(row => pathText(statement, row))) : [];
+  if (paths.length) related.push(section('Graph paths this passage cites', node('p', paths.join('\n'), 'path')));
+  if (hit.topic?.title) related.push(section('Theme', node('p', `${hit.topic.title} (Foundry IQ topic graph)`)));
+  const topics = (Array.isArray(arm.topics) ? arm.topics : []).filter(topic => (topic.sourceDocumentIds || []).includes(hit.sourceId) || (topic.sourceDocumentIds || []).includes(hit.id));
   if (topics.length) related.push(section('Topic', ...topics.map(topic => node('p', `${topic.title || topic.id} · revision ${topic.revision ?? '?'} (experimental)`))));
   if (hit.coordinates?.cells) related.push(section('Table cell coordinates', codeBlock(pretty(hit.coordinates), 'Table cell coordinates')));
 

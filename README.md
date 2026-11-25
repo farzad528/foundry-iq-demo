@@ -4,7 +4,7 @@ See what each Foundry IQ retrieval technique changes, side by side, with real qu
 
 **Live demo:** <https://foundry-iq-demo-studio.vercel.app/>
 
-![Agentic search in Foundry IQ Demo Studio: single-pass hybrid retrieval (BEFORE) and agentic retrieval (AFTER) on the same support index, with ranked, cited results](docs/images/foundry-iq-demo-agentic-search.png)
+![Foundry IQ Demo Studio: agentic search issues its own follow-up sub-query and moves the defective-goods policy from #7 to #1; entity graph search returns relationship paths from drill to recall policy, each cited by its sources](docs/images/foundry-iq-demo-agentic-graph-search.png)
 
 ## What is Foundry IQ?
 
@@ -30,8 +30,8 @@ Foundry IQ (Azure AI Search) is the knowledge and retrieval layer for agents and
 | S05 | Retail search | Keyword search → hybrid search with facets, same store, stock and price filters |
 | S06 | Document boosting | Hybrid search → hybrid search plus a scoring-profile boost |
 | S07 | Agentic search | Single-pass hybrid retrieval → agentic retrieval (evidence only) |
-| S08 | Agentic + graph search | Documents → documents plus a custom bill-of-materials graph |
-| S09 | Topics + entries | Documents → experimental topics with their source entries |
+| S08 | Entity graph search | Plain retrieval → native entity-graph paths, each cited by its source passages |
+| S09 | Topic graph search | Topic diversification off → on, plus the corpus themes from the native topic graph |
 | S10 | Content Understanding | Flattened PDF page text → table rows with cell coordinates |
 | S11 | Multimodal image search | Keyword search over metadata → Azure Vision image similarity |
 

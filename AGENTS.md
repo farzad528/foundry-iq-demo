@@ -26,8 +26,12 @@ test runner. Match surrounding two-space JavaScript style and explicit imports.
 - `lib/http.mjs`: Node bridge, bounded direct clients and cancellation.
 - `lib/studio.mjs`: scenario comparisons, independent arms, safe sample/live
   adapters and exact-query evaluation; preserve shared snapshot and intended differences.
+- `lib/native-graph.mjs`, `config/studio-graph.json`: native S08 entity-graph and S09
+  topic-graph search. GQL comes only from the server-side preset allowlist; never
+  accept GQL from a request. Index names stay in private bindings.
 - `lib/search-adapter.mjs`, `lib/vercel-app.mjs`, `scripts/build-vercel.mjs`: the
-  personal Vercel build. Search docs/search is the only upstream; schema checks use
+  personal Vercel build. Search docs/search (plus docs/search.graph on attested graph
+  indexes) is the only upstream; schema checks use
   private, ETag-pinned attestations compiled into the server bundle; limits are
   stateless, with the `LIVE_ENABLED` kill switch. The owner accepted this build's
   trade-offs (see docs/OPERATIONS.md). It does not relax the App Service invariants below.

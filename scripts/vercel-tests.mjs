@@ -216,19 +216,29 @@ test('Search-only fetch guard, attempt budget and attestation lookup reject ever
 test('build transform pins Search vectorizer bindings to attested ETags and rejects unexplained drift', () => {
   const bindings = { datasetVersion: 'zava-studio-2026-01', resourceVersion: 'v1', scenarios: {
     S02: { index: 'zava-studio-products', indexETag: '"old"', attestation, vector: { ...vector, provider: 'serverAzureOpenAI', vectorizer: 'server-entra-text' } },
+    S05: { index: 'zava-studio-support', indexETag: '"s1"', attestation },
     S09: { index: 'zava-studio-support', indexETag: '"s1"', projectionIndex: 'zava-studio-topics', projectionIndexETag: '"t1"', attestation },
   }, languages: {} };
   const full = { service: 'foundry-iq-demos', apiVersion: SEARCH_API_VERSION, capture: { vectorizerUpdate: { changedIndexes: ['zava-studio-products'] } },
     entries: [{ index: 'zava-studio-products', etag: '"new"', schema: {} }, { index: 'zava-studio-support', etag: '"s1"', schema: {} },
-      { index: 'zava-studio-topics', etag: '"t1"', schema: {} }, { index: 'zava-studio-unused', etag: '"u"', schema: {}, usages: [] }] };
-  const { config, used } = transformBindings(bindings, full);
+      { index: 'zava-studio-topics', etag: '"t1"', schema: {} }, { index: 'zava-studio-unused', etag: '"u"', schema: {}, usages: [] },
+      { index: 'fiq-content', etag: '"c1"', schema: {} }, { index: 'fiq-topics', etag: '"tp1"', schema: {} }] };
+  assert.throws(() => transformBindings(bindings, full), /STUDIO_PRIVATE_GRAPH/);
+  const graph = { dataset: 'zava-retail-en', language: 'en', apiVersion: '2026-11-01-preview', contentIndex: 'fiq-content', graphIndex: 'fiq-graph',
+    topicIndex: 'fiq-topics', semanticConfiguration: 'fiq-semantic', vectorField: 'snippet_vector', timeoutMs: 10000, checkedAt: '2026-11-25' };
+  const { config, used } = transformBindings(bindings, full, graph);
+  // The old custom topic projection is replaced by the native topic-graph binding, pinned to attested ETags.
+  assert.deepEqual(config.scenarios.S09, { index: 'fiq-content', indexETag: '"c1"', attestation: { checkedAt: '2026-11-25', region: 'westcentralus', evidenceVersion: 'foundry-iq-graph-v1' },
+    nativeGraph: { dataset: 'zava-retail-en', language: 'en', apiVersion: '2026-11-01-preview', vectorField: 'snippet_vector', timeoutMs: 10000, topicIndex: 'fiq-topics', topicIndexETag: '"tp1"' } });
+  assert.ok(!used.has('zava-studio-topics'));
   assert.equal(config.scenarios.S02.indexETag, '"new"');
   assert.equal(config.scenarios.S02.vector.provider, undefined);
   assert.equal(config.scenarios.S02.vector.vectorizer, 'zava-text-vectorizer');
   assert.equal(bindings.scenarios.S02.vector.provider, 'serverAzureOpenAI');
-  assert.deepEqual(reduceAttestations(full, used).entries.map(entry => Object.keys(entry).join()), ['index,etag,schema', 'index,etag,schema', 'index,etag,schema']);
+  assert.deepEqual(reduceAttestations(full, used).entries.map(entry => entry.index), ['zava-studio-products', 'zava-studio-support', 'fiq-content', 'fiq-topics']);
   full.entries[1].etag = '"drifted"';
-  assert.throws(() => transformBindings(bindings, full), /Unexpected ETag drift/);
+  assert.throws(() => transformBindings(bindings, full, graph), /Unexpected ETag drift/);
+  assert.throws(() => transformBindings({ ...bindings, scenarios: { S08: {} } }, full, graph), /No schema attestation for bound index fiq-graph/);
 });
 
 const imageSchema = () => ({ name: 'zava-studio-images-vision', fields: [
@@ -523,6 +533,168 @@ test('visible copy says Foundry IQ; "Azure AI Search" appears only in title, met
   assert.ok(!read('config/studio-recorded.json').includes('Azure AI Search'), 'recorded narration');
 });
 
+// Native Foundry IQ entity graph (S08) and topic graph (S09): Search reads only, GQL from the server-side allowlist.
+const graphConfig = JSON.parse(readFileSync(new URL('../config/studio-graph.json', import.meta.url), 'utf8'));
+const nativeBinding = { dataset: 'zava-retail-en', language: 'en', apiVersion: AGENTIC_SEARCH_API_VERSION, vectorField: 'snippet_vector', timeoutMs: 10000 };
+const nativeConfig = () => {
+  const config = structuredClone(liveConfig);
+  config.scenarios.S08 = { index: 'fiq-content', indexETag: '"c1"', attestation, nativeGraph: { ...nativeBinding, graphIndex: 'fiq-graph', graphIndexETag: '"g1"', semanticConfiguration: 'fiq-semantic' } };
+  config.scenarios.S09 = { index: 'fiq-content', indexETag: '"c1"', attestation, nativeGraph: { ...nativeBinding, topicIndex: 'fiq-topics', topicIndexETag: '"t1"' } };
+  config.languages = { fr: { resourceVersion: 'test-fr', scenarios: { S08: structuredClone(config.scenarios.S08) } } };
+  return config;
+};
+const stringField = (name, extra = {}) => ({ name, type: 'Edm.String', retrievable: true, ...extra });
+const nativeSchemas = () => [
+  { index: 'fiq-content', etag: '"c1"', schema: { name: 'fiq-content', fields: [stringField('uid', { key: true }), stringField('snippet', { searchable: true }),
+    { name: 'snippet_vector', type: 'Collection(Edm.Single)', searchable: true, retrievable: true, dimensions: 1536, vectorSearchProfile: 'p' }],
+  semantic: { configurations: [{ name: 'fiq-semantic' }] }, vectorSearch: { profiles: [{ name: 'p', algorithm: 'a', vectorizer: 'v' }], algorithms: [],
+    vectorizers: [{ name: 'v', kind: 'azureOpenAI', azureOpenAIParameters: { apiKey: null, authIdentity: null } }] } } },
+  { index: 'fiq-graph', etag: '"g1"', schema: { name: 'fiq-graph', fields: [stringField('id', { key: true })], graphProfile: { kind: 'edgeList', provenanceIndexName: 'fiq-content' } } },
+  { index: 'fiq-topics', etag: '"t1"', schema: { name: 'fiq-topics', fields: [...['subject_id', 'predicate', 'object_id', 'object_string'].map(name => stringField(name, { filterable: true })),
+    { name: 'object_double', type: 'Edm.Double', retrievable: true }] } },
+];
+// Passage IDs are base64 storage URLs in the real service; the API log must show short hashes instead.
+const opaque = id => `ce6718ce47b8_aHR0cHM6Ly9leGFtcGxlc3RvcmFnZS5ibG9iLmNvcmUud2luZG93cy5uZXQvemF2YS9${id}_pages_0`;
+const passage = (id, title, body, extra = {}) => ({ uid: opaque(id), snippet: `# ${id} — ${title}\n\nSource ID: ${id}\nPublisher: Zava Retail (fictional)\nRecord type: support knowledge\n\n${body}`, ...extra });
+const topicRows = () => {
+  const rows = [];
+  for (const node of graphConfig.topics.hierarchy) {
+    if (!node.parent) rows.push({ subject_id: 'topicgraph:topicgraph-topic', predicate: 'HasRootTopic', object_id: node.id, object_string: null, object_double: null });
+    for (const child of node.children || []) rows.push({ subject_id: node.id, predicate: 'HasSubTopic', object_id: child, object_string: null, object_double: null });
+    rows.push({ subject_id: node.id, predicate: 'prop:title', object_id: '', object_string: node.title, object_double: null });
+    rows.push({ subject_id: node.id, predicate: 'prop:proportion', object_id: '', object_string: null, object_double: node.proportion });
+  }
+  return rows;
+};
+function nativeHarness({ graphRows, topics = topicRows(), config = nativeConfig() } = {}) {
+  return harness({ config, extra: nativeSchemas(), handler: async (url, init) => {
+    const body = JSON.parse(init.body);
+    if (url.includes('search.graph')) {
+      const rows = graphRows ? graphRows(body.gql) : [{ drill: 'DRILL-1001', battery: 'BAT-18V-A', cell: 'CELL-B17', supplier: 'SUP-017', incident: 'INC-2026-017',
+        lot: 'LOT-2407-A', policy: 'POL-RECALL-v2', handle: 'gqlref:opaque', '@search.graphProvenance': { kind: 'hydrate', evidenceCount: { value: 2 },
+          evidence: [{ edgeId: `${opaque('BOM-2026-01')}_raw_triples_0`, chunkId: opaque('BOM-2026-01'), confidence: { edge: 0 } }, { edgeId: 'e2', chunkId: opaque('INC-2026-017') }] } }];
+      return json({ '@odata.count': rows.length, value: rows, '@search.graphStats': { executionMode: 'execute', queryCount: 2, documentsFetched: 7, totalMs: 9 },
+        '@search.graphDiagnostics': [{ code: 'Graph.Execution.Summary', severity: 'info', message: `Returned ${rows.length} rows.` }],
+        '@search.graphProvenanceDocuments': { [opaque('BOM-2026-01')]: passage('BOM-2026-01', 'Sourced battery bill of materials', 'DRILL-1001 uses BAT-18V-A.'),
+          [opaque('INC-2026-017')]: passage('INC-2026-017', 'Battery incident', 'Defect B-17 affects LOT-2407-A.') } }, 'graph-request');
+    }
+    if (url.includes('fiq-topics')) return json({ value: topics });
+    return json({ value: [passage('DRILL-1006', 'Label printer', 'Not a drill.', { '@search.score': 0.03, '@search.rerankerScore': 2.1 }),
+      passage('HAT-002', 'Red bucket hat', 'Cotton hat.', { '@search.score': 0.02, '@search.rerankerScore': 1.4 })] });
+  } });
+}
+
+test('S08 runs allowlisted native graph queries with hydrated, cited paths; plain retrieval is hybrid plus semantic ranker', async () => {
+  const preset = graphConfig.s08[0];
+  const { app, calls } = nativeHarness();
+  const result = await (await app.handle('run', post('run', liveBody('S08', { query: preset.question })), env())).json();
+  assert.equal(result.executionStatus, 'success');
+  assert.equal(calls.length, 1 + preset.statements.length);
+  const before = calls.find(call => call.url.includes('/indexes/fiq-content/docs/search'));
+  assert.equal(before.url, `${ENDPOINT}/indexes/fiq-content/docs/search?api-version=${AGENTIC_SEARCH_API_VERSION}`);
+  assert.deepEqual(JSON.parse(before.init.body), { search: preset.question, top: 5, select: 'uid,snippet', queryType: 'semantic', semanticConfiguration: 'fiq-semantic',
+    vectorQueries: [{ kind: 'text', text: preset.question, fields: 'snippet_vector', k: 50 }] });
+  const graph = calls.find(call => call.url.includes('search.graph'));
+  assert.equal(graph.url, `${ENDPOINT}/indexes('fiq-graph')/docs/search.graph?api-version=${AGENTIC_SEARCH_API_VERSION}`);
+  assert.equal(graph.init.headers['api-key'], KEY);
+  assert.deepEqual(JSON.parse(graph.init.body), { gql: preset.statements[0].gql, provenance: { kind: 'hydrate', hydrateDocuments: { select: 'uid,snippet' } },
+    includeDiagnostics: true, includeStatistics: true });
+  const statement = result.enhanced.graph.statements[0];
+  assert.equal(result.enhanced.graph.kind, 'native');
+  assert.equal(statement.outcome, 'rows');
+  assert.equal(statement.rows[0].values.handle, undefined, 'gqlref handles are never shown');
+  assert.deepEqual(statement.rows[0].sources, ['BOM-2026-01', 'INC-2026-017']);
+  assert.deepEqual(statement.hops[0], { from: 'drill', relation: 'uses battery', to: 'battery' });
+  assert.ok(statement.hops.some(hop => hop.from === 'policy' && hop.relation === 'applies to lot'));
+  assert.deepEqual(result.enhanced.hits.map(hit => [hit.id, hit.title, hit.url, hit.citedBy]), [['BOM-2026-01', 'Sourced battery bill of materials', '/samples/zava-support.md', 1],
+    ['INC-2026-017', 'Battery incident', '/samples/zava-support.md', 1]]);
+  assert.deepEqual(result.baseline.hits.map(hit => [hit.id, hit.score, hit.document.Publisher]), [['DRILL-1006', 2.1, 'Zava Retail (fictional)'], ['HAT-002', 1.4, 'Zava Retail (fictional)']]);
+  assert.equal(result.baseline.graph, undefined);
+  // The API log shows the executed GQL, with opaque storage-derived IDs shortened to hashes.
+  const log = JSON.stringify(result.enhanced.apiLog);
+  assert.equal(result.enhanced.apiLog[0].request.body.gql, preset.statements[0].gql);
+  assert.ok(log.includes('[id ') && !log.includes('aHR0cHM6Ly9') && !log.includes(KEY) && !log.includes('foundry-iq-demos'));
+  assert.ok(!JSON.stringify(result).includes('aHR0cHM6Ly9'));
+});
+
+test('S08 proves absence with an expected zero-row statement and runs free text without a graph query', async () => {
+  const preset = graphConfig.s08.find(item => item.statements.some(statement => statement.expectRows === 0));
+  const absent = preset.statements.find(statement => statement.expectRows === 0);
+  const { app, calls } = nativeHarness({ graphRows: gql => gql === absent.gql ? [] : [{ bulletin: 'SUP-BUL-017', unaffectedCell: 'CELL-X10' }] });
+  const result = await (await app.handle('run', post('run', liveBody('S08', { query: preset.question })), env())).json();
+  assert.equal(calls.length, 1 + preset.statements.length);
+  assert.ok(calls.length <= 4, 'within the per-comparison Search budget');
+  assert.deepEqual(result.enhanced.graph.statements.map(statement => statement.outcome), preset.statements.map(statement => statement.expectRows === 0 ? 'absence' : 'rows'));
+  const free = nativeHarness();
+  const freeResult = await (await free.app.handle('run', post('run', liveBody('S08', { query: 'Which drills use CELL-B17?' })), env())).json();
+  assert.equal(free.calls.length, 1);
+  assert.ok(!free.calls.some(call => call.url.includes('search.graph')));
+  assert.equal(freeResult.enhanced.curatedOnly, true);
+  assert.match(freeResult.enhanced.answer, /curated questions/);
+  assert.deepEqual(freeResult.enhanced.apiLog, []);
+  // GQL is never accepted from the browser.
+  const injected = await free.app.handle('run', post('run', liveBody('S08', { query: preset.question, gql: 'MATCH (n:`Product`) RETURN n' })), env());
+  assert.equal(injected.status, 400);
+});
+
+test('S09 compares topic diversification off and on without the semantic ranker and reads the native theme hierarchy', async () => {
+  const preset = graphConfig.s09.find(item => item.kind === 'facet-coverage');
+  const { app, calls } = nativeHarness();
+  const result = await (await app.handle('run', post('run', liveBody('S09', { query: preset.question })), env())).json();
+  assert.equal(result.executionStatus, 'success');
+  assert.equal(calls.length, 3);
+  const bodies = calls.map(call => [call.url, JSON.parse(call.init.body)]);
+  const kinds = bodies.filter(([url]) => url.includes('fiq-content')).map(([, body]) => body.vectorQueries[0].topicGraph.kind).sort();
+  assert.deepEqual(kinds, ['balanced', 'none']);
+  assert.ok(bodies.every(([, body]) => body.queryType === undefined));
+  const topic = bodies.find(([url]) => url.includes('fiq-topics'));
+  assert.deepEqual(topic[1], { search: '*', top: 1000, filter: "predicate ne 'HasCentroidVector'", select: 'subject_id,predicate,object_id,object_string,object_double' });
+  assert.deepEqual(result.enhanced.topics.hierarchy.map(root => [root.title, root.children.length]),
+    graphConfig.topics.hierarchy.filter(node => !node.parent).sort((a, b) => a.id.localeCompare(b.id)).map(node => [node.title, node.children.length]));
+  assert.equal(result.baseline.topics, undefined);
+  for (const side of ['baseline', 'enhanced']) assert.equal(result[side].topicCoverage.total, graphConfig.topics.leaves.length);
+  assert.equal(result.enhanced.hits[0].topic.title, graphConfig.topics.leaves.find(leaf => leaf.id === graphConfig.topics.leafOfSource['DRILL-1006']).title);
+  const changed = nativeHarness({ topics: topicRows().map(row => row.predicate === 'prop:title' && row.subject_id === 'topic:5' ? { ...row, object_string: 'Renamed' } : row) });
+  const drift = await (await changed.app.handle('run', post('run', liveBody('S09', { query: preset.question })), env())).json();
+  assert.equal(drift.enhanced.status, 'error');
+  assert.equal(drift.enhanced.error.code, 'studio_topic_generation_changed');
+});
+
+test('native graph routing: graph indexes accept graph queries only, on the preview API, with a short per-call timeout', async () => {
+  const seen = [];
+  const hanging = (url, init) => new Promise((resolve, reject) => { seen.push(url); init.signal.addEventListener('abort', () => reject(init.signal.reason)); });
+  const guarded = searchOnlyFetch(hanging, ENDPOINT, ['fiq-graph', 'fiq-content'], 45000, ['fiq-content'], { graphIndexes: ['fiq-graph'], timeouts: { 'fiq-graph': 30 } });
+  const init = { method: 'POST', body: '{}' };
+  for (const url of [`${ENDPOINT}/indexes/fiq-graph/docs/search?api-version=${AGENTIC_SEARCH_API_VERSION}`,
+    `${ENDPOINT}/indexes('fiq-graph')/docs/search.graph?api-version=${SEARCH_API_VERSION}`,
+    `${ENDPOINT}/indexes('fiq-content')/docs/search.graph?api-version=${AGENTIC_SEARCH_API_VERSION}`]) {
+    assert.throws(() => guarded(url, init), error => error.code === 'studio_capability_unavailable', url);
+  }
+  const started = Date.now();
+  await assert.rejects(guarded(`${ENDPOINT}/indexes('fiq-graph')/docs/search.graph?api-version=${AGENTIC_SEARCH_API_VERSION}`, init), error => error.code === 'studio_upstream_timeout');
+  assert.ok(Date.now() - started < 5000);
+  assert.equal(seen.length, 1);
+});
+
+test('S08/S09 honor LIVE_DISABLED_SCENARIOS, and other languages use the English graph with a visible note', async () => {
+  const { app, calls } = nativeHarness();
+  const catalog = await (await app.handle('scenarios', new Request(`${ORIGIN}/api/scenarios`), env({ LIVE_DISABLED_SCENARIOS: 'S08,S09' }))).json();
+  const byId = Object.fromEntries(catalog.scenarios.map(item => [item.id, item]));
+  assert.equal(byId.S08.liveAvailable, false);
+  assert.equal(byId.S09.liveAvailable, false);
+  const paused = await app.handle('run', post('run', liveBody('S08', { query: graphConfig.s08[0].question })), env({ LIVE_DISABLED_SCENARIOS: 'S08' }));
+  assert.equal(paused.status, 503);
+  assert.equal(calls.length, 0);
+  const french = await (await app.handle('scenarios', new Request(`${ORIGIN}/api/scenarios?language=fr`), env())).json();
+  const s08 = french.scenarios.find(item => item.id === 'S08');
+  assert.equal(s08.liveAvailable, true);
+  assert.match(s08.liveDescription, /English Zava content/);
+  const run = await (await app.handle('run', post('run', liveBody('S08', { query: graphConfig.s08[1].question, language: 'fr' })), env())).json();
+  assert.equal(run.executionStatus, 'success');
+  assert.match(run.enhanced.trace.steps.join(' '), /English Zava content/);
+});
+
+
 test('every showcase preset is recorded with a curated note, and AFTER clearly beats BEFORE in the top 3', () => {
   const load = file => JSON.parse(readFileSync(new URL(`../config/${file}`, import.meta.url), 'utf8'));
   const { presets } = load('studio-presets.json');
@@ -550,7 +722,19 @@ test('every showcase preset is recorded with a curated note, and AFTER clearly b
         assert.equal(entry.boostSubtype, scenarioId === 'S06' ? preset.boostSubtype : undefined, key);
         const { baseline, enhanced } = entry.result;
         assert.ok(baseline.apiLog?.length && enhanced.apiLog?.length, `API log: ${key}`);
-        if (preset.criterion === 'graph') assert.ok(enhanced.graph?.edges?.length && !baseline.graph, key);
+        if (preset.criterion === 'graph') {
+          // Native entity graph: every statement meets its expectation (rows, or proof of absence) and no distractor appears.
+          const statements = enhanced.graph?.kind === 'native' ? enhanced.graph.statements : [];
+          assert.ok(statements.length && !baseline.graph, key);
+          assert.ok(statements.every(statement => statement.expectRows === 0 ? statement.outcome === 'absence' : statement.rows.length > 0), key);
+          const values = statements.flatMap(statement => statement.rows.flatMap(row => Object.values(row.values)));
+          assert.ok(!(preset.forbidden || []).some(id => values.includes(id)), `${key}: no distractors`);
+          assert.equal(enhanced.apiLog.length, statements.length, key);
+        } else if (preset.criterion === 'topics') {
+          const after = enhanced.topicCoverage?.covered?.length, before = baseline.topicCoverage?.covered?.length;
+          assert.ok(enhanced.topics?.kind === 'native' && enhanced.topics.hierarchy.length && !baseline.topics, key);
+          assert.ok(preset.topicKind === 'corpus-themes' ? after >= before : after > before, `${key}: themes ${after} vs ${before}`);
+        }
         else if (preset.criterion === 'row') assert.ok(Number.isInteger(enhanced.hits[0]?.row) && !Number.isInteger(baseline.hits?.[0]?.row), key);
         else {
           const delta = ndcg3(enhanced, preset) - ndcg3(baseline, preset);

@@ -58,13 +58,14 @@ export function liveConfiguration(env, id, language = 'en') {
   }
   const config = all.scenarios[id];
   if (!exact(config, ['index', 'indexETag', 'standardIndex', 'standardIndexETag', 'attestation', 'vector',
-    'synonymMaps', 'scoringProfiles', 'scoringParameters', 'kb', 'kbETag', 'kbEffort', 'graphRetrieval', 'projectionIndex', 'projectionIndexETag', 'sources', 'answer', 'agentic', 'customDatasetVersion', 'extraction', 'semantic', 'image', 'language', 'corpusHash'])
+    'synonymMaps', 'scoringProfiles', 'scoringParameters', 'nativeGraph', 'answer', 'agentic', 'extraction', 'semantic', 'image', 'language', 'corpusHash'])
     || !attested(config.attestation)) return unavailable('Scenario resource/schema attestation required.');
   const index = (n, etag) => name(n) && typeof etag === 'string' && etag.length > 0 && etag.length < 200;
   if (!index(config.index, config.indexETag)) return unavailable('Reviewed index and exact schema ETag required.');
-  if (language !== 'en' && (config.language !== language || !config.index.startsWith(`zava-studio-${language}-`)
-    || config.standardIndex && !config.standardIndex.startsWith(`zava-studio-${language}-`)
-    || config.projectionIndex && !config.projectionIndex.startsWith(`zava-studio-${language}-`))) {
+  // The native S08/S09 graphs exist only for English Zava; other languages use them explicitly, with a visible note.
+  const crossLanguageGraph = ['S08', 'S09'].includes(id) && config.nativeGraph?.language === 'en';
+  if (language !== 'en' && !crossLanguageGraph && (config.language !== language || !config.index.startsWith(`zava-studio-${language}-`)
+    || config.standardIndex && !config.standardIndex.startsWith(`zava-studio-${language}-`))) {
     return unavailable('Every comparison index must belong to the selected document language; English fallback is forbidden.');
   }
   if (['S02', 'S03', 'S04', 'S05', 'S06', 'S07'].includes(id)) {
@@ -109,13 +110,17 @@ export function liveConfiguration(env, id, language = 'en') {
       || !Array.isArray(parameters.tags.values) || !parameters.tags.values.length || parameters.tags.values.length > 20
       || parameters.tags.values.some(value => !name(value))) return unavailable('Reviewed server-only scoring parameters for distance and tags are required.');
   }
-  if (id === 'S08' && config.graphRetrieval !== 'index') {
-    if (!index(config.kb, config.kbETag) || !Array.isArray(config.sources) || !config.sources.length
-      || config.sources.length > 10 || config.sources.some(s => !exact(s, ['name', 'kind']) || !name(s.name) || s.kind !== 'searchIndex')
-      || new Set(config.sources.map(s => s.name)).size !== config.sources.length) return unavailable('Pinned indexed-only KB and source allowlist required.');
+  if (['S08', 'S09'].includes(id) || config.nativeGraph !== undefined) {
+    // Native Foundry IQ entity graph (S08) or topic graph (S09): reviewed index/ETag bindings, preview API, bounded per-call timeout.
+    const g = config.nativeGraph;
+    if (!['S08', 'S09'].includes(id) || !exact(g, ['dataset', 'language', 'apiVersion', 'graphIndex', 'graphIndexETag', 'topicIndex', 'topicIndexETag',
+      'semanticConfiguration', 'vectorField', 'timeoutMs']) || !name(g.dataset) || g.language !== 'en' || g.apiVersion !== AGENTIC_SEARCH_API_VERSION
+      || !name(g.vectorField) || !Number.isInteger(g.timeoutMs) || g.timeoutMs < 1000 || g.timeoutMs > 15000
+      || (id === 'S08' ? !index(g.graphIndex, g.graphIndexETag) || !name(g.semanticConfiguration) || g.topicIndex !== undefined || g.topicIndexETag !== undefined
+        : !index(g.topicIndex, g.topicIndexETag) || g.graphIndex !== undefined || g.graphIndexETag !== undefined || g.semanticConfiguration !== undefined)) {
+      return unavailable('Reviewed native Foundry IQ graph or topic index binding required.');
+    }
   }
-  if (config.graphRetrieval !== undefined && (id !== 'S08' || config.graphRetrieval !== 'index')) return unavailable('Unknown custom graph evidence retrieval mode.');
-  if (config.projectionIndex !== undefined && (!['S08', 'S09'].includes(id) || !index(config.projectionIndex, config.projectionIndexETag))) return unavailable('Reviewed projection index/ETag required.');
   if (id === 'S07') {
     if (!exact(config.agentic, ['apiVersion', 'maxRuntimeInSeconds', 'knowledgeRetrievalPlan'])
       || config.agentic.apiVersion !== AGENTIC_SEARCH_API_VERSION || !Number.isInteger(config.agentic.maxRuntimeInSeconds)
@@ -132,8 +137,6 @@ export function liveConfiguration(env, id, language = 'en') {
       || config.answer.instructionsVersion !== 'studio-grounded-answer-v1'
       || !answerOrigin(env.STUDIO_ANSWER_ENDPOINT) || !(env.STUDIO_ANSWER_API_KEY || env.STUDIO_MODEL_AUTH === 'entra'))) return unavailable('Same reviewed answer model and instructions for both arms required.');
   }
-  if (config.kbEffort !== undefined && (id !== 'S08' || !['minimal', 'low'].includes(config.kbEffort))) return unavailable('Only S08 explicitly supports a minimal indexed-only KB baseline.');
-  if (['S08', 'S09'].includes(id) && config.customDatasetVersion !== 'zava-studio-2026-01') return unavailable('Custom graph/topic must be explicitly bound to the public synthetic manifest.');
   if (id === 'S10' && (!index(config.standardIndex, config.standardIndexETag)
     || config.index === config.standardIndex || !exact(config.extraction, ['sourceHash', 'basicVersion', 'standardVersion',
       'provider', 'apiVersion', 'basicAnalyzer', 'standardAnalyzer', 'basicOperationId', 'standardOperationId'])

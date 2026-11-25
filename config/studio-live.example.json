@@ -87,21 +87,18 @@
       }
     },
     "S08": {
-        "index": "zava-studio-support",
+        "index": "replace-with-native-graph-content-index",
         "indexETag": "REPLACE_WITH_ACTUAL_INDEX_ETAG",
-        "graphRetrieval": "index",
-        "projectionIndex": "zava-studio-graph",
-        "projectionIndexETag": "REPLACE_WITH_ACTUAL_GRAPH_ETAG",
         "attestation": { "checkedAt": "REPLACE_AFTER_SCHEMA_CHECK", "region": "westcentralus", "evidenceVersion": "replace-with-reviewed-evidence" },
-        "customDatasetVersion": "zava-studio-2026-01"
+        "nativeGraph": { "dataset": "zava-retail-en", "language": "en", "apiVersion": "2026-11-01-preview", "vectorField": "snippet_vector", "timeoutMs": 10000,
+          "graphIndex": "replace-with-native-graph-index", "graphIndexETag": "REPLACE_WITH_ACTUAL_GRAPH_ETAG", "semanticConfiguration": "replace-with-semantic-configuration" }
       },
       "S09": {
-        "index": "zava-studio-support",
+        "index": "replace-with-native-graph-content-index",
         "indexETag": "REPLACE_WITH_ACTUAL_INDEX_ETAG",
-        "projectionIndex": "zava-studio-topics",
-        "projectionIndexETag": "REPLACE_WITH_ACTUAL_TOPIC_ETAG",
         "attestation": { "checkedAt": "REPLACE_AFTER_SCHEMA_CHECK", "region": "westcentralus", "evidenceVersion": "replace-with-reviewed-evidence" },
-        "customDatasetVersion": "zava-studio-2026-01"
+        "nativeGraph": { "dataset": "zava-retail-en", "language": "en", "apiVersion": "2026-11-01-preview", "vectorField": "snippet_vector", "timeoutMs": 10000,
+          "topicIndex": "replace-with-native-topic-index", "topicIndexETag": "REPLACE_WITH_ACTUAL_TOPIC_ETAG" }
       },
       "S10": {
         "index": "zava-studio-pdf-cu-basic",

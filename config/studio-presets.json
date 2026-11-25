@@ -319,90 +319,91 @@
    ],
    "S08": [
     {
-     "label": "Which drill models could be affected by supplier battery defect B-17?",
-     "query": "Which drill models could be affected by supplier battery defect B-17?",
+     "label": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "query": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "presetId": "zava-s08-recall-exposure",
      "relevant": [
+      "BOM-2026-01",
       "INC-2026-017",
-      "BOM-2026-01",
-      "SUP-BUL-017"
+      "POL-RECALL-v2"
+     ],
+     "forbidden": [
+      "DRILL-1002",
+      "BAT-18V-B",
+      "CASE-002"
      ],
      "criterion": "graph"
     },
     {
-     "label": "Which lots contain CELL-B17?",
-     "query": "Which lots contain CELL-B17?",
+     "label": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "query": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "presetId": "zava-s08-case-recall",
      "relevant": [
-      "BOM-2026-01",
-      "SUP-BUL-017"
-     ],
-     "criterion": "graph"
-    },
-    {
-     "label": "Is DRILL-1002 automatically affected by B-17?",
-     "query": "Is DRILL-1002 automatically affected by B-17?",
-     "relevant": [
-      "INC-2026-017",
-      "BOM-2026-01"
-     ],
-     "criterion": "graph"
-    },
-    {
-     "label": "Trace SUP-017 through CELL-B17 to affected drills",
-     "query": "Trace SUP-017 through CELL-B17 to affected drills",
-     "relevant": [
-      "BOM-2026-01",
-      "SUP-BUL-017",
+      "CASE-001",
+      "POL-RECALL-v2",
       "INC-2026-017"
+     ],
+     "forbidden": [
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "query": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "presetId": "zava-s08-warranty-exclusion",
+     "relevant": [
+      "CASE-002",
+      "WAR-BAT-2026-01"
+     ],
+     "forbidden": [
+      "CASE-001"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "query": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "presetId": "zava-s08-false-premise-x10",
+     "relevant": [
+      "SUP-BUL-017",
+      "POL-RECALL-v2"
      ],
      "criterion": "graph"
     }
    ],
    "S09": [
     {
-     "label": "What do we know about recurring battery failures?",
-     "query": "What do we know about recurring battery failures?",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "criterion": "ranking"
+     "label": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "query": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "presetId": "zava-s09-themes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
     },
     {
-     "label": "Summarize the battery failures topic",
-     "query": "Summarize the battery failures topic",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "criterion": "ranking"
+     "label": "What should a new Zava store associate know?",
+     "query": "What should a new Zava store associate know?",
+     "presetId": "zava-s09-store-associate",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
     },
     {
-     "label": "Give me the full picture on battery charging failures",
-     "query": "Give me the full picture on battery charging failures",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "forbidden": [
-      "POL-RECALL-v1"
-     ],
-     "criterion": "ranking"
+     "label": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "query": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "presetId": "zava-s09-battery-subthemes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
     },
     {
-     "label": "What is the current B-17 recall guidance and supplier evidence?",
-     "query": "What is the current B-17 recall guidance and supplier evidence?",
-     "relevant": [
-      "POL-RECALL-v2",
-      "SUP-BUL-017",
-      "INC-2026-017"
-     ],
-     "forbidden": [
-      "POL-RECALL-v1"
-     ],
-     "criterion": "ranking"
+     "label": "What do Zava customers ask about?",
+     "query": "What do Zava customers ask about?",
+     "presetId": "zava-s09-customer-asks",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
     }
    ],
    "S10": [
@@ -795,90 +796,91 @@
    ],
    "S08": [
     {
-     "label": "Quels modèles de perceuses pourraient être affectés par le défaut de batterie fournisseur B-17 ?",
-     "query": "Quels modèles de perceuses pourraient être affectés par le défaut de batterie fournisseur B-17 ?",
+     "label": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "query": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "presetId": "zava-s08-recall-exposure",
      "relevant": [
+      "BOM-2026-01",
       "INC-2026-017",
-      "BOM-2026-01",
-      "SUP-BUL-017"
+      "POL-RECALL-v2"
+     ],
+     "forbidden": [
+      "DRILL-1002",
+      "BAT-18V-B",
+      "CASE-002"
      ],
      "criterion": "graph"
     },
     {
-     "label": "Quels lots contiennent CELL-B17 ?",
-     "query": "Quels lots contiennent CELL-B17 ?",
+     "label": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "query": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "presetId": "zava-s08-case-recall",
      "relevant": [
-      "BOM-2026-01",
-      "SUP-BUL-017"
-     ],
-     "criterion": "graph"
-    },
-    {
-     "label": "DRILL-1002 est-elle automatiquement affectée par B-17 ?",
-     "query": "DRILL-1002 est-elle automatiquement affectée par B-17 ?",
-     "relevant": [
-      "INC-2026-017",
-      "BOM-2026-01"
-     ],
-     "criterion": "graph"
-    },
-    {
-     "label": "Tracer SUP-017 via CELL-B17 jusqu’aux perceuses affectées",
-     "query": "Tracer SUP-017 via CELL-B17 jusqu’aux perceuses affectées",
-     "relevant": [
-      "BOM-2026-01",
-      "SUP-BUL-017",
+      "CASE-001",
+      "POL-RECALL-v2",
       "INC-2026-017"
+     ],
+     "forbidden": [
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "query": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "presetId": "zava-s08-warranty-exclusion",
+     "relevant": [
+      "CASE-002",
+      "WAR-BAT-2026-01"
+     ],
+     "forbidden": [
+      "CASE-001"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "query": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "presetId": "zava-s08-false-premise-x10",
+     "relevant": [
+      "SUP-BUL-017",
+      "POL-RECALL-v2"
      ],
      "criterion": "graph"
     }
    ],
    "S09": [
     {
-     "label": "Que savons-nous des pannes récurrentes de batteries ?",
-     "query": "Que savons-nous des pannes récurrentes de batteries ?",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "criterion": "ranking"
+     "label": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "query": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "presetId": "zava-s09-themes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
     },
     {
-     "label": "Résumer le sujet des pannes de batteries",
-     "query": "Résumer le sujet des pannes de batteries",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "criterion": "ranking"
+     "label": "What should a new Zava store associate know?",
+     "query": "What should a new Zava store associate know?",
+     "presetId": "zava-s09-store-associate",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
     },
     {
-     "label": "Donnez-moi une vue d’ensemble des pannes de charge des batteries",
-     "query": "Donnez-moi une vue d’ensemble des pannes de charge des batteries",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "forbidden": [
-      "POL-RECALL-v1"
-     ],
-     "criterion": "ranking"
+     "label": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "query": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "presetId": "zava-s09-battery-subthemes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
     },
     {
-     "label": "Quelle est l’orientation actuelle concernant le rappel B-17 et les preuves du fournisseur ?",
-     "query": "Quelle est l’orientation actuelle concernant le rappel B-17 et les preuves du fournisseur ?",
-     "relevant": [
-      "POL-RECALL-v2",
-      "SUP-BUL-017",
-      "INC-2026-017"
-     ],
-     "forbidden": [
-      "POL-RECALL-v1"
-     ],
-     "criterion": "ranking"
+     "label": "What do Zava customers ask about?",
+     "query": "What do Zava customers ask about?",
+     "presetId": "zava-s09-customer-asks",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
     }
    ],
    "S10": [
@@ -1267,90 +1269,91 @@
    ],
    "S08": [
     {
-     "label": "¿Qué modelos de taladro podrían verse afectados por el defecto de batería del proveedor B-17?",
-     "query": "¿Qué modelos de taladro podrían verse afectados por el defecto de batería del proveedor B-17?",
+     "label": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "query": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "presetId": "zava-s08-recall-exposure",
      "relevant": [
+      "BOM-2026-01",
       "INC-2026-017",
-      "BOM-2026-01",
-      "SUP-BUL-017"
+      "POL-RECALL-v2"
+     ],
+     "forbidden": [
+      "DRILL-1002",
+      "BAT-18V-B",
+      "CASE-002"
      ],
      "criterion": "graph"
     },
     {
-     "label": "¿Qué lotes contienen CELL-B17?",
-     "query": "¿Qué lotes contienen CELL-B17?",
+     "label": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "query": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "presetId": "zava-s08-case-recall",
      "relevant": [
-      "BOM-2026-01",
-      "SUP-BUL-017"
-     ],
-     "criterion": "graph"
-    },
-    {
-     "label": "¿DRILL-1002 se ve afectado automáticamente por B-17?",
-     "query": "¿DRILL-1002 se ve afectado automáticamente por B-17?",
-     "relevant": [
-      "INC-2026-017",
-      "BOM-2026-01"
-     ],
-     "criterion": "graph"
-    },
-    {
-     "label": "Rastrear SUP-017 a través de CELL-B17 hasta los taladros afectados",
-     "query": "Rastrear SUP-017 a través de CELL-B17 hasta los taladros afectados",
-     "relevant": [
-      "BOM-2026-01",
-      "SUP-BUL-017",
+      "CASE-001",
+      "POL-RECALL-v2",
       "INC-2026-017"
+     ],
+     "forbidden": [
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "query": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "presetId": "zava-s08-warranty-exclusion",
+     "relevant": [
+      "CASE-002",
+      "WAR-BAT-2026-01"
+     ],
+     "forbidden": [
+      "CASE-001"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "query": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "presetId": "zava-s08-false-premise-x10",
+     "relevant": [
+      "SUP-BUL-017",
+      "POL-RECALL-v2"
      ],
      "criterion": "graph"
     }
    ],
    "S09": [
     {
-     "label": "¿Qué sabemos sobre los fallos recurrentes de baterías?",
-     "query": "¿Qué sabemos sobre los fallos recurrentes de baterías?",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "criterion": "ranking"
+     "label": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "query": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "presetId": "zava-s09-themes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
     },
     {
-     "label": "Resumir el tema de los fallos de baterías",
-     "query": "Resumir el tema de los fallos de baterías",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "criterion": "ranking"
+     "label": "What should a new Zava store associate know?",
+     "query": "What should a new Zava store associate know?",
+     "presetId": "zava-s09-store-associate",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
     },
     {
-     "label": "Dame una visión completa de los fallos de carga de las baterías",
-     "query": "Dame una visión completa de los fallos de carga de las baterías",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "forbidden": [
-      "POL-RECALL-v1"
-     ],
-     "criterion": "ranking"
+     "label": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "query": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "presetId": "zava-s09-battery-subthemes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
     },
     {
-     "label": "¿Cuál es la guía actual de retirada B-17 y la evidencia del proveedor?",
-     "query": "¿Cuál es la guía actual de retirada B-17 y la evidencia del proveedor?",
-     "relevant": [
-      "POL-RECALL-v2",
-      "SUP-BUL-017",
-      "INC-2026-017"
-     ],
-     "forbidden": [
-      "POL-RECALL-v1"
-     ],
-     "criterion": "ranking"
+     "label": "What do Zava customers ask about?",
+     "query": "What do Zava customers ask about?",
+     "presetId": "zava-s09-customer-asks",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
     }
    ],
    "S10": [
@@ -1736,90 +1739,91 @@
    ],
    "S08": [
     {
-     "label": "サプライヤーのバッテリー欠陥 B-17 の影響を受ける可能性があるドリルモデルはどれですか？",
-     "query": "サプライヤーのバッテリー欠陥 B-17 の影響を受ける可能性があるドリルモデルはどれですか？",
+     "label": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "query": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "presetId": "zava-s08-recall-exposure",
      "relevant": [
+      "BOM-2026-01",
       "INC-2026-017",
-      "BOM-2026-01",
-      "SUP-BUL-017"
+      "POL-RECALL-v2"
+     ],
+     "forbidden": [
+      "DRILL-1002",
+      "BAT-18V-B",
+      "CASE-002"
      ],
      "criterion": "graph"
     },
     {
-     "label": "CELL-B17 を含むロットはどれですか？",
-     "query": "CELL-B17 を含むロットはどれですか？",
+     "label": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "query": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "presetId": "zava-s08-case-recall",
      "relevant": [
-      "BOM-2026-01",
-      "SUP-BUL-017"
-     ],
-     "criterion": "graph"
-    },
-    {
-     "label": "DRILL-1002 は B-17 の自動的な対象ですか？",
-     "query": "DRILL-1002 は B-17 の自動的な対象ですか？",
-     "relevant": [
-      "INC-2026-017",
-      "BOM-2026-01"
-     ],
-     "criterion": "graph"
-    },
-    {
-     "label": "SUP-017 から CELL-B17 を経由して影響を受けるドリルまでトレースしてください",
-     "query": "SUP-017 から CELL-B17 を経由して影響を受けるドリルまでトレースしてください",
-     "relevant": [
-      "BOM-2026-01",
-      "SUP-BUL-017",
+      "CASE-001",
+      "POL-RECALL-v2",
       "INC-2026-017"
+     ],
+     "forbidden": [
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "query": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "presetId": "zava-s08-warranty-exclusion",
+     "relevant": [
+      "CASE-002",
+      "WAR-BAT-2026-01"
+     ],
+     "forbidden": [
+      "CASE-001"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "query": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "presetId": "zava-s08-false-premise-x10",
+     "relevant": [
+      "SUP-BUL-017",
+      "POL-RECALL-v2"
      ],
      "criterion": "graph"
     }
    ],
    "S09": [
     {
-     "label": "バッテリー不具合の再発について分かっていることは何ですか？",
-     "query": "バッテリー不具合の再発について分かっていることは何ですか？",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "criterion": "ranking"
+     "label": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "query": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "presetId": "zava-s09-themes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
     },
     {
-     "label": "バッテリー不具合トピックを要約してください",
-     "query": "バッテリー不具合トピックを要約してください",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "criterion": "ranking"
+     "label": "What should a new Zava store associate know?",
+     "query": "What should a new Zava store associate know?",
+     "presetId": "zava-s09-store-associate",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
     },
     {
-     "label": "バッテリーの充電不具合について全体像を教えてください",
-     "query": "バッテリーの充電不具合について全体像を教えてください",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "forbidden": [
-      "POL-RECALL-v1"
-     ],
-     "criterion": "ranking"
+     "label": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "query": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "presetId": "zava-s09-battery-subthemes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
     },
     {
-     "label": "現在の B-17 リコール指針とサプライヤーの証拠は何ですか？",
-     "query": "現在の B-17 リコール指針とサプライヤーの証拠は何ですか？",
-     "relevant": [
-      "POL-RECALL-v2",
-      "SUP-BUL-017",
-      "INC-2026-017"
-     ],
-     "forbidden": [
-      "POL-RECALL-v1"
-     ],
-     "criterion": "ranking"
+     "label": "What do Zava customers ask about?",
+     "query": "What do Zava customers ask about?",
+     "presetId": "zava-s09-customer-asks",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
     }
    ],
    "S10": [
@@ -2212,90 +2216,91 @@
    ],
    "S08": [
     {
-     "label": "Welche Bohrmaschinenmodelle könnten vom Lieferantendefekt B-17 am Akku betroffen sein?",
-     "query": "Welche Bohrmaschinenmodelle könnten vom Lieferantendefekt B-17 am Akku betroffen sein?",
+     "label": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "query": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "presetId": "zava-s08-recall-exposure",
      "relevant": [
+      "BOM-2026-01",
       "INC-2026-017",
-      "BOM-2026-01",
-      "SUP-BUL-017"
+      "POL-RECALL-v2"
+     ],
+     "forbidden": [
+      "DRILL-1002",
+      "BAT-18V-B",
+      "CASE-002"
      ],
      "criterion": "graph"
     },
     {
-     "label": "Welche Chargen enthalten CELL-B17?",
-     "query": "Welche Chargen enthalten CELL-B17?",
+     "label": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "query": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "presetId": "zava-s08-case-recall",
      "relevant": [
-      "BOM-2026-01",
-      "SUP-BUL-017"
-     ],
-     "criterion": "graph"
-    },
-    {
-     "label": "Ist DRILL-1002 automatisch von B-17 betroffen?",
-     "query": "Ist DRILL-1002 automatisch von B-17 betroffen?",
-     "relevant": [
-      "INC-2026-017",
-      "BOM-2026-01"
-     ],
-     "criterion": "graph"
-    },
-    {
-     "label": "SUP-017 über CELL-B17 zu betroffenen Bohrmaschinen nachverfolgen",
-     "query": "SUP-017 über CELL-B17 zu betroffenen Bohrmaschinen nachverfolgen",
-     "relevant": [
-      "BOM-2026-01",
-      "SUP-BUL-017",
+      "CASE-001",
+      "POL-RECALL-v2",
       "INC-2026-017"
+     ],
+     "forbidden": [
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "query": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "presetId": "zava-s08-warranty-exclusion",
+     "relevant": [
+      "CASE-002",
+      "WAR-BAT-2026-01"
+     ],
+     "forbidden": [
+      "CASE-001"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "query": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "presetId": "zava-s08-false-premise-x10",
+     "relevant": [
+      "SUP-BUL-017",
+      "POL-RECALL-v2"
      ],
      "criterion": "graph"
     }
    ],
    "S09": [
     {
-     "label": "Was wissen wir über wiederkehrende Akkuausfälle?",
-     "query": "Was wissen wir über wiederkehrende Akkuausfälle?",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "criterion": "ranking"
+     "label": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "query": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "presetId": "zava-s09-themes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
     },
     {
-     "label": "Fasse das Thema Akkuausfälle zusammen",
-     "query": "Fasse das Thema Akkuausfälle zusammen",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "criterion": "ranking"
+     "label": "What should a new Zava store associate know?",
+     "query": "What should a new Zava store associate know?",
+     "presetId": "zava-s09-store-associate",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
     },
     {
-     "label": "Gib mir einen vollständigen Überblick über Akku-Ladeausfälle",
-     "query": "Gib mir einen vollständigen Überblick über Akku-Ladeausfälle",
-     "relevant": [
-      "INC-2026-017",
-      "SUP-BUL-017",
-      "POL-RECALL-v2"
-     ],
-     "forbidden": [
-      "POL-RECALL-v1"
-     ],
-     "criterion": "ranking"
+     "label": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "query": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "presetId": "zava-s09-battery-subthemes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
     },
     {
-     "label": "Was sind die aktuellen B-17-Rückrufrichtlinien und Lieferantennachweise?",
-     "query": "Was sind die aktuellen B-17-Rückrufrichtlinien und Lieferantennachweise?",
-     "relevant": [
-      "POL-RECALL-v2",
-      "SUP-BUL-017",
-      "INC-2026-017"
-     ],
-     "forbidden": [
-      "POL-RECALL-v1"
-     ],
-     "criterion": "ranking"
+     "label": "What do Zava customers ask about?",
+     "query": "What do Zava customers ask about?",
+     "presetId": "zava-s09-customer-asks",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
     }
    ],
    "S10": [
