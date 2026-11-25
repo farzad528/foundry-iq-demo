@@ -1,0 +1,59 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 7 0 R >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Length 371 >>
+stream
+BT /F1 11 Tf 60 732 Td (Zava Retail - ORIGINAL FICTIONAL MANUAL) Tj ET
+BT /F1 11 Tf 60 702 Td (MAN-DRILL-1001. Synthetic demonstration, not real product specifications.) Tj ET
+BT /F1 11 Tf 60 672 Td (Battery: DRILL-1001 uses BAT-18V-A. DRILL-1002 uses BAT-18V-B.) Tj ET
+BT /F1 11 Tf 60 642 Td (For charging failures contact support; never bypass a safety circuit.) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Length 714 >>
+stream
+BT /F1 11 Tf 60 732 Td (MAN-DRILL-1001 - Table T-1 - synthetic specifications) Tj ET
+BT /F1 11 Tf 60 692 Td (Model          Concrete \(mm\)       Wood \(mm\)       Steel \(mm\)) Tj ET
+60 648 470 24 re S
+BT /F1 11 Tf 70 656 Td (DCD796) Tj ET
+BT /F1 11 Tf 200 656 Td (13) Tj ET
+BT /F1 11 Tf 330 656 Td (40) Tj ET
+BT /F1 11 Tf 440 656 Td (13) Tj ET
+60 624 470 24 re S
+BT /F1 11 Tf 70 632 Td (DCD797) Tj ET
+BT /F1 11 Tf 200 632 Td (16) Tj ET
+BT /F1 11 Tf 330 632 Td (38) Tj ET
+BT /F1 11 Tf 440 632 Td (13) Tj ET
+BT /F1 11 Tf 60 587 Td (Top-left row rectangles in points: \(60,120,470,24\) and \(60,144,470,24\).) Tj ET
+BT /F1 11 Tf 60 562 Td (Adjacent rows deliberately differ. These are invented model values.) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000000373 00000 n 
+0000000443 00000 n 
+0000000864 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+1628
+%%EOF

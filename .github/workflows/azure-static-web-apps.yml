@@ -1,4 +1,4 @@
-name: Explorer build and test
+name: Studio build and test
 
 on:
   push:

@@ -207,9 +207,9 @@ test('invalid types, duplicates, unknown fields and source membership are reject
   assert.equal((await post(app, '{')).status, 400);
 });
 
-test('actual-service output token bounds match UI, canaries and explicit request snapshots', async () => {
+test('legacy retrieval output token bounds remain pinned in explicit request snapshots', async () => {
   const page = readFileSync(new URL('../page.html', import.meta.url), 'utf8');
-  assert.match(page, /id="tokens"[^>]*min="5001"[^>]*max="10000"[^>]*value="5001"/);
+  assert.match(page, /id="count"/);
   const { app } = setup();
   for (const maxOutputSize of [5001, 10000]) {
     const body = bodyFor();
@@ -460,6 +460,28 @@ test('30/IP per rolling minute applies to clients that discard cookies', async (
   await assert.rejects(new BlobQuotaCoordinator(blob).reserve({ sessionId: 'new-cookie', ip: '192.0.2.9', secret: env.SESSION_SECRET, lifetimeMs: 65000 }), error => error.code === 'ip_limit');
   assert.equal(blob.state.count, 30);
   assert.ok(!JSON.stringify(blob.state).includes('192.0.2.9'));
+});
+
+test('comparison availability plans a whole quota window without reserving or resetting calls', async () => {
+  const blob = new FakeBlob();
+  const coordinator = new BlobQuotaCoordinator(blob);
+  const actor = { sessionId: 'prepared-browser', ip: '192.0.2.18', secret: env.SESSION_SECRET };
+  for (let i = 0; i < 2; i++) {
+    const slot = await coordinator.reserve({ ...actor, lifetimeMs: 65000 });
+    await coordinator.release(slot);
+  }
+  const before = structuredClone(blob.state);
+  assert.equal((await coordinator.availability({ ...actor, attempts: 5 })).retryAfter, 60);
+  assert.equal((await coordinator.availability({ ...actor, attempts: 3 })).retryAfter, 0);
+  assert.deepEqual(blob.state, before);
+  blob.now += 60001;
+  assert.equal((await coordinator.availability({ ...actor, attempts: 5 })).retryAfter, 0);
+  assert.equal(blob.state.count, 2);
+  blob.state.enabled = false;
+  await assert.rejects(coordinator.availability({ ...actor, attempts: 1 }), error => error.code === 'live_disabled');
+  blob.state.enabled = true;
+  blob.state.count = 999;
+  await assert.rejects(coordinator.availability({ ...actor, attempts: 2 }), error => error.code === 'daily_limit');
 });
 
 test('10 global slots hold across overlapping clients/instances; stale slots expire safely', async () => {

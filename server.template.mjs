@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { API_VERSION, HttpError, MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES, MAX_RUNTIME_SECONDS, canonicalOrigin, capabilities, readBounded, retryAfter, validateRequest } from './lib/protocol.mjs';
 import { normalizeResponse, sanitize } from './lib/normalize.mjs';
 import { anonymousSession, createQuotaCoordinator } from './lib/quota.mjs';
+import { prepareComparison, runComparison, studioScenarios } from './lib/studio.mjs';
+import { documentLanguages, validDocumentLanguage } from './config/studio-languages.mjs';
 
 const catalog = __DATA__;
 const fixtures = __FIXTURES__;
@@ -22,7 +24,19 @@ function searchEndpoint(value) {
   }
 }
 
-export function createApplication({ fetchUpstream = (...args) => fetch(...args), coordinator, log = event => process.stdout.write(`${JSON.stringify(event)}\n`) } = {}) {
+export function createApplication({ fetchUpstream = (...args) => fetch(...args), coordinator, getModelToken, verifiedScenarios, nativeCuBlocker, schemaCache = new Map(), log = event => process.stdout.write(`${JSON.stringify(event)}\n`) } = {}) {
+  const publicScenarios = (env, language = 'en') => studioScenarios(env, language).map(item => {
+    const verified = item.liveAvailable && verifiedScenarios?.has(language === 'en' ? item.id : `${language}:${item.id}`) === true;
+    const nativePdf = item.id === 'S10' && item.extractionProvider === 'azureContentUnderstanding';
+    const customPdf = item.id === 'S10' && !nativePdf;
+    const cuReason = nativeCuBlocker || 'Executed Azure Content Understanding extraction is not configured or verified; this is a custom pre-extracted example.';
+    return { ...item, liveAvailable: verified, status: verified ? customPdf ? 'custom_retrieval_verified' : 'live_verified' : item.status,
+      ...(customPdf ? { nativeTreatment: { provider: 'Azure Content Understanding', status: 'blocked', reason: cuReason } }
+        : nativePdf ? { nativeTreatment: { provider: 'Azure Content Understanding', status: verified ? 'verified' : 'unverified', extractionTiming: 'ingestion, not query time' } } : {}),
+      live: { ...item.live, available: verified, status: verified ? customPdf ? 'custom_preextracted_index_retrieval_verified' : 'actual_retrieval_verified' : 'unavailable',
+        reason: verified ? customPdf ? `Custom pre-extracted Azure index retrieval only. ${cuReason}` : 'Actual Azure retrieval verified for this running operator session.'
+          : item.liveAvailable ? 'Live verification/prerequisites are incomplete; no Sample fallback.' : item.live.reason } };
+  });
   return {
     async fetch(request, env = {}, context = {}) {
       const requestId = randomUUID();
@@ -39,6 +53,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
       let timer;
       let slotId;
       let quotas;
+      const studioSlots = new Set();
       const url = new URL(request.url);
       const headers = {
         'Cache-Control': 'no-store',
@@ -46,7 +61,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
         'Referrer-Policy': 'no-referrer',
         'X-Frame-Options': 'DENY',
         'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-        'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+        'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
         'X-Request-Id': requestId,
       };
       const respond = (body, responseStatus = 200, extra = {}) => {
@@ -70,13 +85,39 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
           return respond({ status: 'ok', liveEnabled: env.FOUNDRY_IQ_LIVE_ENABLED === 'true', requestId });
         }
         if (request.method === 'GET' && url.pathname === '/') return resource(page, 'text/html; charset=utf-8');
+        if (request.method === 'GET' && ['/agents', '/knowledge', '/playground'].includes(url.pathname)) {
+          status = 308;
+          return new Response(null, { status, headers: { ...headers, Location: '/' } });
+        }
+        if (request.method === 'GET' && url.pathname === '/api/scenarios') {
+          const language = url.searchParams.get('language') ?? 'en';
+          if (!validDocumentLanguage(language)) throw new HttpError(400, 'invalid_document_language', 'Select a supported document language.');
+          return respond({ scenarios: publicScenarios(env, language), language, documentLanguages,
+            defaultMode: language !== 'en' || verifiedScenarios?.size && env.FOUNDRY_IQ_LIVE_ENABLED === 'true' ? 'live' : 'sample' });
+        }
+        if (request.method === 'GET' && url.pathname === '/api/health') {
+          return respond({
+            status: 'ok',
+            liveEnabled: env.FOUNDRY_IQ_LIVE_ENABLED === 'true',
+            dependencyReadiness: verifiedScenarios?.size ? 'per-scenario actual retrieval verified; unavailable scenarios remain gated' : 'unverified',
+            scenarios: publicScenarios(env),
+            uploads: { status: 'unsupported', reason: 'Durable scoped equivalent ingestion and compatible image encoding are not configured.' },
+          });
+        }
+        if (url.pathname === '/api/uploads' || url.pathname.startsWith('/api/uploads/')) {
+          throw new HttpError(501, 'uploads_unsupported', 'New uploads are unsupported. No content was persisted. Use canonical sample evidence until durable scoped ingestion and compatible encoding are configured.');
+        }
         if (request.method === 'GET' && url.pathname === '/download') {
           return resource(Buffer.from(sourceArchive, 'base64'), 'application/zip', {
             'Content-Disposition': 'attachment; filename="foundryiq-customer-demos-source.zip"',
           });
         }
         if (request.method === 'GET' && Object.hasOwn(samples, url.pathname)) {
-          return resource(samples[url.pathname], 'text/plain; charset=utf-8');
+          const sample = samples[url.pathname];
+          if (sample && typeof sample === 'object') {
+            return resource(sample.base64 ? Buffer.from(sample.base64, 'base64') : sample.text, sample.type);
+          }
+          return resource(sample, 'text/plain; charset=utf-8');
         }
         if (request.method === 'GET' && Object.hasOwn(assets, url.pathname)) {
           const asset = assets[url.pathname];
@@ -96,7 +137,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
             capabilities: Object.fromEntries(catalog.filter(item => item.execution === 'live').map(item => [item.id, capabilities(item, env)])),
           });
         }
-        if (url.pathname !== '/api/retrieve') throw new HttpError(404, 'not_found', 'Not found.');
+        if (!['/api/retrieve', '/api/demo/run', '/api/demo/prepare'].includes(url.pathname)) throw new HttpError(404, 'not_found', 'Not found.');
         if (request.method !== 'POST') {
           headers.Allow = 'POST';
           throw new HttpError(405, 'method_not_allowed', 'Method not allowed.');
@@ -121,6 +162,60 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
           if (error instanceof SyntaxError) throw new HttpError(400, 'invalid_json', 'Invalid request JSON.');
           if (readSignal.aborted && !request.signal.aborted) throw new HttpError(408, 'body_timeout', 'The request body took too long to arrive.');
           throw error;
+        }
+        if (['/api/demo/run', '/api/demo/prepare'].includes(url.pathname)) {
+          mode = ['sample', 'live'].includes(body?.mode) ? body.mode : undefined;
+          scenarioId = typeof body?.scenarioId === 'string' && /^S(?:0[1-9]|1[01])$/.test(body.scenarioId) ? body.scenarioId : undefined;
+          timer = new AbortController();
+          const timeout = setTimeout(() => timer.abort(new DOMException('Comparison budget elapsed', 'TimeoutError')), 55000);
+          timeout.unref?.();
+          timer.signal.addEventListener('abort', () => clearTimeout(timeout), { once: true });
+          const signal = AbortSignal.any([request.signal, timer.signal]);
+          let session;
+          let initializeQuotas;
+          const initialize = async () => {
+            initializeQuotas ||= (async () => {
+              session = anonymousSession(request.headers.get('cookie'), env.SESSION_SECRET, origin.startsWith('https:'));
+              sessionCookie = session.cookie;
+              quotas = coordinator || await createQuotaCoordinator(env);
+            })();
+            await initializeQuotas;
+          };
+          const reserveAttempt = async () => {
+            await initialize();
+            const slot = await quotas.reserve({
+              sessionId: session.id, ip: context.clientIp || 'unknown', secret: env.SESSION_SECRET,
+              lifetimeMs: 85000, signal,
+            });
+            studioSlots.add(slot);
+            return slot;
+          };
+          const releaseAttempt = async slot => {
+            await quotas.release(slot);
+            studioSlots.delete(slot);
+          };
+          const language = body.language ?? 'en';
+          if (!validDocumentLanguage(language)) throw new HttpError(400, 'invalid_document_language', 'Select a supported document language.');
+          if (body.mode === 'live' && verifiedScenarios?.has(language === 'en' ? body.scenarioId : `${language}:${body.scenarioId}`) !== true) {
+            throw new HttpError(503, 'studio_live_unverified', publicScenarios(env, language).find(item => item.id === body.scenarioId)?.live.reason
+              || 'This scenario has not passed actual live verification; no Sample fallback.');
+          }
+          if (url.pathname === '/api/demo/prepare') {
+            const result = await prepareComparison(body, { env, signal, fetchUpstream, reserveAttempt, releaseAttempt, getModelToken, schemaCache,
+              availability: async (attempts, concurrent) => {
+                await initialize();
+                if (typeof quotas.availability !== 'function') throw new HttpError(503, 'studio_quota_unavailable', 'Live preparation requires shared quota availability.');
+                return quotas.availability({ sessionId: session.id, ip: context.clientIp || 'unknown',
+                  secret: env.SESSION_SECRET, attempts, concurrent, signal });
+              } });
+            signal.throwIfAborted();
+            if (studioSlots.size) throw new HttpError(503, 'quota_unavailable', 'Live preparation could not release its reservation.');
+            return respond(result);
+          }
+          const result = await runComparison(body, { env, signal, fetchUpstream, reserveAttempt, releaseAttempt, requestId, getModelToken, schemaCache });
+          signal.throwIfAborted();
+          if (studioSlots.size) throw new HttpError(503, 'quota_unavailable', 'An upstream reservation could not be released. Live comparisons fail closed until shared coordination recovers.');
+          return respond(result);
         }
         const { scenario, outbound, question } = validateRequest(body, catalog, env);
         mode = body.mode;
@@ -236,6 +331,14 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
         }, normalized.normalized.partial ? 206 : 200);
       } catch (error) {
         let failure = error;
+        for (const slot of studioSlots) {
+          try {
+            await quotas.release(slot);
+            studioSlots.delete(slot);
+          } catch {
+            failure = new HttpError(503, 'quota_unavailable', 'Quota release could not be verified. The bounded reservation will expire; live comparisons fail closed.');
+          }
+        }
         if (slotId) {
           try {
             await quotas.release(slotId);
@@ -257,7 +360,7 @@ export function createApplication({ fetchUpstream = (...args) => fetch(...args),
         }, failure.status, failure.details.retryAfter ? { 'Retry-After': String(failure.details.retryAfter) } : {});
       } finally {
         timer?.abort();
-        if (url.pathname === '/api/retrieve') {
+        if (['/api/retrieve', '/api/demo/run', '/api/demo/prepare'].includes(url.pathname)) {
           log(Object.fromEntries(Object.entries({
             event: 'retrieval',
             requestId,

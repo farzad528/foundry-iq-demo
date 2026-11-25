@@ -3,6 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { publicCatalog } from '../config/knowledge-bases.mjs';
 import { archiveFiles } from './source-files.mjs';
+import { illustrationPng } from './generate-studio.mjs';
 
 process.chdir(fileURLToPath(new URL('..', import.meta.url)));
 for (const path of archiveFiles) {
@@ -34,10 +35,18 @@ if (corpus.license !== 'MIT' || corpus.documents?.length !== 12 || corpus.record
 }
 const catalog = publicCatalog(fixtures);
 const html = readFileSync('page.html', 'utf8').replace('__SCENARIOS__', () => JSON.stringify(catalog).replace(/</g, '\\u003c'));
-const samples = Object.fromEntries(archiveFiles.filter(path => path.startsWith('samples/')).map(path => ['/' + path, readFileSync(path, 'utf8')]));
-const assets = Object.fromEntries(archiveFiles.filter(path => /^assets\/.*\.(?:svg|mjs)$/.test(path)).map(path => [
+const samples = Object.fromEntries(archiveFiles.filter(path => path.startsWith('samples/')).map(path => [
   '/' + path,
-  { type: path.endsWith('.svg') ? 'image/svg+xml' : 'text/javascript; charset=utf-8', body: readFileSync(path, 'utf8') },
+  path.endsWith('.pdf') ? { type: 'application/pdf', base64: readFileSync(path).toString('base64') }
+    : path.endsWith('.svg') ? { type: 'image/svg+xml', text: readFileSync(path, 'utf8') }
+      : readFileSync(path, 'utf8'),
+]));
+for (const [file, index] of [['zava-hat-blue.png', 0], ['zava-hat-red.png', 1], ['zava-bowl-blue.png', 3]]) {
+  samples['/samples/' + file] = { type: 'image/png', base64: illustrationPng(index).toString('base64') };
+}
+const assets = Object.fromEntries(archiveFiles.filter(path => /^assets\/.*\.(?:svg|mjs|js|css)$/.test(path)).map(path => [
+  '/' + path,
+  { type: path.endsWith('.svg') ? 'image/svg+xml' : path.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8', body: readFileSync(path, 'utf8') },
 ]));
 const values = {
   '__DATA__': JSON.stringify(catalog),
@@ -49,7 +58,10 @@ const values = {
 };
 const source = readFileSync('server.template.mjs', 'utf8').replace(/__DATA__|__FIXTURES__|__PAGE__|__ARCHIVE__|__SAMPLES__|__ASSETS__/g, match => values[match]);
 mkdirSync('dist/server/lib', { recursive: true });
-for (const file of ['protocol.mjs', 'normalize.mjs', 'quota.mjs', 'http.mjs']) copyFileSync('lib/' + file, 'dist/server/lib/' + file);
+for (const path of archiveFiles.filter(path => /^lib\/.*\.mjs$/.test(path) || /^config\/studio.*\.(?:mjs|json)$/.test(path))) {
+  mkdirSync('dist/server/' + path.slice(0, path.lastIndexOf('/')), { recursive: true });
+  copyFileSync(path, 'dist/server/' + path);
+}
 writeFileSync('dist/server/index.mjs', source);
 writeFileSync('dist/server/package.json', JSON.stringify({ type: 'module' }));
 writeFileSync('dist/source.zip', Buffer.from(archive, 'base64'));

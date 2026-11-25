@@ -1,8 +1,8 @@
-# Foundry IQ Explorer contributor rules
+# Foundry IQ Demo Studio contributor rules
 
 ## Application and scope
 
-Foundry IQ Explorer is the primary application at the repository root. The
+Foundry IQ Demo Studio is the primary application at the repository root. The
 legacy Next.js/React app and its deployment templates have been retired, not
 retained as an alternate app. Preserve Git history; do not resurrect a second
 application or add a component wrapper directory.
@@ -11,18 +11,26 @@ Runtime: Node.js **22+**, ECMAScript modules, native HTTP and browser JavaScript
 Python **3** is build-time only, for a deterministic sanitized source ZIP.
 Dependencies: `@azure/identity` and `@azure/storage-blob`. Use the npm lockfile.
 No frontend framework, TypeScript compiler, external test runner or bundler is
-required. Match surrounding two-space JavaScript style and explicit imports.
+required. Playwright is development-only automation used with Node's built-in
+test runner. Match surrounding two-space JavaScript style and explicit imports.
 
 ## Source map
 
-- `page.html`, `assets/client.mjs`, `assets/source-icons.mjs`: three-column UI,
-  keyboard/citation interactions and locally bundled source icons.
+- `page.html`, `assets/client.mjs`, `assets/source-icons.mjs`: compact S01–S11
+  comparison UI, cancellation/reset/citation interactions and local source icons.
 - `server.template.mjs`: application handler template. Build embeds only the
   approved catalog, synthetic fixtures, source ZIP and local public assets.
 - `lib/protocol.mjs`: pinned contract, capability validation and streaming bounds.
 - `lib/normalize.mjs`: evidence/citation joins, safe URLs and redaction.
 - `lib/quota.mjs`: managed-identity Blob leases/ETags and durable shared limits.
 - `lib/http.mjs`: Node bridge, bounded direct clients and cancellation.
+- `lib/studio.mjs`: scenario comparisons, independent arms, safe sample/live
+  adapters and exact-query evaluation; preserve shared snapshot and intended differences.
+- `lib/search-adapter.mjs`, `lib/vercel-app.mjs`, `scripts/build-vercel.mjs`: the
+  personal Vercel build. Search docs/search is the only upstream; schema checks use
+  private, ETag-pinned attestations compiled into the server bundle; limits are
+  stateless, with the `LIVE_ENABLED` kill switch. The owner accepted this build's
+  trade-offs (see README). It does not relax the App Service invariants below.
 - `config/`: explicit live KB/source identities and synthetic replay catalog.
 - `samples/`: fictional, public example documents, never real customer content.
 - `scripts/`: build/dev/start, Node tests, Storage double, ZIP allowlist and
@@ -41,11 +49,14 @@ npm ci
 npm test
 npm run build
 npm run validate
+npm run test:browser
 git diff --check
 ```
 
 `npm test` first builds, then uses Node's built-in test runner for contract,
-normalization, quotas, cancellation, HTTP and root-migration regressions.
+normalization, quotas, cancellation, HTTP, studio scenarios and root-migration regressions.
+Install Playwright Chromium separately with `npx playwright install chromium`
+before `npm run test:browser`; browser tooling is not required for startup.
 Python is required for build and artifact validation, not startup.
 Use `node --check` for changed `.mjs` source files and the generated handler.
 The handler template intentionally contains build placeholders.
@@ -79,8 +90,9 @@ Local tests and Storage doubles do not establish live dependency readiness.
 ## Non-negotiable runtime invariants
 
 - Keep live and synthetic modes visibly distinct; never fall back from a live
-  failure to replay. Replays accept only their curated question and must not
-  claim controls changed recorded evidence/timings.
+  failure to replay. Replays accept only curated questions and must not
+  claim controls changed recorded Azure evidence/timings. Studio topK limits
+  displayed supporting evidence, not generated answer count.
 - Retain the pinned published preview request contract and typed capability
   checks, exact KB/source allowlists, indexed-only minimal/extractive rules,
   operator-gated medium effort, and explicit request-level `maxOutputSize` in

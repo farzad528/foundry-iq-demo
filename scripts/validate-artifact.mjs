@@ -10,7 +10,9 @@ const { default: application } = await import('../dist/server/index.mjs');
 assert.equal(typeof application.fetch, 'function');
 const origin = 'https://demo.example.test';
 const page = await (await application.fetch(new Request(origin), { PUBLIC_ORIGIN: origin })).text();
-assert.ok(page.includes('grid-template-columns:272px minmax(0,1fr) 350px'));
+assert.ok(page.includes('Foundry IQ Demo Studio'));
+assert.ok(page.includes('id="scenario"') && page.includes('id="baseline"') && page.includes('id="enhanced"'));
+assert.ok(!page.includes('<aside') && !page.includes('<nav'));
 const python = (process.env.PYTHON ? [process.env.PYTHON] : ['python', 'python3'])
   .find(command => {
     const result = spawnSync(command, ['--version'], { encoding: 'utf8' });

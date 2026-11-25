@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>About · Foundry IQ Demo Studio</title>
+  <meta name="description" content="Why the Foundry IQ Demo Studio exists, how Sample and Live modes work, and what each S01–S11 retrieval scenario compares.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <script src="/assets/theme.js"></script>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Foundry IQ Demo Studio home"><img src="/assets/foundry.svg" alt="" width="26" height="26"><span>Foundry IQ Demo Studio</span></a>
+    <div class="actions">
+      <a class="icon-btn" href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer" aria-label="View the source on GitHub (opens in a new tab)" title="GitHub">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+      </a>
+      <a class="btn primary back" href="/">Open the demo</a>
+    </div>
+  </header>
+  <main class="about">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">›</span> <span aria-current="page">About</span></nav>
+    <div class="about-hero">
+      <h1><img src="/assets/foundry.svg" alt="" width="40" height="40">About Foundry IQ Demo Studio</h1>
+    </div>
+
+    <section aria-labelledby="why">
+      <h2 id="why">Why this demo exists</h2>
+      <p>Foundry IQ and Azure AI Search offer many retrieval techniques: keyword, vector, hybrid, semantic ranking, scoring profiles, agentic retrieval, multimodal search and more. They are easy to describe and hard to feel. This studio puts each technique side by side as a <strong>BEFORE</strong> and <strong>AFTER</strong> comparison on the same synthetic Zava Retail corpus, the same query and the same evidence budget. You see real ranked documents and citations, not marketing claims.</p>
+    </section>
+
+    <div class="two-col">
+      <section aria-labelledby="helps">
+        <h2 id="helps">How it helps</h2>
+        <ul>
+          <li>Shows what changes, and what does not, when you switch on a retrieval feature.</li>
+          <li>Every result links to its source document, page or table row, so claims can be checked.</li>
+          <li><strong>Technical details</strong> show the exact index, filters, API version, request IDs and timing for each arm.</li>
+          <li>Five document languages show language-specific analyzers and multilingual vectors.</li>
+          <li>Failures are shown as failures; the app never invents passages, citations or timings.</li>
+        </ul>
+      </section>
+      <section aria-labelledby="modes">
+        <h2 id="modes">Sample mode vs Live data</h2>
+        <p><strong>Live data</strong> sends real queries from the server to Azure AI Search. Query vectors are computed by the index vectorizers inside Azure AI Search. Your browser never sees a key.</p>
+        <p><strong>Sample mode</strong> replays real Live responses that were recorded for every curated example, in all five languages, with the capture date shown. It sends no Azure request. Sample is always labeled and is never used as a silent fallback when Live fails.</p>
+        <p>Open <strong>Advanced options</strong> under the search box to switch mode and evidence count.</p>
+      </section>
+    </div>
+
+    <section aria-labelledby="scenarios">
+      <h2 id="scenarios">The scenarios</h2>
+      <div class="cards">
+        <article class="scenario-card"><h3>S01 Keyword search <span class="tag live">Live</span></h3><p>Plain app-style substring matching vs Azure full-text search with language analyzers and synonym maps.</p><p class="why">Why it matters: “drill” should find a “hammer drill”, and typed product names should still match.</p></article>
+        <article class="scenario-card"><h3>S02 Vector search <span class="tag live">Live</span></h3><p>Keyword (BM25) ranking vs vector similarity from the index’s text-embedding-3-small vectorizer.</p><p class="why">Why it matters: describe the need (“a light tool for holes in brick”) instead of guessing product words. Exact IDs can still favor keyword.</p></article>
+        <article class="scenario-card"><h3>S03 Hybrid search <span class="tag live">Live</span></h3><p>Keyword vs hybrid (keyword + vector with reciprocal rank fusion) under identical category and price filters.</p><p class="why">Why it matters: hybrid keeps exact matches and adds meaning, while filters still apply.</p></article>
+        <article class="scenario-card"><h3>S04 Semantic reranking <span class="tag live">Live</span></h3><p>The same hybrid candidates before and after the Azure semantic ranker.</p><p class="why">Why it matters: shows rank movement only. No new documents appear, so the effect is easy to attribute.</p></article>
+        <article class="scenario-card"><h3>S05 Retail search <span class="tag live">Live</span></h3><p>Location, stock, category and price filters, with keyword vs hybrid results plus category facets.</p><p class="why">Why it matters: commerce search needs hard eligibility rules and navigation, not just relevance.</p></article>
+        <article class="scenario-card"><h3>S06 Document boosting <span class="tag live">Live</span></h3><p>The same hybrid query with and without a reviewed scoring profile: freshness, magnitude, distance, tags or availability.</p><p class="why">Why it matters: business signals can reorder relevant results in an explainable way.</p></article>
+        <article class="scenario-card"><h3>S07 Agentic search <span class="tag live">Live</span> <span class="tag">Evidence only</span></h3><p>Single-pass hybrid retrieval vs native single-index agentic retrieval on the same support index, with a bounded runtime.</p><p class="why">Why it matters: a complex support question needs policy, warranty and manual evidence together. This deployment compares retrieved documents and citations; it does not generate answers.</p></article>
+        <article class="scenario-card"><h3>S08 Agentic + graph search <span class="tag live">Live</span> <span class="tag">Custom</span></h3><p>Search evidence vs the same evidence plus an Azure-indexed, custom bill-of-materials graph.</p><p class="why">Why it matters: tracing a supplier defect to affected lots and models needs relationships. This is a custom projection, not native graph support.</p></article>
+        <article class="scenario-card"><h3>S09 Topics + entries <span class="tag live">Live</span> <span class="tag">Experimental</span></h3><p>Search evidence vs an experimental, versioned topic projection that expands to its sources.</p><p class="why">Why it matters: recurring issues are easier to explore as topics, as long as each topic stays grounded in sources.</p></article>
+        <article class="scenario-card"><h3>S10 Content Understanding <span class="tag live">Live</span> <span class="tag">Pre-ingested</span></h3><p>Azure Content Understanding Read pages vs Layout table rows from the same PDF. Extraction ran at ingestion; queries run live.</p><p class="why">Why it matters: table-aware extraction cites the exact page and row (for example, a model’s drilling diameter).</p></article>
+        <article class="scenario-card"><h3>S11 Multimodal image search <span class="tag live">Live</span> <span class="tag">Preview</span></h3><p>Keyword search over image metadata vs Azure Vision multimodal vectors computed by Azure AI Search, from an uploaded image or a text description.</p><p class="why">Why it matters: shoppers often have a picture, not the right words. Uploads are bounded to 40 KiB and never stored.</p></article>
+      </div>
+    </section>
+
+    <div class="two-col">
+      <section aria-labelledby="languages">
+        <h2 id="languages">Five document languages</h2>
+        <p>Each language has its own translated corpus and indexes, with language-specific analyzers. English is never substituted for another language.</p>
+        <ul class="lang-list"><li>English</li><li>Français</li><li>Español</li><li>日本語</li><li>Deutsch</li></ul>
+        <p>Change the language from the profile menu: <strong>Settings</strong> › <strong>Document language</strong>.</p>
+      </section>
+      <section aria-labelledby="limits">
+        <h2 id="limits">Current limitations</h2>
+        <ul>
+          <li>All content is synthetic (Zava Retail); no customer data.</li>
+          <li>S07 compares retrieval evidence only; it relies on paid Standard knowledge retrieval and has no generated answers here.</li>
+          <li>S08 is a custom graph projection and S09 is experimental; neither is a native feature.</li>
+          <li>S10 uses PDFs processed by Content Understanding at ingestion; new PDF uploads are not supported.</li>
+          <li>S11 uses a preview vectorizer; uploads are limited to 40 KiB JPEG, PNG or WebP.</li>
+          <li>Requests are rate limited. The first Live query after a quiet period can take longer while Azure warms up.</li>
+        </ul>
+      </section>
+    </div>
+
+    <section aria-labelledby="learn">
+      <h2 id="learn">Learn more</h2>
+      <p><a href="https://learn.microsoft.com/en-us/azure/search/" target="_blank" rel="noopener noreferrer">Foundry IQ (Azure AI Search) documentation</a> · <a href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer">Source on GitHub</a></p>
+      <p><a class="btn primary back" href="/">Back to the demo</a></p>
+    </section>
+    <footer><span>Synthetic demo content · Zava Retail · S01–S11</span><span><a href="https://learn.microsoft.com/en-us/azure/search/" target="_blank" rel="noopener noreferrer">Docs</a> · <a href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer">GitHub</a></span></footer>
+  </main>
+</body>
+</html>
