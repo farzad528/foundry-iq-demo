@@ -37,7 +37,7 @@ const armLabels = {
   singlePass: 'Single-pass retrieval', planned: 'Single-index agentic retrieval',
   documents: 'Source-document retrieval', graph: 'Custom graph-enhanced retrieval',
   topic: 'Experimental topics + entries', basic: 'Basic text extraction', layout: 'Layout-aware extraction',
-  metadata: 'Text-only product metadata', image: 'Compatible image-vector retrieval',
+  metadata: 'Text-only product metadata', image: 'Image-vector similarity',
 };
 const label = (value, fallback) => typeof value === 'string' ? armLabels[value] || value : value?.label || fallback;
 const errorText = value => typeof value === 'string' ? value : value?.message || value?.code || 'This arm could not complete.';
@@ -95,9 +95,12 @@ async function choosePreset(preset, fromSelect = false) {
     const bytes = await response.arrayBuffer();
     if (epoch !== sequence) return;
     await selectFile(new File([bytes], preset.image.split('/').pop(), { type: 'image/png' }), epoch, true);
-    if (epoch === sequence && selectedFile) setStatus(selectedScenario().liveAvailable
-      ? `Bundled synthetic image ${selectedFile.name} selected. Click Search to send it to the live encoder.`
-      : 'Bundled reference selected; live image similarity is unavailable until a compatible encoder is configured.');
+    const name = selectedFile?.name;
+    if (epoch === sequence && selectedFile) setStatus(recordedSampleMode()
+      ? `Bundled example image ${name} selected. Click Search to replay its recorded result; nothing is sent to Azure.`
+      : element('mode').value !== 'live' ? `Bundled synthetic image ${name} selected. Switch to Live data to search with it.`
+        : selectedScenario().liveAvailable ? `Bundled synthetic image ${name} selected. Click Search to send it to Azure AI Search.`
+          : `Bundled synthetic image ${name} selected, but Live image search is currently unavailable. Switch to Sample to try the bundled examples.`);
   } catch (error) {
     if (epoch === sequence) showError(error.message);
   } finally {
@@ -141,26 +144,10 @@ function showError(message) {
 function modeChanged() {
   invalidate();
   const mode = element('mode').value;
-  const liveDescriptions = {
-    S01: 'Compare simple app search with full-text analysis and synonyms.',
-    S02: 'Compare keyword matching with text-vector similarity, including exact-identifier counterexamples.',
-    S03: 'Compare keyword and hybrid retrieval with identical hard filters.',
-    S04: 'Compare the same hybrid candidates before and after semantic reranking: rank movement, not unlike-score differences.',
-    S05: 'Find eligible products with inventory, location and price filters, plus facets.',
-    S06: 'Compare isolated freshness, price, distance, tag and availability boosts.',
-    S07: 'Compare single-pass hybrid retrieval with native single-index agentic retrieval on the same support index. Evidence and citations only; no generated answers.',
-    S08: 'Trace sourced component and lot relationships with a custom BOM graph, not a native graph feature.',
-    S09: 'Explore versioned topics and their source evidence. EXPERIMENTAL, not a native topic feature.',
-    S10: selectedScenario()?.extractionProvider === 'azureContentUnderstanding'
-      ? 'Compare Read and Layout processing of the same PDF, with page and table-row citations. Extraction ran at ingestion.'
-      : 'Compare custom pre-extracted PDF pages and table rows. Native Content Understanding has not been verified.',
-    S11: 'Compare keyword matching with Azure Vision image similarity: use an image, or describe the item in text. Not captions.',
-  };
   const scenario = selectedScenario();
   const recorded = scenario?.sample?.recorded;
   // Recorded Sample replays real Live responses, so it uses the Live description.
-  element('demo-description').textContent = mode === 'live' || recorded ? liveDescriptions[scenario?.id] || scenario?.liveDescription
-    : scenario?.description || scenario?.difference || '';
+  element('demo-description').textContent = (mode === 'live' || recorded ? scenario?.liveDescription : scenario?.description) || '';
   element('mode-badge').hidden = true;
   element('mode-badge').textContent = recorded ? `Recorded Sample · ${recorded.recordedAt}` : 'Sample mode';
   element('mode-chip').dataset.mode = mode;
@@ -168,25 +155,25 @@ function modeChanged() {
   element('mode-help').textContent = mode === 'live'
     ? 'Live sends real Azure AI Search queries from the server. Failures are shown as errors; Sample results are never substituted.'
     : recorded ? `Recorded Live responses captured on ${recorded.recordedAt}. Curated questions only; no Azure request is sent now.`
-      : 'Deterministic, curated synthetic fixtures. No Azure latency, usage or cost claims.';
+      : 'Curated synthetic examples computed in the app. No Azure request is sent, and timings are not Azure measurements.';
   element('weight').disabled = mode === 'live';
   element('weight-field').hidden = scenario?.id !== 'S06' || !!(mode === 'sample' && recorded);
   element('query').required = !(mode === 'live' && selectedScenario()?.id === 'S11' && selectedScenario()?.liveAvailable && selectedFile);
   setStatus(mode === 'live'
-    ? (selectedScenario()?.status === 'custom_retrieval_verified' ? 'Custom pre-extracted index retrieval verified; native Azure Content Understanding remains blocked.'
-      : selectedScenario()?.status === 'live_verified' ? 'Ready to search.'
-      : selectedScenario()?.liveAvailable ? 'Live configuration available; not a service-readiness guarantee.' : selectedScenario()?.live?.reason || 'Live unavailable until this scenario’s prerequisites are verified.')
+    ? (selectedScenario()?.status === 'custom_retrieval_verified' ? 'Ready to search. This example uses custom pre-extracted PDF content.'
+      : selectedScenario()?.liveAvailable ? 'Ready to search.' : selectedScenario()?.live?.reason || 'Live data is currently unavailable for this scenario.')
     : 'Curated sample mode ready.', mode === 'live' && selectedScenario()?.liveAvailable);
   element('sample-reference').hidden = selectedScenario()?.id !== 'S11' || mode !== 'sample' || !!selectedScenario()?.sample?.recorded;
   populatePresets();
-  if (selectedScenario()?.id === 'S10' && mode === 'live') element('upload-help').textContent = 'Search the bundled original PDF. New document uploads need an approved durable extraction workflow.';
-  if (selectedScenario()?.id === 'S11') {
-    element('upload-help').textContent = mode === 'sample' && recorded
-      ? 'Recorded Sample replays the Live result captured for each bundled example image. Switch to Live data to search with your own JPEG, PNG or WebP image (up to 40 KiB).'
-      : mode === 'live' && selectedScenario()?.liveAvailable
-      ? 'JPEG/PNG/WebP up to 40 KiB, sent once to Azure AI Search, which vectorizes it with Azure Vision. Nothing is stored or indexed. Without an image, your text is matched against the image vectors (text-to-image).'
-      : 'Sample uses a fixed original illustration, not arbitrary image understanding. Live query-image similarity requires a compatible corpus/query encoder; unconfigured uploads are explicitly unsupported.';
-  }
+  if (['S10', 'S11'].includes(scenario?.id)) element('upload-help').textContent = uploadHelp(scenario, mode);
+}
+
+function uploadHelp(scenario, mode) {
+  if (scenario.id === 'S10') return 'Both arms search the same bundled product manual PDF, and citations open the exact page. Uploading new PDFs isn’t supported in this demo.';
+  if (mode === 'live' && scenario.liveAvailable) return 'PNG, JPEG or WebP up to 40 KiB, sent once to Azure AI Search, which vectorizes it with Azure Vision. Nothing is stored or indexed. Without an image, your text is matched against the image vectors (text-to-image).';
+  if (mode === 'live') return 'Live image search is currently unavailable for this scenario. Switch to Sample to try the bundled example images.';
+  if (scenario.sample?.recorded) return 'Sample replays recorded results for the bundled example images and queries. Switch to Live data to search with your own PNG, JPEG or WebP image (up to 40 KiB).';
+  return 'Sample uses the bundled blue hat illustration with curated example queries. Switch to Live data, where available, to search with your own PNG, JPEG or WebP image (up to 40 KiB).';
 }
 
 function scenarioChanged() {
@@ -195,7 +182,7 @@ function scenarioChanged() {
   const scenario = selectedScenario();
   document.querySelector('.surface').dataset.tone = ['S10', 'S11'].includes(scenario.id) ? 'blue' : 'lavender';
   element('demo-title').textContent = scenario.title;
-  element('demo-description').textContent = scenario.description || scenario.explanation || scenario.difference || 'Compare retrieval on the same synthetic Zava corpus and query.';
+  element('demo-description').textContent = scenario.description || 'Compare retrieval on the same synthetic Zava corpus and query.';
   element('query').value = scenario.sampleQuery || queryList(scenario)[0] || '';
   const sampleOption = element('mode').querySelector('[value=sample]');
   sampleOption.disabled = !scenario.sample?.available;
@@ -205,11 +192,10 @@ function scenarioChanged() {
   element('weight-field').hidden = scenario.id !== 'S06';
   element('upload-area').hidden = !['S10', 'S11'].includes(scenario.id);
   element('file').accept = scenario.id === 'S10' ? 'application/pdf' : 'image/jpeg,image/png,image/webp';
-  element('file-label').textContent = scenario.id === 'S10' ? 'Optional PDF' : 'Optional image';
+  element('file-label').textContent = 'Optional image';
+  // S10 always searches the bundled manual; new PDF uploads are not supported, so no picker is offered.
+  element('file').closest('.field').hidden = scenario.id === 'S10';
   if (scenario.id === 'S11') element('sample-reference').src = '/samples/zava-hat-blue.svg';
-  element('upload-help').textContent = scenario.id === 'S10'
-    ? 'Canonical synthetic PDF evidence is pre-indexed in the sample. New PDF uploads are unsupported until durable, scoped equivalent extraction for both arms is approved.'
-    : 'Sample uses a fixed original illustration, not arbitrary image understanding. Upload similarity requires a compatible corpus/query image encoder; unconfigured uploads are explicitly unsupported.';
   modeChanged();
 }
 
@@ -264,9 +250,12 @@ function renderArm(side, arm, scenario, result) {
     return;
   }
   if (arm.error) container.append(node('p', `Partial result: ${errorText(arm.error)}`, 'error'));
-  if (arm.answer) {
+  // "Insufficient evidence." is a refusal, not an answer: without hits the empty state says it; with hits, say so plainly.
+  const noAnswer = arm.answer === 'Insufficient evidence.';
+  if (arm.answer && !(noAnswer && !arm.hits?.length)) {
     const answer = node('article', undefined, 'card');
-    answer.append(node('h3', arm.answerKind === 'note' ? 'Why this arm can’t answer' : 'Grounded answer'), node('p', arm.answer, 'snippet'));
+    answer.append(node('h3', arm.answerKind === 'note' ? 'Why this arm can’t answer' : noAnswer ? 'No grounded answer' : 'Grounded answer'),
+      node('p', noAnswer ? 'The retrieved evidence doesn’t answer this question.' : arm.answer, 'snippet'));
     const citations = node('div', undefined, 'citations');
     (arm.citations || []).forEach((citation, i) => {
       const id = typeof citation === 'string' ? citation : citation.sourceId || citation.id || citation.referenceId;
@@ -278,7 +267,7 @@ function renderArm(side, arm, scenario, result) {
         citations.append(link);
       } else citations.append(node('span', `Unresolved citation: ${id || i + 1}`));
     });
-    answer.append(citations);
+    if (!noAnswer) answer.append(citations);
     container.append(answer);
   }
   if (arm.graph?.edges) {
@@ -365,11 +354,13 @@ async function run(event) {
   const id = sequence;
   if (selectedFile && !imageCompatible && !(recordedSample && keepBundled)) {
     showError(recordedSample ? 'Recorded Sample replays the bundled example images only. Switch to Live data to search with your own image.'
-      : 'New uploads are unsupported: durable scoped ingestion and a compatible encoder are not configured. Remove the file to use canonical sample evidence.');
+      : scenario.id !== 'S11' ? 'Uploading new PDFs isn’t supported in this demo. Remove the file to search the bundled manual.'
+        : element('mode').value === 'live' ? 'Live image search is currently unavailable for this scenario. Remove the image, or switch to Sample to try the bundled examples.'
+          : 'Searching with your own image needs Live data. Remove the image, or switch to Live data.');
     return;
   }
   if (imageCompatible && selectedFile && selectedFile.size > 40960) {
-    showError('Live image similarity requires a JPEG/PNG/WebP reference of at most 40 KiB.');
+    showError('Live image search accepts PNG, JPEG or WebP images up to 40 KiB.');
     return;
   }
   const controller = new AbortController();
@@ -511,7 +502,7 @@ async function selectFile(file, epoch, bundled = false) {
   const valid = scenarioId === 'S10' ? file.type === 'application/pdf' && pdf
     : (file.type === 'image/jpeg' && jpeg) || (file.type === 'image/png' && png) || (file.type === 'image/webp' && webp);
   if (file.size > limit || !valid) {
-    showError('Invalid file signature/type or file exceeds 5 MiB. No upload was sent.');
+    showError('Invalid file signature or type, or the file is larger than 5 MiB. Nothing was sent.');
     return;
   }
   selectedFile = file;
@@ -530,7 +521,10 @@ async function selectFile(file, epoch, bundled = false) {
   }
   if (recordedBundled) setStatus(`Bundled example ${file.name} selected. Recorded Sample replays its recorded Live result; nothing is sent to Azure.`);
   else if (compatible) setStatus(`${file.name} (${Math.ceil(file.size / 1024)} KiB) ready as an ephemeral query reference; not uploaded or indexed.`);
-  else showError(`${file.name} (${Math.ceil(file.size / 1024)} KiB) remains local only. New uploads are unsupported until scoped durable ingestion / compatible image encoding is configured (inline images must be at most 40 KiB).`);
+  else showError(scenarioId === 'S10' ? `Uploading new PDFs isn’t supported in this demo, so ${file.name} won’t be searched. Remove it to search the bundled manual.`
+    : file.size > 40960 ? `${file.name} is ${Math.ceil(file.size / 1024)} KiB. Live image search accepts images up to 40 KiB. Nothing was sent.`
+      : element('mode').value === 'live' ? `Live image search is currently unavailable, so ${file.name} won’t be searched. Nothing was sent.`
+        : `Switch to Live data to search with ${file.name}. Sample replays only the bundled example images. Nothing was sent.`);
 }
 
 element('file').addEventListener('change', async () => {

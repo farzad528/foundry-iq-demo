@@ -981,7 +981,7 @@ test('custom graph uses actual indexed edges and verified Azure source IDs, neve
   assert.equal(result.enhanced.graph.edges.length, graph.length);
   assert.ok(result.enhanced.answer.includes('DRILL-1001'));
   assert.ok(!result.enhanced.answer.includes('DRILL-1002'));
-  assert.ok(result.baseline.label.includes('not agentic KB'));
+  assert.equal(result.baseline.label, 'Search evidence only');
   assert.equal(result.enhanced.trace.configuration.projection.requestId, 'real-service-request');
   assert.equal(helpers.attempts.length, 5);
 });

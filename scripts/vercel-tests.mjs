@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { createVercelApp } from '../lib/vercel-app.mjs';
 import { liveStatus, searchOnlyFetch, attemptBudget, attestedMetadata, disabledScenarios, LIVE_SCENARIOS } from '../lib/search-adapter.mjs';
@@ -389,4 +390,61 @@ test('S10 labels the flattened-text limitation as a note, not a grounded answer'
   assert.match(result.baseline.answer, /row association/);
   assert.equal(result.enhanced.answerKind, undefined);
   assert.match(result.enhanced.answer, /DCD796/);
+});
+
+// Wording from earlier builds (local fixtures, gated S07/S11, App Service and Blob ledger) that no longer matches the
+// shipped behavior. Negated mentions such as "no generated answers" remain accurate and are allowed.
+const STALE_COPY = [
+  [/\bNOT\b/, 'all-caps NOT'],
+  [/\bKB\b/, 'KB jargon'],
+  [/\bfixtures?\b/i, 'fixture wording'],
+  [/arbitrary image understanding|fixed original illustrat|illustrative/i, 'fixed-illustration Sample claim'],
+  [/explicitly unsupported|unsupported until|uploads are unsupported/i, 'stale upload claim'],
+  [/compatible (?:corpus|query|image)? ?encoder|until [^.]*configured|\bnot configured\b/i, 'encoder-not-configured claim'],
+  [/App Service|ledger|\bBlob\b|managed identity|\bquota\b/i, 'retired App Service architecture'],
+  [/Standard Knowledge Retrieval (?:is )?required|requires (?:paid )?Standard/i, 'S07 gated claim'],
+  [/remains blocked|readiness (?:guarantee|evidence)|not been verified/i, 'blocked or unverified claim'],
+  [/\bcanonical\b|\bdurable\b/i, 'developer wording'],
+  [/(?<!\bno |neither arm )generat(?:ed|es) (?:an )?answers?/i, 'generated-answer claim'],
+];
+const staleIn = text => STALE_COPY.filter(([pattern]) => pattern.test(text)).map(([, name]) => name);
+
+test('catalog copy in every language describes shipped behavior in both modes, not earlier builds', async () => {
+  const languages = ['en', 'fr', 'es', 'ja', 'de'];
+  const ids = Array.from({ length: 11 }, (_, i) => `S${String(i + 1).padStart(2, '0')}`);
+  const entries = Object.fromEntries(languages.flatMap(language => ids.map(id => [`${language}|${id}|q`,
+    { language, scenarioId: id, query: 'q', topK: 10, result: {} }])));
+  const app = createVercelApp({ liveConfig, attestations: attestations(), recorded: { recordedAt: '2026-11-25', entries }, log: () => {},
+    fetchUpstream: async () => { throw new Error('The catalog must not contact Azure.'); } });
+  for (const language of languages) {
+    const { scenarios } = await (await app.handle('scenarios', new Request(`${ORIGIN}/api/scenarios?language=${language}`), env())).json();
+    assert.equal(scenarios.length, 11);
+    for (const item of scenarios) {
+      assert.equal(item.description, item.liveDescription, `${language} ${item.id}: recorded Sample replays Live, so both modes share one description`);
+      assert.equal(typeof item.limits, 'string');
+      const shown = [item.title, item.description, item.difference, item.liveDescription, item.limits, item.sample.label,
+        ...(item.sampleImages || []).map(image => image.label), ...(item.demoPresets || []).map(preset => preset.label),
+        ...(item.liveAvailable ? [item.live.reason] : [])];
+      for (const copy of shown) assert.deepEqual(staleIn(copy), [], `${language} ${item.id}: ${copy}`);
+    }
+    const s11 = scenarios.find(item => item.id === 'S11');
+    assert.match(s11.description, /image/);
+    assert.ok(!/fixed|only the bundled/i.test(s11.limits), s11.limits);
+  }
+});
+
+test('recorded Sample narration, client and pages carry no stale claims', () => {
+  const recordedFile = JSON.parse(readFileSync(new URL('../config/studio-recorded.json', import.meta.url), 'utf8'));
+  for (const entry of Object.values(recordedFile.entries)) {
+    const narration = [entry.result.comparison?.intendedDifference,
+      ...['baseline', 'enhanced'].flatMap(side => [entry.result[side]?.label, ...(entry.result[side]?.trace?.steps || [])])].filter(Boolean);
+    for (const copy of narration) assert.deepEqual(staleIn(copy), [], `${entry.language} ${entry.scenarioId}: ${copy}`);
+  }
+  for (const file of ['assets/client.mjs', 'assets/header.mjs', 'page.html', 'about.html', '404.html']) {
+    const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/^\s*\/\/.*$/gm, '');
+    assert.deepEqual(staleIn(source), [], file);
+  }
+  const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
+  assert.match(client, /Switch to Live data to search with your own PNG, JPEG or WebP image \(up to 40 KiB\)/);
+  assert.doesNotMatch(client, /liveDescriptions\s*=/, 'descriptions come from the server catalog only');
 });

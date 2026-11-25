@@ -18,8 +18,10 @@ arrow keys and Enter, mouse or touch to select; Escape closes the list.
 Selection only fills the input; **Search** explicitly starts the comparison.
 Free-text Live queries remain supported. S11 Live examples disclose and load
 bundled synthetic PNGs through the same ephemeral image/encoder path as local
-uploads; selecting one never calls Azure. S11 Sample examples retain the fixed,
-clearly labeled blue-hat reference rather than claiming arbitrary image input.
+uploads; selecting one never calls Azure. In the Vercel build, S11 Sample
+replays recorded Live results for the bundled example images; the standalone
+local server's Sample keeps the clearly labeled blue-hat reference rather than
+claiming arbitrary image input.
 
 One Node host serves the UI and `/api/demo/run`. The original pinned
 `/api/retrieve` remains a bounded compatibility endpoint, not a second UI.
@@ -59,6 +61,12 @@ The build does the following:
 - Checks all 55 scenario/language pairs offline against the attested schemas.
 - Fails if recorded Sample coverage is incomplete or contains request IDs.
 - Scans `public/` for private markers and credential-shaped values.
+
+Scenario descriptions shown to visitors come from `liveDifferences` in
+`config/studio-scenarios.mjs`. Recorded Sample replays Live responses, so the
+catalog shows that same description in both modes. `scripts/vercel-tests.mjs`
+fails if wording from earlier builds returns, such as fixed-illustration Sample,
+unconfigured-encoder, App Service or ledger claims, or an S07 generated answer.
 
 Do not commit or publish the private inputs or `dist/vercel`.
 
@@ -279,6 +287,9 @@ S07 has since been replaced with **single-index agentic Search**. Its real
 paid **Standard Knowledge Retrieval**, while this S1 service currently has the
 Free plan. That separate billing-plan change awaits approval. S07 Live is blocked,
 not routed back to the old KB or classic Search; the other ten paths are unchanged.
+*Superseded:* the owner later approved paid Standard Knowledge Retrieval, and S07
+now runs Live as an evidence-only comparison (see
+[Personal Vercel deployment](#personal-vercel-deployment-search-only-live)).
 S08 remains **custom**, and S09 **experimental**; neither becomes a native
 graph/topic feature. All eleven retain explicit Sample behavior with no silent
 live fallback. These are scoped local canaries, not production-hosting,
