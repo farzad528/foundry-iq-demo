@@ -12,6 +12,7 @@ import { imageOnlyQuery } from '../config/studio-languages.mjs';
 import { displayText, notConfigured, passageView, repairMojibake, frontMatter, METADATA_ONLY } from '../assets/display.mjs';
 import { sanitize, safeUrl } from '../lib/normalize.mjs';
 import { readBounded } from '../lib/protocol.mjs';
+import { entityGraphModel, layoutEntityGraph, packCircles, topicMapModel, layoutTopicMap } from '../assets/graph-viz.mjs';
 
 const KEY = 'QueryKeyForTestsOnly0123456789abcdefABCDEF';
 const ENDPOINT = 'https://foundry-iq-demos.search.windows.net';
@@ -465,7 +466,7 @@ test('recorded Sample narration, client and pages carry no stale claims', () => 
       ...['baseline', 'enhanced'].flatMap(side => [entry.result[side]?.label, ...(entry.result[side]?.trace?.steps || [])])].filter(Boolean);
     for (const copy of narration) assert.deepEqual(staleIn(copy), [], `${entry.language} ${entry.scenarioId}: ${copy}`);
   }
-  for (const file of ['assets/client.mjs', 'assets/header.mjs', 'page.html', 'about.html', '404.html']) {
+  for (const file of ['assets/client.mjs', 'assets/graph-viz.mjs', 'assets/header.mjs', 'page.html', 'about.html', '404.html']) {
     const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').replace(/^\s*\/\/.*$/gm, '');
     assert.deepEqual(staleIn(source), [], file);
   }
@@ -538,7 +539,7 @@ test('visible copy says Foundry IQ; Azure product names appear only in title, me
   for (const file of ['page.html', '404.html']) assert.doesNotMatch(text(read(file)), /\bAzure\b/, file);
   assert.equal(text(read('about.html')).match(/\bAzure\b/g)?.length, 1, 'About names Azure once: Foundry IQ (Azure AI Search)');
   const strings = /(['`])[^'`\n]*\bAzure\b[^'`\n]*\1/;
-  for (const file of ['assets/client.mjs', 'assets/header.mjs', 'assets/about.mjs', 'assets/display.mjs']) {
+  for (const file of ['assets/client.mjs', 'assets/graph-viz.mjs', 'assets/header.mjs', 'assets/about.mjs', 'assets/display.mjs']) {
     const code = read(file).split(/\r?\n/).filter(line => !/^\s*(\/\/|\*|\/\*)/.test(line)).join('\n');
     assert.doesNotMatch(code, strings, file);
   }
@@ -551,7 +552,7 @@ test('visible copy says Foundry IQ; Azure product names appear only in title, me
   assert.ok(about.includes('Foundry IQ (Azure AI Search)'));
   // Client strings, server messages and score labels (comments excluded).
   const literal = /(['`])[^'`\n]*Azure AI Search[^'`\n]*\1/;
-  for (const file of ['assets/client.mjs', 'assets/header.mjs', 'assets/about.mjs', 'lib/studio.mjs', 'lib/vercel-app.mjs', 'lib/search-adapter.mjs', 'lib/industry.mjs', 'config/studio-scenarios.mjs']) {
+  for (const file of ['assets/client.mjs', 'assets/graph-viz.mjs', 'assets/header.mjs', 'assets/about.mjs', 'lib/studio.mjs', 'lib/vercel-app.mjs', 'lib/search-adapter.mjs', 'lib/industry.mjs', 'config/studio-scenarios.mjs']) {
     const code = read(file).split(/\r?\n/).filter(line => !/^\s*(\/\/|\*|\/\*)/.test(line)).join('\n');
     assert.doesNotMatch(code, literal, file);
   }
@@ -1422,11 +1423,14 @@ test('recorded graph replays add path source links, and Cited by links open the 
   assert.deepEqual(replay.enhanced.graph.sourceLinks, { 'NRG-TEST-1': 'https://www.eia.gov/todayinenergy/detail.php?id=1' }, 'a source without a public URL stays unlinked');
   assert.equal(calls.length, 0);
   const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
-  const start = client.indexOf('function renderPathRow(');
-  const body = client.slice(start, client.indexOf('\nfunction ', start + 10));
+  const section = name => { const start = client.indexOf(`function ${name}(`); return client.slice(start, client.indexOf('\nfunction ', start + 10)); };
+  const body = section('citationLinks');
   assert.match(body, /safeUrl\(arm\.graph\?\.sourceLinks\?\.\[id\]\)/);
   assert.match(body, /link\.target = '_blank'/);
   assert.match(body, /citation unavailable/, 'only a source without any URL says citation unavailable');
+  // Path rows and the entity graph inspector share the same citation links.
+  assert.match(section('renderPathRow'), /citationLinks\(row\.sources\.slice\(0, 8\), side, arm\)/);
+  assert.match(section('renderNativeGraph'), /citations: ids => citationLinks\(ids, side, arm\)/);
 });
 
 test('shared helpers: unsafe URLs and credentials never leave the server, and streamed bodies are bounded UTF-8', async () => {
@@ -1452,4 +1456,68 @@ test('the hero shows only the search type: no scenario description or industry b
   const client = readFileSync(new URL('../assets/client.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(client, /demo-description|industry-blurb/);
   assert.match(client, /element\('demo-title'\)\.textContent = scenario\.title;/);
+});
+
+// AFTER-arm graph visuals (assets/graph-viz.mjs): drawn only from returned rows and topics, deterministic, and non-overlapping.
+const recordedArms = () => Object.values(JSON.parse(readFileSync(new URL('../config/studio-recorded.json', import.meta.url), 'utf8')).entries)
+  .map(entry => entry.result?.enhanced).filter(Boolean);
+
+test('the entity graph draws exactly the returned rows: no invented entities or relationships', () => {
+  const statement = { hops: [{ from: 'p', relation: 'madeBy', to: 'b' }, { from: 'b', relation: 'basedIn', to: 'c' }], columns: ['p', 'b', 'c'],
+    rows: [{ values: { p: 'Drill', b: 'Acme', c: 'Oslo' } }, { values: { p: 'Saw', b: 'Acme', c: 'Oslo' } }, { values: { p: 'Sander', b: 'Bolt', c: '' } }] };
+  const model = entityGraphModel(statement);
+  assert.deepEqual(model.nodes.map(node => `${node.role}:${node.value}`), ['p:Drill', 'b:Acme', 'c:Oslo', 'p:Saw', 'p:Sander', 'b:Bolt']);
+  assert.deepEqual(model.edges.map(edge => `${edge.source.value} ${edge.relation} ${edge.target.value} [${edge.rows}]`),
+    ['Drill madeBy Acme [0]', 'Acme basedIn Oslo [0,1]', 'Saw madeBy Acme [1]', 'Sander madeBy Bolt [2]'], 'an empty value draws no edge');
+  assert.deepEqual(model.nodes.map(node => node.depth), [0, 1, 2, 0, 0, 1]);
+  assert.equal(entityGraphModel({ ...statement, rows: [] }), null);
+  assert.equal(entityGraphModel({ ...statement, hops: [] }), null);
+  let checked = 0;
+  for (const statement of recordedArms().flatMap(arm => arm.graph?.statements || [])) {
+    const model = entityGraphModel(statement);
+    if (!model) { assert.ok(!statement.rows?.length || !statement.hops?.length, statement.label); continue; }
+    checked += 1;
+    for (const node of model.nodes) assert.ok(node.rows.every(index => String(statement.rows[index].values[node.role]) === node.value), `${statement.label}: ${node.value}`);
+    for (const edge of model.edges) {
+      assert.ok(statement.hops.some(hop => hop.from === edge.source.role && hop.to === edge.target.role && String(hop.relation || 'related to') === edge.relation));
+      assert.ok(edge.rows.every(index => String(statement.rows[index].values[edge.source.role]) === edge.source.value
+        && String(statement.rows[index].values[edge.target.role]) === edge.target.value));
+    }
+    for (const width of [300, 640, 1200]) {
+      const layout = layoutEntityGraph(model, width);
+      assert.deepEqual(layoutEntityGraph(model, width), layout, 'deterministic');
+      for (const node of model.nodes) assert.ok(node.x >= 0 && node.x <= layout.width && node.y > 0 && node.y < layout.height && node.r > 0, `${statement.label} @${width}`);
+    }
+  }
+  assert.ok(checked >= 10, `checked ${checked} recorded statements`);
+});
+
+test('the topic map sizes bubbles by share, keeps sub-themes inside their theme and never overlaps', () => {
+  const radii = [30, 22, 22, 15, 9, 9, 4];
+  const circles = packCircles(radii, { gap: 2, squash: 0.6 });
+  circles.forEach((a, i) => circles.slice(i + 1).forEach(b => assert.ok(Math.hypot(a.x - b.x, a.y - b.y) >= a.r + b.r + 2 - 1e-6)));
+  let checked = 0;
+  for (const arm of recordedArms().filter(arm => arm.topics)) {
+    const model = topicMapModel(arm.topics, arm.topicCoverage);
+    if (!model) continue;
+    checked += 1;
+    const covered = new Set(arm.topicCoverage?.covered || []);
+    for (const item of model.roots.flatMap(root => [root, ...root.children])) assert.equal(item.covered, covered.has(item.id));
+    for (const width of [320, 700]) {
+      const { height } = layoutTopicMap(model, width);
+      const roots = model.roots;
+      roots.forEach((a, i) => {
+        assert.ok(a.x - a.r >= 0 && a.x + a.r <= width && a.y - a.r >= 0 && a.y + a.r <= height, `${a.title} @${width}`);
+        roots.slice(i + 1).forEach(b => assert.ok(Math.hypot(a.x - b.x, a.y - b.y) >= a.r + b.r - 0.5, `${a.title} / ${b.title}`));
+        // Bubble area is proportional to share.
+        assert.ok(Math.abs((a.r ** 2 / roots[0].r ** 2) - a.proportion / roots[0].proportion) < 0.05, a.title);
+        a.children.forEach((child, j) => {
+          assert.ok(Math.hypot(child.x - a.x, child.y - a.y) + child.r <= a.r + 0.5, `${child.title} inside ${a.title}`);
+          a.children.slice(j + 1).forEach(other => assert.ok(Math.hypot(child.x - other.x, child.y - other.y) >= child.r + other.r - 0.5));
+        });
+      });
+    }
+  }
+  assert.ok(checked >= 5, `checked ${checked} recorded topic hierarchies`);
+  assert.equal(topicMapModel({ hierarchy: [{ id: 'x', title: 'No share' }] }), null, 'a theme without a share is not drawn');
 });

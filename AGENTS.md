@@ -13,7 +13,8 @@ two-space JavaScript style and explicit imports.
 ## Source map
 
 - `page.html`, `about.html`, `404.html`, `assets/`: the static UI. `assets/client.mjs` (comparison UI, industry switch,
-  drawer, API log), `assets/display.mjs` (display-only text cleanup), `assets/header.mjs` (Share, settings, theme).
+  drawer, API log), `assets/display.mjs` (display-only text cleanup), `assets/header.mjs` (Share, settings, theme),
+  `assets/graph-viz.mjs` (AFTER-arm S08 entity graph and S09 topic map, drawn only from returned rows and topics).
 - `lib/vercel-app.mjs`: the API handler (`/api/scenarios`, `/api/health`, `/api/demo/prepare`, `/api/demo/run`), recorded
   Sample replay, stateless limits and the `LIVE_ENABLED` kill switch.
 - `lib/search-adapter.mjs`: environment checks, attested schema metadata, the Search-only fetch guard and call budget.

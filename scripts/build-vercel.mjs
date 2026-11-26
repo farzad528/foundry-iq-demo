@@ -389,6 +389,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   write('public/assets/client.mjs', readFileSync('assets/client.mjs'));
   write('public/assets/header.mjs', readFileSync('assets/header.mjs'));
   write('public/assets/display.mjs', readFileSync('assets/display.mjs'));
+  write('public/assets/graph-viz.mjs', readFileSync('assets/graph-viz.mjs'));
   write('public/assets/about.mjs', readFileSync('assets/about.mjs'));
   write('public/assets/styles.css', readFileSync('assets/styles.css'));
   write('public/assets/theme.js', readFileSync('assets/theme.js'));

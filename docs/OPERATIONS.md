@@ -32,6 +32,14 @@ Browser ── static UI (dist/vercel/public) ──► /api/* Vercel Functions 
 The API has four routes: `GET /api/scenarios`, `GET /api/health` (also `/healthz`), `POST /api/demo/prepare` and
 `POST /api/demo/run`. Private bindings and attestations exist only inside the built server bundle.
 
+AFTER S08 draws each graph statement's returned rows as an entity graph and AFTER S09 draws the topic hierarchy as a topic
+map (`assets/graph-viz.mjs`). The entity graph shows each entity once per role and name and each relationship once per
+entity pair, in the query pattern's order. Bubble area in the topic map is each theme's share of passages; sub-themes sit
+inside their theme and a ✓ marks covered themes. Nothing is added for density. Hover or focus highlights an item with a
+one-line readout; click, tap or Enter pins its details below (relations, sub-themes and the citations of the rows that
+contain the entity). The path rows and the theme list stay as text. Motion is a one-time reveal plus finite pulses on the
+highlighted item, and reduced-motion preferences turn it off.
+
 ## Local development
 
 ```bash
