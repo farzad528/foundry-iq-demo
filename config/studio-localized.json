@@ -1,0 +1,1881 @@
+{
+  "version": "zava-locales-2026-01",
+  "locales": {
+    "fr": {
+      "products": [
+        {
+          "id": "DRILL-1001",
+          "title": "Perceuse à percussion compacte Zava DCD796",
+          "content": "Perceuse à percussion sans fil 18V légère pour la maçonnerie en brique et les petits travaux de rénovation à domicile. Batterie BAT-18V-A."
+        },
+        {
+          "id": "DRILL-1002",
+          "title": "Perceuse sans balais Zava DCD797",
+          "content": "Perceuse sans fil 18V compacte pour la rénovation à domicile. La batterie BAT-18V-B utilise un lot différent, non soumis à B-17."
+        },
+        {
+          "id": "DRILL-1003",
+          "title": "Zava Mason Lite",
+          "content": "Outil rotatif léger pour percer des trous dans les murs en briques et la maçonnerie en béton."
+        },
+        {
+          "id": "DRILL-1004",
+          "title": "Perceuse de maçonnerie professionnelle Zava",
+          "content": "Perceuse de maçonnerie sans fil 18V légère, positionnée pour la rénovation professionnelle à domicile."
+        },
+        {
+          "id": "DRILL-1005",
+          "title": "Perceuse Zava Home 18",
+          "content": "Perceuse de maçonnerie sans fil 18V légère pour la rénovation à domicile, temporairement en rupture de stock."
+        },
+        {
+          "id": "DRILL-1006",
+          "title": "Imprimante d’étiquettes d’identification Zava exact",
+          "content": "Imprimante d’étiquettes d’actifs DCD796. Ce n’est pas une perceuse. Imprime uniquement des identifiants."
+        },
+        {
+          "id": "DRILL-1007",
+          "title": "Perceuse de maçonnerie Zava North",
+          "content": "Perceuse sans fil 18V légère pour murs en briques."
+        },
+        {
+          "id": "BAT-18V-A",
+          "title": "Batterie Zava A",
+          "content": "Bloc rechargeable 18V, CELL-B17, SUP-017, LOT-2407-A et LOT-2407-B. Dépannage de la charge."
+        },
+        {
+          "id": "BAT-18V-B",
+          "title": "Batterie Zava B",
+          "content": "Bloc 18V avec CELL-C20 et LOT-2501-C, non affecté par B-17."
+        },
+        {
+          "id": "HAT-001",
+          "title": "Bob bleu Zava",
+          "content": "Bob bleu en coton avec bord rond."
+        },
+        {
+          "id": "HAT-002",
+          "title": "Bob rouge Zava",
+          "content": "Bob rouge en coton avec bord rond."
+        },
+        {
+          "id": "BOWL-001",
+          "title": "Bol mélangeur bleu Zava",
+          "content": "Bol de cuisine rond bleu, ce n’est pas un vêtement."
+        },
+        {
+          "id": "ZAVA-P-00001",
+          "title": "Produit fictif Zava 1",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00002",
+          "title": "Produit fictif Zava 2",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00003",
+          "title": "Produit fictif Zava 3",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00004",
+          "title": "Produit fictif Zava 4",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00005",
+          "title": "Produit fictif Zava 5",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00006",
+          "title": "Produit fictif Zava 6",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00007",
+          "title": "Produit fictif Zava 7",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00008",
+          "title": "Produit fictif Zava 8",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00009",
+          "title": "Produit fictif Zava 9",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00010",
+          "title": "Produit fictif Zava 10",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00011",
+          "title": "Produit fictif Zava 11",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00012",
+          "title": "Produit fictif Zava 12",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00013",
+          "title": "Produit fictif Zava 13",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00014",
+          "title": "Produit fictif Zava 14",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00015",
+          "title": "Produit fictif Zava 15",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00016",
+          "title": "Produit fictif Zava 16",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00017",
+          "title": "Produit fictif Zava 17",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00018",
+          "title": "Produit fictif Zava 18",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00019",
+          "title": "Produit fictif Zava 19",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00020",
+          "title": "Produit fictif Zava 20",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00021",
+          "title": "Produit fictif Zava 21",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00022",
+          "title": "Produit fictif Zava 22",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00023",
+          "title": "Produit fictif Zava 23",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00024",
+          "title": "Produit fictif Zava 24",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00025",
+          "title": "Produit fictif Zava 25",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00026",
+          "title": "Produit fictif Zava 26",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00027",
+          "title": "Produit fictif Zava 27",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        },
+        {
+          "id": "ZAVA-P-00028",
+          "title": "Produit fictif Zava 28",
+          "content": "Remplissage synthétique original de catalogue, aucun contenu client réel."
+        }
+      ],
+      "support": [
+        {
+          "id": "POL-RET-2026-01",
+          "title": "Politique de retours ordinaires",
+          "content": "Les retours ordinaires nécessitent une preuve d’achat dans un délai de 30 jours. Après 45 jours, la période de retour ordinaire est terminée."
+        },
+        {
+          "id": "POL-DEF-2026-02",
+          "title": "Procédure pour produits défectueux",
+          "content": "Les produits de type batterie défectueux après 45 jours ne sont pas automatiquement refusés : contactez le support pour une évaluation avec le reçu, le numéro de série et le lot de la batterie. L’exception pour produits défectueux est un processus distinct, pas un remboursement automatique."
+        },
+        {
+          "id": "WAR-BAT-2026-01",
+          "title": "Garantie batterie",
+          "content": "L’éligibilité à la garantie de charge de la batterie dépend de la date d’achat, du modèle, du reçu et des exclusions. La couverture est de 12 mois pour les défauts de fabrication ; elle exclut les dégâts des eaux, la mauvaise utilisation et l’usure normale."
+        },
+        {
+          "id": "MAN-CHARGE-1001",
+          "title": "Manuel de charge de la batterie",
+          "content": "La batterie a cessé de se charger : inspectez le chargeur et le lot BAT-18V-A ; arrêtez l’utilisation en cas de surchauffe et contactez le support. Ne contournez jamais un circuit de sécurité de batterie endommagé."
+        },
+        {
+          "id": "POL-RECALL-v2",
+          "title": "Politique actuelle de rappel de batteries",
+          "content": "Politique actuelle de rappel pour pannes de batteries : isoler uniquement LOT-2407-A et LOT-2407-B, arrêter l’utilisation, contacter le support pour une évaluation ; DRILL-1002 n’est pas automatiquement affectée. Révision v2 en vigueur à partir du 2026-09-01."
+        },
+        {
+          "id": "INC-2026-017",
+          "title": "Incident batterie B-17",
+          "content": "Le défaut B-17 du composant CELL-B17 du fournisseur SUP-017 affecte LOT-2407-A et LOT-2407-B installés dans DRILL-1001 avec BAT-18V-A. Pannes de batterie récurrentes. DRILL-1002 utilise un lot de batterie différent et n’est pas automatiquement affectée."
+        },
+        {
+          "id": "BOM-2026-01",
+          "title": "Nomenclature d’approvisionnement des batteries",
+          "content": "DRILL-1001 utilise BAT-18V-A ; contient CELL-B17 fourni par SUP-017. Lots LOT-2407-A et LOT-2407-B. DRILL-1002 utilise BAT-18V-B avec CELL-C20, LOT-2501-C."
+        },
+        {
+          "id": "SUP-BUL-017",
+          "title": "Bulletin fournisseur B-17",
+          "content": "SUP-017 confirme des pannes de charge de CELL-B17 uniquement dans LOT-2407-A et LOT-2407-B. Un autre composant CELL-X10 du même fournisseur n’est pas affecté."
+        },
+        {
+          "id": "CASE-001",
+          "title": "Dossier d’assistance pour panne de charge",
+          "content": "DRILL-1001 BAT-18V-A LOT-2407-A a cessé de se charger après 45 jours ; reçu collecté, évaluation du produit défectueux en attente."
+        },
+        {
+          "id": "CASE-002",
+          "title": "Dossier de batterie sans lien",
+          "content": "DRILL-1002 BAT-18V-B LOT-2501-C endommagée par l’eau, sans lien avec le défaut fournisseur B-17."
+        },
+        {
+          "id": "MAN-DRILL-1001",
+          "title": "Manuel de spécifications de perceuse Zava",
+          "content": "Diamètre de perçage dans le béton : DCD796 13 mm ; ligne adjacente DCD797 16 mm. Bois : DCD796 40 mm. Acier : DCD796 13 mm."
+        }
+      ],
+      "topics": [
+        {
+          "id": "TOPIC-BATTERY-FAILURES",
+          "title": "Pannes récurrentes de batteries",
+          "content": "B-17 : CELL-B17 de SUP-017 affecte LOT-2407-A et LOT-2407-B. Évaluer les pannes de charge ; DRILL-1002 n’est pas automatiquement affectée.",
+          "summary": "B-17 : CELL-B17 de SUP-017 affecte LOT-2407-A et LOT-2407-B. Évaluer les pannes de charge ; DRILL-1002 n’est pas automatiquement affectée."
+        }
+      ],
+      "queries": {
+        "S01": [
+          {
+            "label": "Perceuse sans fil DeWalt DCD796",
+            "query": "Perceuse sans fil DeWalt DCD796"
+          },
+          {
+            "label": "perceuse de maçonnerie sans fil",
+            "query": "perceuse de maçonnerie sans fil"
+          },
+          {
+            "label": "imprimante d’étiquettes DCD796",
+            "query": "imprimante d’étiquettes DCD796"
+          },
+          {
+            "label": "perceuse BAT-18V-A",
+            "query": "perceuse BAT-18V-A"
+          }
+        ],
+        "S02": [
+          {
+            "label": "Un outil léger pour percer des trous dans les murs en briques",
+            "query": "Un outil léger pour percer des trous dans les murs en briques"
+          },
+          {
+            "label": "DCD796",
+            "query": "DCD796"
+          },
+          {
+            "label": "bloc-batterie en charge",
+            "query": "bloc-batterie en charge"
+          },
+          {
+            "label": "bol de cuisine bleu qui n’est pas un chapeau",
+            "query": "bol de cuisine bleu qui n’est pas un chapeau"
+          }
+        ],
+        "S03": [
+          {
+            "label": "Perceuse de maçonnerie sans fil légère à moins de £200",
+            "query": "Perceuse de maçonnerie sans fil légère à moins de £200"
+          },
+          {
+            "label": "Perceuse de maçonnerie professionnelle à moins de £200",
+            "query": "Perceuse de maçonnerie professionnelle à moins de £200"
+          },
+          {
+            "label": "DCD796 à moins de £200",
+            "query": "DCD796 à moins de £200"
+          },
+          {
+            "label": "Perceuse sans fil compatible avec la batterie à moins de £200",
+            "query": "Perceuse sans fil compatible avec la batterie à moins de £200"
+          }
+        ],
+        "S04": [
+          {
+            "label": "Meilleure perceuse pour de petits travaux de rénovation à domicile",
+            "query": "Meilleure perceuse pour de petits travaux de rénovation à domicile"
+          },
+          {
+            "label": "perceuse de maçonnerie",
+            "query": "perceuse de maçonnerie"
+          },
+          {
+            "label": "imprimante d’étiquettes DCD796",
+            "query": "imprimante d’étiquettes DCD796"
+          },
+          {
+            "label": "perceuse sans fil compatible avec la batterie",
+            "query": "perceuse sans fil compatible avec la batterie"
+          }
+        ],
+        "S05": [
+          {
+            "label": "Perceuse sans fil 18V, disponible à Londres, à moins de £200",
+            "query": "Perceuse sans fil 18V, disponible à Londres, à moins de £200"
+          },
+          {
+            "label": "Perceuse de maçonnerie à Londres à moins de £200",
+            "query": "Perceuse de maçonnerie à Londres à moins de £200"
+          },
+          {
+            "label": "Stock DCD796 à Londres à moins de £200",
+            "query": "Stock DCD796 à Londres à moins de £200"
+          },
+          {
+            "label": "Perceuse compatible BAT-18V-A disponible à Londres",
+            "query": "Perceuse compatible BAT-18V-A disponible à Londres"
+          }
+        ],
+        "S06": [
+          {
+            "label": "Meilleure perceuse sans fil pour la rénovation",
+            "query": "Meilleure perceuse sans fil pour la rénovation"
+          },
+          {
+            "label": "outil de maçonnerie léger",
+            "query": "outil de maçonnerie léger"
+          },
+          {
+            "label": "imprimante d’étiquettes DCD796",
+            "query": "imprimante d’étiquettes DCD796"
+          },
+          {
+            "label": "perceuse sans fil compatible avec la batterie",
+            "query": "perceuse sans fil compatible avec la batterie"
+          }
+        ],
+        "S07": [
+          {
+            "label": "La batterie de ma perceuse a cessé de se charger après 45 jours. Puis-je la retourner ?",
+            "query": "La batterie de ma perceuse a cessé de se charger après 45 jours. Puis-je la retourner ?"
+          },
+          {
+            "label": "Quelles sont les exclusions de la garantie batterie ?",
+            "query": "Quelles sont les exclusions de la garantie batterie ?"
+          },
+          {
+            "label": "Les dégâts des eaux donnent-ils droit automatiquement à un remboursement de la batterie ?",
+            "query": "Les dégâts des eaux donnent-ils droit automatiquement à un remboursement de la batterie ?"
+          },
+          {
+            "label": "Quel lot de batterie dois-je vérifier lorsque DRILL-1001 cesse de se charger ?",
+            "query": "Quel lot de batterie dois-je vérifier lorsque DRILL-1001 cesse de se charger ?"
+          }
+        ],
+        "S08": [
+          {
+            "label": "Quels modèles de perceuses pourraient être affectés par le défaut de batterie fournisseur B-17 ?",
+            "query": "Quels modèles de perceuses pourraient être affectés par le défaut de batterie fournisseur B-17 ?"
+          },
+          {
+            "label": "Quels lots contiennent CELL-B17 ?",
+            "query": "Quels lots contiennent CELL-B17 ?"
+          },
+          {
+            "label": "DRILL-1002 est-elle automatiquement affectée par B-17 ?",
+            "query": "DRILL-1002 est-elle automatiquement affectée par B-17 ?"
+          },
+          {
+            "label": "Tracer SUP-017 via CELL-B17 jusqu’aux perceuses affectées",
+            "query": "Tracer SUP-017 via CELL-B17 jusqu’aux perceuses affectées"
+          }
+        ],
+        "S09": [
+          {
+            "label": "Que savons-nous des pannes récurrentes de batteries ?",
+            "query": "Que savons-nous des pannes récurrentes de batteries ?"
+          },
+          {
+            "label": "Résumer le sujet des pannes de batteries",
+            "query": "Résumer le sujet des pannes de batteries"
+          },
+          {
+            "label": "Toutes les pièces SUP-017 sont-elles défectueuses ?",
+            "query": "Toutes les pièces SUP-017 sont-elles défectueuses ?"
+          },
+          {
+            "label": "Quelle est l’orientation actuelle concernant le rappel B-17 et les preuves du fournisseur ?",
+            "query": "Quelle est l’orientation actuelle concernant le rappel B-17 et les preuves du fournisseur ?"
+          }
+        ],
+        "S10": [
+          {
+            "label": "Quel est le diamètre maximal de perçage dans le béton du modèle DCD796 ?",
+            "query": "Quel est le diamètre maximal de perçage dans le béton du modèle DCD796 ?"
+          },
+          {
+            "label": "Quel est le diamètre de perçage dans le béton de DCD797 ?",
+            "query": "Quel est le diamètre de perçage dans le béton de DCD797 ?"
+          },
+          {
+            "label": "Le diamètre de perçage dans le béton de DCD796 est-il de 16 mm ?",
+            "query": "Le diamètre de perçage dans le béton de DCD796 est-il de 16 mm ?"
+          },
+          {
+            "label": "Comparer les diamètres de perçage de DCD796 dans le béton et le bois",
+            "query": "Comparer les diamètres de perçage de DCD796 dans le béton et le bois"
+          }
+        ],
+        "S11": [
+          {
+            "label": "Chapeau bleu groupé - image uniquement",
+            "query": ""
+          },
+          {
+            "label": "Chapeau bleu groupé + requête chapeau bleu en coton",
+            "query": "Bob bleu en coton avec bord rond."
+          },
+          {
+            "label": "Chapeau rouge groupé + requête chapeau rouge en coton",
+            "query": "Bob rouge en coton avec bord rond."
+          },
+          {
+            "label": "Bol bleu groupé + requête bol de cuisine",
+            "query": "Bol de cuisine rond bleu, ce n’est pas un vêtement."
+          }
+        ]
+      }
+    },
+    "es": {
+      "products": [
+        {
+          "id": "DRILL-1001",
+          "title": "Taladro percutor compacto Zava DCD796",
+          "content": "Taladro percutor inalámbrico de 18V y peso ligero para albañilería en ladrillo y pequeñas reformas en el hogar. Batería BAT-18V-A."
+        },
+        {
+          "id": "DRILL-1002",
+          "title": "Taladro sin escobillas Zava DCD797",
+          "content": "Taladro inalámbrico compacto de 18V para reformas en el hogar. La batería BAT-18V-B usa un lote diferente, no sujeto a B-17."
+        },
+        {
+          "id": "DRILL-1003",
+          "title": "Zava Mason Lite",
+          "content": "Herramienta rotativa ligera para hacer agujeros en paredes de ladrillo y mampostería de hormigón."
+        },
+        {
+          "id": "DRILL-1004",
+          "title": "Taladro profesional para mampostería Zava",
+          "content": "Taladro para mampostería inalámbrico de 18V y peso ligero, orientado a marketing de reformas profesionales en el hogar."
+        },
+        {
+          "id": "DRILL-1005",
+          "title": "Taladro Zava Home 18",
+          "content": "Taladro para mampostería inalámbrico de 18V y peso ligero para reformas en el hogar, temporalmente sin existencias."
+        },
+        {
+          "id": "DRILL-1006",
+          "title": "Impresora de etiquetas de identificador exacto Zava",
+          "content": "Impresora de etiquetas de activos DCD796. No es un taladro. Solo imprime identificadores."
+        },
+        {
+          "id": "DRILL-1007",
+          "title": "Taladro para mampostería Zava North",
+          "content": "Taladro inalámbrico de 18V y peso ligero para paredes de ladrillo."
+        },
+        {
+          "id": "BAT-18V-A",
+          "title": "Batería Zava A",
+          "content": "Paquete recargable de 18V, CELL-B17, SUP-017, LOT-2407-A y LOT-2407-B. Resolución de problemas de carga."
+        },
+        {
+          "id": "BAT-18V-B",
+          "title": "Batería Zava B",
+          "content": "Paquete de 18V con CELL-C20 y LOT-2501-C, no afectado por B-17."
+        },
+        {
+          "id": "HAT-001",
+          "title": "Sombrero pescador azul Zava",
+          "content": "Sombrero pescador azul de algodón con ala redonda."
+        },
+        {
+          "id": "HAT-002",
+          "title": "Sombrero pescador rojo Zava",
+          "content": "Sombrero pescador rojo de algodón con ala redonda."
+        },
+        {
+          "id": "BOWL-001",
+          "title": "Bol de mezcla azul Zava",
+          "content": "Bol de cocina azul y redondo, no es una prenda."
+        },
+        {
+          "id": "ZAVA-P-00001",
+          "title": "Producto ficticio Zava 1",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00002",
+          "title": "Producto ficticio Zava 2",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00003",
+          "title": "Producto ficticio Zava 3",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00004",
+          "title": "Producto ficticio Zava 4",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00005",
+          "title": "Producto ficticio Zava 5",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00006",
+          "title": "Producto ficticio Zava 6",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00007",
+          "title": "Producto ficticio Zava 7",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00008",
+          "title": "Producto ficticio Zava 8",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00009",
+          "title": "Producto ficticio Zava 9",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00010",
+          "title": "Producto ficticio Zava 10",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00011",
+          "title": "Producto ficticio Zava 11",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00012",
+          "title": "Producto ficticio Zava 12",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00013",
+          "title": "Producto ficticio Zava 13",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00014",
+          "title": "Producto ficticio Zava 14",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00015",
+          "title": "Producto ficticio Zava 15",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00016",
+          "title": "Producto ficticio Zava 16",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00017",
+          "title": "Producto ficticio Zava 17",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00018",
+          "title": "Producto ficticio Zava 18",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00019",
+          "title": "Producto ficticio Zava 19",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00020",
+          "title": "Producto ficticio Zava 20",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00021",
+          "title": "Producto ficticio Zava 21",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00022",
+          "title": "Producto ficticio Zava 22",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00023",
+          "title": "Producto ficticio Zava 23",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00024",
+          "title": "Producto ficticio Zava 24",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00025",
+          "title": "Producto ficticio Zava 25",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00026",
+          "title": "Producto ficticio Zava 26",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00027",
+          "title": "Producto ficticio Zava 27",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        },
+        {
+          "id": "ZAVA-P-00028",
+          "title": "Producto ficticio Zava 28",
+          "content": "Relleno sintético original de catálogo, sin contenido real de clientes."
+        }
+      ],
+      "support": [
+        {
+          "id": "POL-RET-2026-01",
+          "title": "Política ordinaria de devoluciones",
+          "content": "Las devoluciones ordinarias requieren comprobante de compra dentro de 30 días. Después de 45 días, el periodo ordinario de devolución ha finalizado."
+        },
+        {
+          "id": "POL-DEF-2026-02",
+          "title": "Proceso para productos defectuosos",
+          "content": "Los productos de batería defectuosos después de 45 días no se rechazan automáticamente: contacte con soporte para una evaluación con recibo, número de serie y lote de la batería. La excepción por producto defectuoso es un proceso separado, no un reembolso automático."
+        },
+        {
+          "id": "WAR-BAT-2026-01",
+          "title": "Garantía de batería",
+          "content": "La elegibilidad de la garantía de carga de la batería depende de la fecha de compra, el modelo, el recibo y las exclusiones. La cobertura es de 12 meses para defectos de fabricación; excluye daños por agua, uso indebido y desgaste normal."
+        },
+        {
+          "id": "MAN-CHARGE-1001",
+          "title": "Manual de carga de batería",
+          "content": "La batería dejó de cargar: inspeccione el cargador y el lote BAT-18V-A; deje de usarla si se sobrecalienta y contacte con soporte. Nunca anule el circuito de seguridad de una batería dañada."
+        },
+        {
+          "id": "POL-RECALL-v2",
+          "title": "Política actual de retirada de baterías",
+          "content": "Política actual de retirada por fallos de baterías: aislar solo LOT-2407-A y LOT-2407-B, dejar de usar, contactar con soporte para evaluación; DRILL-1002 no se ve afectado automáticamente. Revisión v2 efectiva desde 2026-09-01."
+        },
+        {
+          "id": "INC-2026-017",
+          "title": "Incidente de batería B-17",
+          "content": "El defecto B-17 del componente CELL-B17 del proveedor SUP-017 afecta a LOT-2407-A y LOT-2407-B instalados en DRILL-1001 con BAT-18V-A. Fallos recurrentes de batería. DRILL-1002 usa un lote de batería diferente y no se ve afectado automáticamente."
+        },
+        {
+          "id": "BOM-2026-01",
+          "title": "Lista de materiales de batería adquirida",
+          "content": "DRILL-1001 usa BAT-18V-A; contiene CELL-B17 suministrada por SUP-017. Lotes LOT-2407-A y LOT-2407-B. DRILL-1002 usa BAT-18V-B con CELL-C20, LOT-2501-C."
+        },
+        {
+          "id": "SUP-BUL-017",
+          "title": "Boletín del proveedor B-17",
+          "content": "SUP-017 confirma fallos de carga de CELL-B17 solo en LOT-2407-A y LOT-2407-B. Un componente diferente CELL-X10 del mismo proveedor no se ve afectado."
+        },
+        {
+          "id": "CASE-001",
+          "title": "Caso de soporte por fallo de carga",
+          "content": "DRILL-1001 BAT-18V-A LOT-2407-A dejó de cargar después de 45 días; recibo recopilado, evaluación de producto defectuoso pendiente."
+        },
+        {
+          "id": "CASE-002",
+          "title": "Caso de batería no relacionado",
+          "content": "DRILL-1002 BAT-18V-B LOT-2501-C con daños por agua, no relacionado con el defecto de proveedor B-17."
+        },
+        {
+          "id": "MAN-DRILL-1001",
+          "title": "Manual de especificaciones del taladro Zava",
+          "content": "Diámetro de perforación en hormigón: DCD796 13 mm; fila adyacente DCD797 16 mm. Madera: DCD796 40 mm. Acero: DCD796 13 mm."
+        }
+      ],
+      "topics": [
+        {
+          "id": "TOPIC-BATTERY-FAILURES",
+          "title": "Fallos recurrentes de baterías",
+          "content": "B-17: CELL-B17 de SUP-017 afecta a LOT-2407-A y LOT-2407-B. Evaluar fallos de carga; DRILL-1002 no se ve afectado automáticamente.",
+          "summary": "B-17: CELL-B17 de SUP-017 afecta a LOT-2407-A y LOT-2407-B. Evaluar fallos de carga; DRILL-1002 no se ve afectado automáticamente."
+        }
+      ],
+      "queries": {
+        "S01": [
+          {
+            "label": "Taladro inalámbrico DeWalt DCD796",
+            "query": "Taladro inalámbrico DeWalt DCD796"
+          },
+          {
+            "label": "taladro inalámbrico para mampostería",
+            "query": "taladro inalámbrico para mampostería"
+          },
+          {
+            "label": "impresora de etiquetas DCD796",
+            "query": "impresora de etiquetas DCD796"
+          },
+          {
+            "label": "taladro BAT-18V-A",
+            "query": "taladro BAT-18V-A"
+          }
+        ],
+        "S02": [
+          {
+            "label": "Una herramienta ligera para hacer agujeros en paredes de ladrillo",
+            "query": "Una herramienta ligera para hacer agujeros en paredes de ladrillo"
+          },
+          {
+            "label": "DCD796",
+            "query": "DCD796"
+          },
+          {
+            "label": "cargar paquete de batería",
+            "query": "cargar paquete de batería"
+          },
+          {
+            "label": "bol de cocina azul que no es un sombrero",
+            "query": "bol de cocina azul que no es un sombrero"
+          }
+        ],
+        "S03": [
+          {
+            "label": "Taladro inalámbrico ligero para mampostería por debajo de £200",
+            "query": "Taladro inalámbrico ligero para mampostería por debajo de £200"
+          },
+          {
+            "label": "taladro profesional para mampostería por debajo de £200",
+            "query": "taladro profesional para mampostería por debajo de £200"
+          },
+          {
+            "label": "DCD796 por debajo de £200",
+            "query": "DCD796 por debajo de £200"
+          },
+          {
+            "label": "taladro inalámbrico compatible con batería por debajo de £200",
+            "query": "taladro inalámbrico compatible con batería por debajo de £200"
+          }
+        ],
+        "S04": [
+          {
+            "label": "Mejor taladro para pequeñas reformas en el hogar",
+            "query": "Mejor taladro para pequeñas reformas en el hogar"
+          },
+          {
+            "label": "taladro para mampostería",
+            "query": "taladro para mampostería"
+          },
+          {
+            "label": "impresora de etiquetas DCD796",
+            "query": "impresora de etiquetas DCD796"
+          },
+          {
+            "label": "taladro inalámbrico compatible con batería",
+            "query": "taladro inalámbrico compatible con batería"
+          }
+        ],
+        "S05": [
+          {
+            "label": "Taladro inalámbrico de 18V, disponible en Londres, por debajo de £200",
+            "query": "Taladro inalámbrico de 18V, disponible en Londres, por debajo de £200"
+          },
+          {
+            "label": "taladro para mampostería en Londres por debajo de £200",
+            "query": "taladro para mampostería en Londres por debajo de £200"
+          },
+          {
+            "label": "DCD796 existencias en Londres por debajo de £200",
+            "query": "DCD796 existencias en Londres por debajo de £200"
+          },
+          {
+            "label": "taladro compatible con BAT-18V-A disponible en Londres",
+            "query": "taladro compatible con BAT-18V-A disponible en Londres"
+          }
+        ],
+        "S06": [
+          {
+            "label": "Mejor taladro inalámbrico para reformas",
+            "query": "Mejor taladro inalámbrico para reformas"
+          },
+          {
+            "label": "herramienta ligera para mampostería",
+            "query": "herramienta ligera para mampostería"
+          },
+          {
+            "label": "impresora de etiquetas DCD796",
+            "query": "impresora de etiquetas DCD796"
+          },
+          {
+            "label": "taladro inalámbrico compatible con batería",
+            "query": "taladro inalámbrico compatible con batería"
+          }
+        ],
+        "S07": [
+          {
+            "label": "La batería de mi taladro dejó de cargar después de 45 días. ¿Puedo devolverla?",
+            "query": "La batería de mi taladro dejó de cargar después de 45 días. ¿Puedo devolverla?"
+          },
+          {
+            "label": "¿Cuáles son las exclusiones de la garantía de la batería?",
+            "query": "¿Cuáles son las exclusiones de la garantía de la batería?"
+          },
+          {
+            "label": "¿Los daños por agua suponen un reembolso automático de la batería?",
+            "query": "¿Los daños por agua suponen un reembolso automático de la batería?"
+          },
+          {
+            "label": "¿Qué lote de batería debo comprobar cuando el DRILL-1001 deja de cargar?",
+            "query": "¿Qué lote de batería debo comprobar cuando el DRILL-1001 deja de cargar?"
+          }
+        ],
+        "S08": [
+          {
+            "label": "¿Qué modelos de taladro podrían verse afectados por el defecto de batería del proveedor B-17?",
+            "query": "¿Qué modelos de taladro podrían verse afectados por el defecto de batería del proveedor B-17?"
+          },
+          {
+            "label": "¿Qué lotes contienen CELL-B17?",
+            "query": "¿Qué lotes contienen CELL-B17?"
+          },
+          {
+            "label": "¿DRILL-1002 se ve afectado automáticamente por B-17?",
+            "query": "¿DRILL-1002 se ve afectado automáticamente por B-17?"
+          },
+          {
+            "label": "Rastrear SUP-017 a través de CELL-B17 hasta los taladros afectados",
+            "query": "Rastrear SUP-017 a través de CELL-B17 hasta los taladros afectados"
+          }
+        ],
+        "S09": [
+          {
+            "label": "¿Qué sabemos sobre los fallos recurrentes de baterías?",
+            "query": "¿Qué sabemos sobre los fallos recurrentes de baterías?"
+          },
+          {
+            "label": "Resumir el tema de los fallos de baterías",
+            "query": "Resumir el tema de los fallos de baterías"
+          },
+          {
+            "label": "¿Todas las piezas de SUP-017 son defectuosas?",
+            "query": "¿Todas las piezas de SUP-017 son defectuosas?"
+          },
+          {
+            "label": "¿Cuál es la guía actual de retirada B-17 y la evidencia del proveedor?",
+            "query": "¿Cuál es la guía actual de retirada B-17 y la evidencia del proveedor?"
+          }
+        ],
+        "S10": [
+          {
+            "label": "¿Cuál es el diámetro máximo de perforación en hormigón del modelo DCD796?",
+            "query": "¿Cuál es el diámetro máximo de perforación en hormigón del modelo DCD796?"
+          },
+          {
+            "label": "¿Cuál es el diámetro de perforación en hormigón de DCD797?",
+            "query": "¿Cuál es el diámetro de perforación en hormigón de DCD797?"
+          },
+          {
+            "label": "¿El diámetro de perforación en hormigón de DCD796 es 16 mm?",
+            "query": "¿El diámetro de perforación en hormigón de DCD796 es 16 mm?"
+          },
+          {
+            "label": "Comparar los diámetros de perforación en hormigón y madera de DCD796",
+            "query": "Comparar los diámetros de perforación en hormigón y madera de DCD796"
+          }
+        ],
+        "S11": [
+          {
+            "label": "Sombrero azul incluido en el lote - solo imagen",
+            "query": ""
+          },
+          {
+            "label": "Sombrero azul incluido en el lote + consulta de sombrero pescador azul de algodón",
+            "query": "Sombrero pescador azul de algodón con ala redonda."
+          },
+          {
+            "label": "Sombrero rojo incluido en el lote + consulta de sombrero pescador rojo de algodón",
+            "query": "Sombrero pescador rojo de algodón con ala redonda."
+          },
+          {
+            "label": "Bol azul incluido en el lote + consulta de bol de cocina",
+            "query": "Bol de cocina azul y redondo, no es una prenda."
+          }
+        ]
+      }
+    },
+    "ja": {
+      "products": [
+        {
+          "id": "DRILL-1001",
+          "title": "Zava DCD796 コンパクトハンマードリル",
+          "content": "レンガ組積造や小規模な自宅リフォーム向けの 18V コードレス軽量ハンマードリル。バッテリー BAT-18V-A。"
+        },
+        {
+          "id": "DRILL-1002",
+          "title": "Zava DCD797 ブラシレスドリル",
+          "content": "自宅リフォーム向け 18V コードレスコンパクトドリル。バッテリー BAT-18V-B は別ロットを使用しており、B-17 の対象ではありません。"
+        },
+        {
+          "id": "DRILL-1003",
+          "title": "Zava Mason Lite",
+          "content": "レンガ壁やコンクリート組積造に穴を開けるための軽量ロータリーツール。"
+        },
+        {
+          "id": "DRILL-1004",
+          "title": "Zava プロフェッショナル組積造ドリル",
+          "content": "18V コードレス軽量組積造ドリル。プロ向け自宅リフォームをうたったマーケティング。"
+        },
+        {
+          "id": "DRILL-1005",
+          "title": "Zava Home 18 ドリル",
+          "content": "自宅リフォーム向け 18V コードレス軽量組積造ドリル。一時的に在庫切れ。"
+        },
+        {
+          "id": "DRILL-1006",
+          "title": "Zava exact identifier ラベルプリンター",
+          "content": "DCD796 資産ラベルプリンター。ドリルではありません。識別子のみを印刷します。"
+        },
+        {
+          "id": "DRILL-1007",
+          "title": "Zava North 組積造ドリル",
+          "content": "レンガ壁向け 18V コードレス軽量ドリル。"
+        },
+        {
+          "id": "BAT-18V-A",
+          "title": "Zava バッテリー A",
+          "content": "18V 充電式パック。CELL-B17、SUP-017、LOT-2407-A および LOT-2407-B。充電トラブルシューティング。"
+        },
+        {
+          "id": "BAT-18V-B",
+          "title": "Zava バッテリー B",
+          "content": "CELL-C20 と LOT-2501-C を搭載した 18V パックで、B-17 の影響は受けません。"
+        },
+        {
+          "id": "HAT-001",
+          "title": "Zava ブルーバケットハット",
+          "content": "丸いつば付きのブルーコットン製バケットハット。"
+        },
+        {
+          "id": "HAT-002",
+          "title": "Zava レッドバケットハット",
+          "content": "丸いつば付きのレッドコットン製バケットハット。"
+        },
+        {
+          "id": "BOWL-001",
+          "title": "Zava ブルー ミキシングボウル",
+          "content": "ブルーの丸型キッチンボウル。衣料品ではありません。"
+        },
+        {
+          "id": "ZAVA-P-00001",
+          "title": "Zava 架空製品 1",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00002",
+          "title": "Zava 架空製品 2",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00003",
+          "title": "Zava 架空製品 3",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00004",
+          "title": "Zava 架空製品 4",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00005",
+          "title": "Zava 架空製品 5",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00006",
+          "title": "Zava 架空製品 6",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00007",
+          "title": "Zava 架空製品 7",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00008",
+          "title": "Zava 架空製品 8",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00009",
+          "title": "Zava 架空製品 9",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00010",
+          "title": "Zava 架空製品 10",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00011",
+          "title": "Zava 架空製品 11",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00012",
+          "title": "Zava 架空製品 12",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00013",
+          "title": "Zava 架空製品 13",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00014",
+          "title": "Zava 架空製品 14",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00015",
+          "title": "Zava 架空製品 15",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00016",
+          "title": "Zava 架空製品 16",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00017",
+          "title": "Zava 架空製品 17",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00018",
+          "title": "Zava 架空製品 18",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00019",
+          "title": "Zava 架空製品 19",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00020",
+          "title": "Zava 架空製品 20",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00021",
+          "title": "Zava 架空製品 21",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00022",
+          "title": "Zava 架空製品 22",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00023",
+          "title": "Zava 架空製品 23",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00024",
+          "title": "Zava 架空製品 24",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00025",
+          "title": "Zava 架空製品 25",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00026",
+          "title": "Zava 架空製品 26",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00027",
+          "title": "Zava 架空製品 27",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        },
+        {
+          "id": "ZAVA-P-00028",
+          "title": "Zava 架空製品 28",
+          "content": "オリジナルの合成カタログ埋め草であり、実在の顧客コンテンツはありません。"
+        }
+      ],
+      "support": [
+        {
+          "id": "POL-RET-2026-01",
+          "title": "通常返品ポリシー",
+          "content": "通常の返品には 30 日以内の購入証明が必要です。45 日を過ぎると通常返品の受付期間は終了します。"
+        },
+        {
+          "id": "POL-DEF-2026-02",
+          "title": "不良品対応プロセス",
+          "content": "バッテリー不良品は 45 日経過後でも自動的に拒否されるわけではありません。レシート、シリアル番号、バッテリーのロット情報を添えてサポートに連絡し、評価を受けてください。不良品特例は通常返品とは別プロセスであり、自動返金ではありません。"
+        },
+        {
+          "id": "WAR-BAT-2026-01",
+          "title": "バッテリー保証",
+          "content": "バッテリー充電に関する保証適用可否は、購入日、モデル、レシートおよび除外事項によって決まります。製造上の欠陥については 12 か月間の保証がありますが、水濡れ、誤使用、通常の摩耗は対象外です。"
+        },
+        {
+          "id": "MAN-CHARGE-1001",
+          "title": "バッテリー充電マニュアル",
+          "content": "バッテリーが充電しなくなった場合は、充電器と BAT-18V-A のロットを確認し、過熱している場合は使用を中止してサポートに連絡してください。損傷したバッテリーの安全回路を決してバイパスしないでください。"
+        },
+        {
+          "id": "POL-RECALL-v2",
+          "title": "現行バッテリーリコールポリシー",
+          "content": "現行のバッテリー不具合に関するリコールポリシー: LOT-2407-A と LOT-2407-B のみを隔離し、使用を中止してサポートに連絡し評価を受けてください。DRILL-1002 は自動的な対象ではありません。改訂 v2、2026-09-01 発効。"
+        },
+        {
+          "id": "INC-2026-017",
+          "title": "バッテリー B-17 インシデント",
+          "content": "サプライヤー SUP-017 のコンポーネント CELL-B17 の欠陥 B-17 は、DRILL-1001 に BAT-18V-A として搭載されている LOT-2407-A および LOT-2407-B に影響します。バッテリー不具合が繰り返し発生しています。DRILL-1002 は別のバッテリーロットを使用しており、自動的な対象ではありません。"
+        },
+        {
+          "id": "BOM-2026-01",
+          "title": "調達バッテリー部品表",
+          "content": "DRILL-1001 は BAT-18V-A を使用し、SUP-017 供給の CELL-B17 を含みます。ロットは LOT-2407-A および LOT-2407-B。DRILL-1002 は CELL-C20 を搭載した BAT-18V-B を使用し、ロットは LOT-2501-C。"
+        },
+        {
+          "id": "SUP-BUL-017",
+          "title": "サプライヤー通達 B-17",
+          "content": "SUP-017 は、CELL-B17 の充電不具合が LOT-2407-A および LOT-2407-B のみに発生していることを確認しました。同じサプライヤーの別コンポーネント CELL-X10 には影響はありません。"
+        },
+        {
+          "id": "CASE-001",
+          "title": "充電不良サポートケース",
+          "content": "DRILL-1001 BAT-18V-A LOT-2407-A が 45 日後に充電しなくなりました。レシートは回収済みで、不良品評価待ちです。"
+        },
+        {
+          "id": "CASE-002",
+          "title": "無関係なバッテリーケース",
+          "content": "DRILL-1002 BAT-18V-B LOT-2501-C の水濡れであり、サプライヤー欠陥 B-17 とは無関係です。"
+        },
+        {
+          "id": "MAN-DRILL-1001",
+          "title": "Zava ドリル仕様マニュアル",
+          "content": "コンクリートの穴あけ径: DCD796 13 mm。隣の DCD797 行は 16 mm。木材: DCD796 40 mm。鋼材: DCD796 13 mm。"
+        }
+      ],
+      "topics": [
+        {
+          "id": "TOPIC-BATTERY-FAILURES",
+          "title": "バッテリー不具合の再発",
+          "content": "B-17: SUP-017 の CELL-B17 は LOT-2407-A および LOT-2407-B に影響します。充電不具合を評価してください。DRILL-1002 は自動的な対象ではありません。",
+          "summary": "B-17: SUP-017 の CELL-B17 は LOT-2407-A および LOT-2407-B に影響します。充電不具合を評価してください。DRILL-1002 は自動的な対象ではありません。"
+        }
+      ],
+      "queries": {
+        "S01": [
+          {
+            "label": "DeWalt DCD796 コードレスドリル",
+            "query": "DeWalt DCD796 コードレスドリル"
+          },
+          {
+            "label": "コードレス組積造ドリル",
+            "query": "コードレス組積造ドリル"
+          },
+          {
+            "label": "DCD796 ラベルプリンター",
+            "query": "DCD796 ラベルプリンター"
+          },
+          {
+            "label": "BAT-18V-A ドリル",
+            "query": "BAT-18V-A ドリル"
+          }
+        ],
+        "S02": [
+          {
+            "label": "レンガ壁に穴を開けるための軽量工具",
+            "query": "レンガ壁に穴を開けるための軽量工具"
+          },
+          {
+            "label": "DCD796",
+            "query": "DCD796"
+          },
+          {
+            "label": "バッテリーパックの充電",
+            "query": "バッテリーパックの充電"
+          },
+          {
+            "label": "帽子ではない青いキッチンボウル",
+            "query": "帽子ではない青いキッチンボウル"
+          }
+        ],
+        "S03": [
+          {
+            "label": "£200 未満の軽量コードレス組積造ドリル",
+            "query": "£200 未満の軽量コードレス組積造ドリル"
+          },
+          {
+            "label": "£200 未満のプロフェッショナル組積造ドリル",
+            "query": "£200 未満のプロフェッショナル組積造ドリル"
+          },
+          {
+            "label": "£200 未満の DCD796",
+            "query": "£200 未満の DCD796"
+          },
+          {
+            "label": "£200 未満のバッテリー互換コードレスドリル",
+            "query": "£200 未満のバッテリー互換コードレスドリル"
+          }
+        ],
+        "S04": [
+          {
+            "label": "小規模な自宅リフォームに最適なドリル",
+            "query": "小規模な自宅リフォームに最適なドリル"
+          },
+          {
+            "label": "組積造ドリル",
+            "query": "組積造ドリル"
+          },
+          {
+            "label": "DCD796 ラベルプリンター",
+            "query": "DCD796 ラベルプリンター"
+          },
+          {
+            "label": "バッテリー互換コードレスドリル",
+            "query": "バッテリー互換コードレスドリル"
+          }
+        ],
+        "S05": [
+          {
+            "label": "ロンドンで購入可能な £200 未満の 18V コードレスドリル",
+            "query": "ロンドンで購入可能な £200 未満の 18V コードレスドリル"
+          },
+          {
+            "label": "ロンドンで £200 未満の組積造ドリル",
+            "query": "ロンドンで £200 未満の組積造ドリル"
+          },
+          {
+            "label": "ロンドン在庫の £200 未満の DCD796",
+            "query": "ロンドン在庫の £200 未満の DCD796"
+          },
+          {
+            "label": "ロンドンで購入可能な BAT-18V-A 互換ドリル",
+            "query": "ロンドンで購入可能な BAT-18V-A 互換ドリル"
+          }
+        ],
+        "S06": [
+          {
+            "label": "リフォームに最適なコードレスドリル",
+            "query": "リフォームに最適なコードレスドリル"
+          },
+          {
+            "label": "軽量な組積造用工具",
+            "query": "軽量な組積造用工具"
+          },
+          {
+            "label": "DCD796 ラベルプリンター",
+            "query": "DCD796 ラベルプリンター"
+          },
+          {
+            "label": "バッテリー互換コードレスドリル",
+            "query": "バッテリー互換コードレスドリル"
+          }
+        ],
+        "S07": [
+          {
+            "label": "ドリルのバッテリーが 45 日後に充電できなくなりました。返品できますか？",
+            "query": "ドリルのバッテリーが 45 日後に充電できなくなりました。返品できますか？"
+          },
+          {
+            "label": "バッテリー保証の除外事項は何ですか？",
+            "query": "バッテリー保証の除外事項は何ですか？"
+          },
+          {
+            "label": "水濡れはバッテリーの自動返金対象ですか？",
+            "query": "水濡れはバッテリーの自動返金対象ですか？"
+          },
+          {
+            "label": "DRILL-1001 が充電しなくなったとき、どのバッテリーロットを確認すべきですか？",
+            "query": "DRILL-1001 が充電しなくなったとき、どのバッテリーロットを確認すべきですか？"
+          }
+        ],
+        "S08": [
+          {
+            "label": "サプライヤーのバッテリー欠陥 B-17 の影響を受ける可能性があるドリルモデルはどれですか？",
+            "query": "サプライヤーのバッテリー欠陥 B-17 の影響を受ける可能性があるドリルモデルはどれですか？"
+          },
+          {
+            "label": "CELL-B17 を含むロットはどれですか？",
+            "query": "CELL-B17 を含むロットはどれですか？"
+          },
+          {
+            "label": "DRILL-1002 は B-17 の自動的な対象ですか？",
+            "query": "DRILL-1002 は B-17 の自動的な対象ですか？"
+          },
+          {
+            "label": "SUP-017 から CELL-B17 を経由して影響を受けるドリルまでトレースしてください",
+            "query": "SUP-017 から CELL-B17 を経由して影響を受けるドリルまでトレースしてください"
+          }
+        ],
+        "S09": [
+          {
+            "label": "バッテリー不具合の再発について分かっていることは何ですか？",
+            "query": "バッテリー不具合の再発について分かっていることは何ですか？"
+          },
+          {
+            "label": "バッテリー不具合トピックを要約してください",
+            "query": "バッテリー不具合トピックを要約してください"
+          },
+          {
+            "label": "SUP-017 の部品はすべて不良ですか？",
+            "query": "SUP-017 の部品はすべて不良ですか？"
+          },
+          {
+            "label": "現在の B-17 リコール指針とサプライヤーの証拠は何ですか？",
+            "query": "現在の B-17 リコール指針とサプライヤーの証拠は何ですか？"
+          }
+        ],
+        "S10": [
+          {
+            "label": "DCD796 モデルの最大コンクリート穴あけ径はいくつですか？",
+            "query": "DCD796 モデルの最大コンクリート穴あけ径はいくつですか？"
+          },
+          {
+            "label": "DCD797 のコンクリート穴あけ径はいくつですか？",
+            "query": "DCD797 のコンクリート穴あけ径はいくつですか？"
+          },
+          {
+            "label": "DCD796 のコンクリート穴あけ径は 16 mm ですか？",
+            "query": "DCD796 のコンクリート穴あけ径は 16 mm ですか？"
+          },
+          {
+            "label": "DCD796 のコンクリートと木材の穴あけ径を比較してください",
+            "query": "DCD796 のコンクリートと木材の穴あけ径を比較してください"
+          }
+        ],
+        "S11": [
+          {
+            "label": "同梱ブルーハット - 画像のみ",
+            "query": ""
+          },
+          {
+            "label": "同梱ブルーハット + 青いコットンハットのクエリ",
+            "query": "丸いつば付きのブルーコットン製バケットハット。"
+          },
+          {
+            "label": "同梱レッドハット + 赤いコットンハットのクエリ",
+            "query": "丸いつば付きのレッドコットン製バケットハット。"
+          },
+          {
+            "label": "同梱ブルーボウル + キッチンボウルのクエリ",
+            "query": "ブルーの丸型キッチンボウル。衣料品ではありません。"
+          }
+        ]
+      }
+    },
+    "de": {
+      "products": [
+        {
+          "id": "DRILL-1001",
+          "title": "Zava DCD796 kompakte Schlagbohrmaschine",
+          "content": "18V kabellose, leichte Schlagbohrmaschine für Ziegelmauerwerk und kleine Heimrenovierungen. Akku BAT-18V-A."
+        },
+        {
+          "id": "DRILL-1002",
+          "title": "Zava DCD797 bürstenlose Bohrmaschine",
+          "content": "18V kabellose, kompakte Bohrmaschine für Heimrenovierungen. Akku BAT-18V-B verwendet eine andere Charge, nicht von B-17 betroffen."
+        },
+        {
+          "id": "DRILL-1003",
+          "title": "Zava Mason Lite",
+          "content": "Leichtes Rotationswerkzeug zum Bohren von Löchern in Ziegelwände und Betonmauerwerk."
+        },
+        {
+          "id": "DRILL-1004",
+          "title": "Zava professionelle Mauerwerksbohrmaschine",
+          "content": "18V kabellose, leichte Mauerwerksbohrmaschine, Marketing für professionelle Heimrenovierungen."
+        },
+        {
+          "id": "DRILL-1005",
+          "title": "Zava Home 18 Bohrmaschine",
+          "content": "18V kabellose, leichte Mauerwerksbohrmaschine für Heimrenovierungen, vorübergehend nicht auf Lager."
+        },
+        {
+          "id": "DRILL-1006",
+          "title": "Zava exakter Kennzeichendrucker",
+          "content": "DCD796 Asset-Kennzeichendrucker. Keine Bohrmaschine. Druckt nur Kennungen."
+        },
+        {
+          "id": "DRILL-1007",
+          "title": "Zava North Mauerwerksbohrmaschine",
+          "content": "18V kabellose, leichte Bohrmaschine für Ziegelwände."
+        },
+        {
+          "id": "BAT-18V-A",
+          "title": "Zava Akku A",
+          "content": "18V wiederaufladbares Pack, CELL-B17, SUP-017, LOT-2407-A und LOT-2407-B. Fehlerbehebung beim Laden."
+        },
+        {
+          "id": "BAT-18V-B",
+          "title": "Zava Akku B",
+          "content": "18V Pack mit CELL-C20 und LOT-2501-C, nicht von B-17 betroffen."
+        },
+        {
+          "id": "HAT-001",
+          "title": "Zava blauer Fischerhut",
+          "content": "Blauer Fischerhut aus Baumwolle mit rundum verlaufender Krempe."
+        },
+        {
+          "id": "HAT-002",
+          "title": "Zava roter Fischerhut",
+          "content": "Roter Fischerhut aus Baumwolle mit rundum verlaufender Krempe."
+        },
+        {
+          "id": "BOWL-001",
+          "title": "Zava blaue Rührschüssel",
+          "content": "Blaue runde Küchenschüssel, keine Bekleidung."
+        },
+        {
+          "id": "ZAVA-P-00001",
+          "title": "Zava fiktives Produkt 1",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00002",
+          "title": "Zava fiktives Produkt 2",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00003",
+          "title": "Zava fiktives Produkt 3",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00004",
+          "title": "Zava fiktives Produkt 4",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00005",
+          "title": "Zava fiktives Produkt 5",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00006",
+          "title": "Zava fiktives Produkt 6",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00007",
+          "title": "Zava fiktives Produkt 7",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00008",
+          "title": "Zava fiktives Produkt 8",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00009",
+          "title": "Zava fiktives Produkt 9",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00010",
+          "title": "Zava fiktives Produkt 10",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00011",
+          "title": "Zava fiktives Produkt 11",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00012",
+          "title": "Zava fiktives Produkt 12",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00013",
+          "title": "Zava fiktives Produkt 13",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00014",
+          "title": "Zava fiktives Produkt 14",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00015",
+          "title": "Zava fiktives Produkt 15",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00016",
+          "title": "Zava fiktives Produkt 16",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00017",
+          "title": "Zava fiktives Produkt 17",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00018",
+          "title": "Zava fiktives Produkt 18",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00019",
+          "title": "Zava fiktives Produkt 19",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00020",
+          "title": "Zava fiktives Produkt 20",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00021",
+          "title": "Zava fiktives Produkt 21",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00022",
+          "title": "Zava fiktives Produkt 22",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00023",
+          "title": "Zava fiktives Produkt 23",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00024",
+          "title": "Zava fiktives Produkt 24",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00025",
+          "title": "Zava fiktives Produkt 25",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00026",
+          "title": "Zava fiktives Produkt 26",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00027",
+          "title": "Zava fiktives Produkt 27",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        },
+        {
+          "id": "ZAVA-P-00028",
+          "title": "Zava fiktives Produkt 28",
+          "content": "Ursprünglicher synthetischer Katalogfüller, keine echten Kundeninhalte."
+        }
+      ],
+      "support": [
+        {
+          "id": "POL-RET-2026-01",
+          "title": "Normale Rückgaberichtlinie",
+          "content": "Für normale Rückgaben ist ein Kaufnachweis innerhalb von 30 Tagen erforderlich. Nach 45 Tagen ist das normale Rückgabefenster abgelaufen."
+        },
+        {
+          "id": "POL-DEF-2026-02",
+          "title": "Vorgehen bei mangelhafter Ware",
+          "content": "Mangelhafte Akkuware nach 45 Tagen wird nicht automatisch abgelehnt: Kontaktieren Sie den Support zur Prüfung mit Kassenbeleg, Seriennummer und Akku-Charge. Die Ausnahme für mangelhafte Ware ist ein separater Prozess, keine automatische Rückerstattung."
+        },
+        {
+          "id": "WAR-BAT-2026-01",
+          "title": "Akkugarantie",
+          "content": "Die Anspruchsberechtigung für die Akkuladegarantie hängt vom Kaufdatum, Modell, Beleg und Ausschlüssen ab. Die Abdeckung beträgt 12 Monate für Herstellungsfehler; Wasserschäden, unsachgemäße Verwendung und normaler Verschleiß sind ausgeschlossen."
+        },
+        {
+          "id": "MAN-CHARGE-1001",
+          "title": "Handbuch zum Laden des Akkus",
+          "content": "Akku lädt nicht mehr: Ladegerät und BAT-18V-A-Charge prüfen; bei Überhitzung Nutzung stoppen und Support kontaktieren. Niemals eine beschädigte Akkusicherheits-Schaltung überbrücken."
+        },
+        {
+          "id": "POL-RECALL-v2",
+          "title": "Aktuelle Rückrufrichtlinie für Akkus",
+          "content": "Aktuelle Rückrufrichtlinie für Akku-Ausfälle: Nur LOT-2407-A und LOT-2407-B isolieren, Nutzung stoppen, Support zur Prüfung kontaktieren; DRILL-1002 ist nicht automatisch betroffen. Revision v2 gültig ab 2026-09-01."
+        },
+        {
+          "id": "INC-2026-017",
+          "title": "B-17-Akkuvorfall",
+          "content": "SUP-017-Komponente CELL-B17 mit Defekt B-17 betrifft LOT-2407-A und LOT-2407-B, die in DRILL-1001 mit BAT-18V-A verbaut sind. Wiederkehrende Akkuausfälle. DRILL-1002 verwendet eine andere Akku-Charge und ist nicht automatisch betroffen."
+        },
+        {
+          "id": "BOM-2026-01",
+          "title": "Stückliste der bezogenen Akkus",
+          "content": "DRILL-1001 verwendet BAT-18V-A; enthält CELL-B17 von SUP-017. Chargen LOT-2407-A und LOT-2407-B. DRILL-1002 verwendet BAT-18V-B mit CELL-C20, LOT-2501-C."
+        },
+        {
+          "id": "SUP-BUL-017",
+          "title": "Lieferantenmitteilung B-17",
+          "content": "SUP-017 bestätigt CELL-B17-Ladeausfälle nur in LOT-2407-A und LOT-2407-B. Eine andere Komponente, CELL-X10, vom selben Lieferanten ist nicht betroffen."
+        },
+        {
+          "id": "CASE-001",
+          "title": "Supportfall Ladeausfall",
+          "content": "DRILL-1001 BAT-18V-A LOT-2407-A lädt nach 45 Tagen nicht mehr; Beleg erfasst, Prüfung als mangelhafte Ware ausstehend."
+        },
+        {
+          "id": "CASE-002",
+          "title": "Unabhängiger Akku-Fall",
+          "content": "DRILL-1002 BAT-18V-B LOT-2501-C Wasserschaden, unabhängig vom Lieferantendefekt B-17."
+        },
+        {
+          "id": "MAN-DRILL-1001",
+          "title": "Zava Bohrmaschinenspezifikationshandbuch",
+          "content": "Betonbohrdurchmesser: DCD796 13 mm; benachbarte DCD797-Zeile 16 mm. Holz: DCD796 40 mm. Stahl: DCD796 13 mm."
+        }
+      ],
+      "topics": [
+        {
+          "id": "TOPIC-BATTERY-FAILURES",
+          "title": "Wiederkehrende Akkuausfälle",
+          "content": "B-17: CELL-B17 von SUP-017 betrifft LOT-2407-A und LOT-2407-B. Ladeausfälle prüfen; DRILL-1002 ist nicht automatisch betroffen.",
+          "summary": "B-17: CELL-B17 von SUP-017 betrifft LOT-2407-A und LOT-2407-B. Ladeausfälle prüfen; DRILL-1002 ist nicht automatisch betroffen."
+        }
+      ],
+      "queries": {
+        "S01": [
+          {
+            "label": "DeWalt DCD796 Akku-Bohrmaschine",
+            "query": "DeWalt DCD796 Akku-Bohrmaschine"
+          },
+          {
+            "label": "kabellose Mauerwerksbohrmaschine",
+            "query": "kabellose Mauerwerksbohrmaschine"
+          },
+          {
+            "label": "DCD796 Kennzeichendrucker",
+            "query": "DCD796 Kennzeichendrucker"
+          },
+          {
+            "label": "BAT-18V-A Bohrmaschine",
+            "query": "BAT-18V-A Bohrmaschine"
+          }
+        ],
+        "S02": [
+          {
+            "label": "Ein leichtes Werkzeug zum Bohren von Löchern in Ziegelwände",
+            "query": "Ein leichtes Werkzeug zum Bohren von Löchern in Ziegelwände"
+          },
+          {
+            "label": "DCD796",
+            "query": "DCD796"
+          },
+          {
+            "label": "Akku-Pack laden",
+            "query": "Akku-Pack laden"
+          },
+          {
+            "label": "blaue Küchenschüssel, kein Hut",
+            "query": "blaue Küchenschüssel, kein Hut"
+          }
+        ],
+        "S03": [
+          {
+            "label": "Leichte kabellose Mauerwerksbohrmaschine unter £200",
+            "query": "Leichte kabellose Mauerwerksbohrmaschine unter £200"
+          },
+          {
+            "label": "professionelle Mauerwerksbohrmaschine unter £200",
+            "query": "professionelle Mauerwerksbohrmaschine unter £200"
+          },
+          {
+            "label": "DCD796 unter £200",
+            "query": "DCD796 unter £200"
+          },
+          {
+            "label": "Akku-kompatible kabellose Bohrmaschine unter £200",
+            "query": "Akku-kompatible kabellose Bohrmaschine unter £200"
+          }
+        ],
+        "S04": [
+          {
+            "label": "Beste Bohrmaschine für kleine Heimrenovierungen",
+            "query": "Beste Bohrmaschine für kleine Heimrenovierungen"
+          },
+          {
+            "label": "Mauerwerksbohrmaschine",
+            "query": "Mauerwerksbohrmaschine"
+          },
+          {
+            "label": "DCD796 Kennzeichendrucker",
+            "query": "DCD796 Kennzeichendrucker"
+          },
+          {
+            "label": "Akku-kompatible kabellose Bohrmaschine",
+            "query": "Akku-kompatible kabellose Bohrmaschine"
+          }
+        ],
+        "S05": [
+          {
+            "label": "18V Akku-Bohrmaschine, verfügbar in London, unter £200",
+            "query": "18V Akku-Bohrmaschine, verfügbar in London, unter £200"
+          },
+          {
+            "label": "Mauerwerksbohrmaschine in London unter £200",
+            "query": "Mauerwerksbohrmaschine in London unter £200"
+          },
+          {
+            "label": "DCD796 Lagerbestand in London unter £200",
+            "query": "DCD796 Lagerbestand in London unter £200"
+          },
+          {
+            "label": "Mit BAT-18V-A kompatible Bohrmaschine, verfügbar in London",
+            "query": "Mit BAT-18V-A kompatible Bohrmaschine, verfügbar in London"
+          }
+        ],
+        "S06": [
+          {
+            "label": "Beste kabellose Bohrmaschine für Renovierungen",
+            "query": "Beste kabellose Bohrmaschine für Renovierungen"
+          },
+          {
+            "label": "leichtes Mauerwerkswerkzeug",
+            "query": "leichtes Mauerwerkswerkzeug"
+          },
+          {
+            "label": "DCD796 Kennzeichendrucker",
+            "query": "DCD796 Kennzeichendrucker"
+          },
+          {
+            "label": "Akku-kompatible kabellose Bohrmaschine",
+            "query": "Akku-kompatible kabellose Bohrmaschine"
+          }
+        ],
+        "S07": [
+          {
+            "label": "Mein Bohrmaschinenakku hat nach 45 Tagen aufgehört zu laden. Kann ich ihn zurückgeben?",
+            "query": "Mein Bohrmaschinenakku hat nach 45 Tagen aufgehört zu laden. Kann ich ihn zurückgeben?"
+          },
+          {
+            "label": "Was sind die Ausschlüsse bei der Akkugarantie?",
+            "query": "Was sind die Ausschlüsse bei der Akkugarantie?"
+          },
+          {
+            "label": "Sind Wasserschäden ein automatischer Akkurückerstattungsgrund?",
+            "query": "Sind Wasserschäden ein automatischer Akkurückerstattungsgrund?"
+          },
+          {
+            "label": "Welche Akku-Charge sollte ich prüfen, wenn DRILL-1001 aufhört zu laden?",
+            "query": "Welche Akku-Charge sollte ich prüfen, wenn DRILL-1001 aufhört zu laden?"
+          }
+        ],
+        "S08": [
+          {
+            "label": "Welche Bohrmaschinenmodelle könnten vom Lieferantendefekt B-17 am Akku betroffen sein?",
+            "query": "Welche Bohrmaschinenmodelle könnten vom Lieferantendefekt B-17 am Akku betroffen sein?"
+          },
+          {
+            "label": "Welche Chargen enthalten CELL-B17?",
+            "query": "Welche Chargen enthalten CELL-B17?"
+          },
+          {
+            "label": "Ist DRILL-1002 automatisch von B-17 betroffen?",
+            "query": "Ist DRILL-1002 automatisch von B-17 betroffen?"
+          },
+          {
+            "label": "SUP-017 über CELL-B17 zu betroffenen Bohrmaschinen nachverfolgen",
+            "query": "SUP-017 über CELL-B17 zu betroffenen Bohrmaschinen nachverfolgen"
+          }
+        ],
+        "S09": [
+          {
+            "label": "Was wissen wir über wiederkehrende Akkuausfälle?",
+            "query": "Was wissen wir über wiederkehrende Akkuausfälle?"
+          },
+          {
+            "label": "Fasse das Thema Akkuausfälle zusammen",
+            "query": "Fasse das Thema Akkuausfälle zusammen"
+          },
+          {
+            "label": "Sind alle SUP-017-Teile defekt?",
+            "query": "Sind alle SUP-017-Teile defekt?"
+          },
+          {
+            "label": "Was sind die aktuellen B-17-Rückrufrichtlinien und Lieferantennachweise?",
+            "query": "Was sind die aktuellen B-17-Rückrufrichtlinien und Lieferantennachweise?"
+          }
+        ],
+        "S10": [
+          {
+            "label": "Wie groß ist der maximale Betonbohrdurchmesser des Modells DCD796?",
+            "query": "Wie groß ist der maximale Betonbohrdurchmesser des Modells DCD796?"
+          },
+          {
+            "label": "Wie groß ist der Betonbohrdurchmesser des DCD797?",
+            "query": "Wie groß ist der Betonbohrdurchmesser des DCD797?"
+          },
+          {
+            "label": "Ist der Betonbohrdurchmesser des DCD796 16 mm?",
+            "query": "Ist der Betonbohrdurchmesser des DCD796 16 mm?"
+          },
+          {
+            "label": "Vergleiche die Beton- und Holzbohrdurchmesser des DCD796",
+            "query": "Vergleiche die Beton- und Holzbohrdurchmesser des DCD796"
+          }
+        ],
+        "S11": [
+          {
+            "label": "Gebündelter blauer Hut – nur Bild",
+            "query": ""
+          },
+          {
+            "label": "Gebündelter blauer Hut + Anfrage blauer Baumwoll-Fischerhut",
+            "query": "Blauer Fischerhut aus Baumwolle mit rundum verlaufender Krempe."
+          },
+          {
+            "label": "Gebündelter roter Hut + Anfrage roter Baumwoll-Fischerhut",
+            "query": "Roter Fischerhut aus Baumwolle mit rundum verlaufender Krempe."
+          },
+          {
+            "label": "Gebündelte blaue Schüssel + Anfrage Küchenschüssel",
+            "query": "Blaue runde Küchenschüssel, keine Bekleidung."
+          }
+        ]
+      }
+    }
+  }
+}

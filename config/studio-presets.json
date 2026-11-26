@@ -1,0 +1,2380 @@
+{
+ "version": 1,
+ "description": "Showcase presets: four per scenario and language, each verified on Live so AFTER clearly beats BEFORE in the top 3 (criterion: ranking = higher nDCG@3 against relevant/forbidden IDs; graph = AFTER returns a sourced graph path; row = AFTER cites the exact table row).",
+ "presets": {
+  "en": {
+   "S01": [
+    {
+     "label": "DCD796 hammer drill",
+     "query": "DCD796 hammer drill",
+     "relevant": [
+      "DRILL-1001"
+     ],
+     "forbidden": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "cordless masonry drill",
+     "query": "cordless masonry drill",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "DCD796 label printer",
+     "query": "DCD796 label printer",
+     "relevant": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "BAT-18V-A drill",
+     "query": "BAT-18V-A drill",
+     "relevant": [
+      "DRILL-1001",
+      "BAT-18V-A"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S02": [
+    {
+     "label": "something light for making openings in stonework",
+     "query": "something light for making openings in stonework",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "headwear to keep the sun off",
+     "query": "headwear to keep the sun off",
+     "relevant": [
+      "HAT-001",
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "a dish for whisking eggs",
+     "query": "a dish for whisking eggs",
+     "relevant": [
+      "BOWL-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "tool for hanging shelves in an old stone cottage",
+     "query": "tool for hanging shelves in an old stone cottage",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S03": [
+    {
+     "label": "cheap stonework driller",
+     "query": "cheap stonework driller",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "affordable tool for boring into brickwork",
+     "query": "affordable tool for boring into brickwork",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "something light for making openings in stonework under £200",
+     "query": "something light for making openings in stonework under £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "budget tool to put up shelves on a stone wall",
+     "query": "budget tool to put up shelves on a stone wall",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S04": [
+    {
+     "label": "Best drill for small home renovations",
+     "query": "Best drill for small home renovations",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1002",
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Which drill uses a battery that is not affected by the B-17 defect?",
+     "query": "Which drill uses a battery that is not affected by the B-17 defect?",
+     "relevant": [
+      "DRILL-1002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "compact brushless drill for home DIY",
+     "query": "compact brushless drill for home DIY",
+     "relevant": [
+      "DRILL-1002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "I need a drill for concrete, not a label printer",
+     "query": "I need a drill for concrete, not a label printer",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S05": [
+    {
+     "label": "light driller for stone available in London under £200",
+     "query": "light driller for stone available in London under £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "affordable tool for boring into brickwork in London",
+     "query": "affordable tool for boring into brickwork in London",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "something to make openings in stonework I can pick up in London under £200",
+     "query": "something to make openings in stonework I can pick up in London under £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "budget tool to put up shelves on a stone wall in London",
+     "query": "budget tool to put up shelves on a stone wall in London",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S06": [
+    {
+     "label": "lightweight 18V masonry drill for home renovation",
+     "query": "lightweight 18V masonry drill for home renovation",
+     "boostSubtype": "freshness",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "cordless masonry drill for a home project",
+     "query": "cordless masonry drill for a home project",
+     "boostSubtype": "freshness",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "lightweight drill for brick walls near central London",
+     "query": "lightweight drill for brick walls near central London",
+     "boostSubtype": "distance",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004"
+     ],
+     "forbidden": [
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "cordless drill for brick walls I can collect in London",
+     "query": "cordless drill for brick walls I can collect in London",
+     "boostSubtype": "distance",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004"
+     ],
+     "forbidden": [
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S07": [
+    {
+     "label": "My drill's power brick croaked seven weeks in. Do I get my money back?",
+     "query": "My drill's power brick croaked seven weeks in. Do I get my money back?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "The rechargeable brick on my drill died in week seven. Can I get my money back?",
+     "query": "The rechargeable brick on my drill died in week seven. Can I get my money back?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "The battery brick on my Zava drill gave up in week six. Store credit or a repair?",
+     "query": "The battery brick on my Zava drill gave up in week six. Store credit or a repair?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "The rechargeable brick on my cordless driver gave out in week six. Refund or repair?",
+     "query": "The rechargeable brick on my cordless driver gave out in week six. Refund or repair?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S08": [
+    {
+     "label": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "query": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "presetId": "zava-s08-recall-exposure",
+     "relevant": [
+      "BOM-2026-01",
+      "INC-2026-017",
+      "POL-RECALL-v2"
+     ],
+     "forbidden": [
+      "DRILL-1002",
+      "BAT-18V-B",
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "query": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "presetId": "zava-s08-case-recall",
+     "relevant": [
+      "CASE-001",
+      "POL-RECALL-v2",
+      "INC-2026-017"
+     ],
+     "forbidden": [
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "query": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "presetId": "zava-s08-warranty-exclusion",
+     "relevant": [
+      "CASE-002",
+      "WAR-BAT-2026-01"
+     ],
+     "forbidden": [
+      "CASE-001"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "query": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "presetId": "zava-s08-false-premise-x10",
+     "relevant": [
+      "SUP-BUL-017",
+      "POL-RECALL-v2"
+     ],
+     "criterion": "graph"
+    }
+   ],
+   "S09": [
+    {
+     "label": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "query": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "presetId": "zava-s09-themes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
+    },
+    {
+     "label": "What should a new Zava store associate know?",
+     "query": "What should a new Zava store associate know?",
+     "presetId": "zava-s09-store-associate",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
+    },
+    {
+     "label": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "query": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "presetId": "zava-s09-battery-subthemes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
+    },
+    {
+     "label": "What do Zava customers ask about?",
+     "query": "What do Zava customers ask about?",
+     "presetId": "zava-s09-customer-asks",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
+    }
+   ],
+   "S10": [
+    {
+     "label": "What is the maximum concrete drilling diameter of model DCD796?",
+     "query": "What is the maximum concrete drilling diameter of model DCD796?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "What is the concrete drilling diameter of DCD797?",
+     "query": "What is the concrete drilling diameter of DCD797?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "Is DCD796 concrete drilling diameter 16 mm?",
+     "query": "Is DCD796 concrete drilling diameter 16 mm?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "Compare DCD796 concrete and wood drilling diameters",
+     "query": "Compare DCD796 concrete and wood drilling diameters",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    }
+   ],
+   "S11": [
+    {
+     "label": "Bundled blue hat - image only",
+     "query": "",
+     "image": "/samples/zava-hat-blue.png",
+     "relevant": [
+      "HAT-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Bundled blue bowl + find this item",
+     "query": "Find this item",
+     "image": "/samples/zava-bowl-blue.png",
+     "relevant": [
+      "BOWL-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Bundled red hat + red cotton hat query",
+     "query": "Red cotton bucket hat",
+     "image": "/samples/zava-hat-red.png",
+     "relevant": [
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Text only - headwear for a sunny day",
+     "query": "headwear for a sunny day",
+     "relevant": [
+      "HAT-001",
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    }
+   ]
+  },
+  "fr": {
+   "S01": [
+    {
+     "label": "perceuse à percussion DCD796",
+     "query": "perceuse à percussion DCD796",
+     "relevant": [
+      "DRILL-1001"
+     ],
+     "forbidden": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "perceuse de maçonnerie sans fil",
+     "query": "perceuse de maçonnerie sans fil",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "imprimante d’étiquettes DCD796",
+     "query": "imprimante d’étiquettes DCD796",
+     "relevant": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "perceuse BAT-18V-A",
+     "query": "perceuse BAT-18V-A",
+     "relevant": [
+      "DRILL-1001",
+      "BAT-18V-A"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S02": [
+    {
+     "label": "quelque chose de léger pour faire des ouvertures dans de la pierre",
+     "query": "quelque chose de léger pour faire des ouvertures dans de la pierre",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "un couvre-chef pour se protéger du soleil",
+     "query": "un couvre-chef pour se protéger du soleil",
+     "relevant": [
+      "HAT-001",
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "un récipient pour battre des œufs",
+     "query": "un récipient pour battre des œufs",
+     "relevant": [
+      "BOWL-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "un outil pour fixer des étagères dans une vieille maison en pierre",
+     "query": "un outil pour fixer des étagères dans une vieille maison en pierre",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S03": [
+    {
+     "label": "appareil bon marché pour percer la pierre",
+     "query": "appareil bon marché pour percer la pierre",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "outil abordable pour forer la pierre de taille",
+     "query": "outil abordable pour forer la pierre de taille",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "quelque chose de léger pour faire des ouvertures dans la pierre à moins de £200",
+     "query": "quelque chose de léger pour faire des ouvertures dans la pierre à moins de £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "outil économique pour installer des étagères sur un mur en pierre",
+     "query": "outil économique pour installer des étagères sur un mur en pierre",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S04": [
+    {
+     "label": "Meilleure perceuse pour de petits travaux de rénovation à domicile",
+     "query": "Meilleure perceuse pour de petits travaux de rénovation à domicile",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1002",
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Quelle perceuse utilise une batterie non affectée par le défaut B-17 ?",
+     "query": "Quelle perceuse utilise une batterie non affectée par le défaut B-17 ?",
+     "relevant": [
+      "DRILL-1002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "perceuse compacte sans balais pour le bricolage à la maison",
+     "query": "perceuse compacte sans balais pour le bricolage à la maison",
+     "relevant": [
+      "DRILL-1002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "J’ai besoin d’une perceuse pour le béton, pas d’une imprimante d’étiquettes",
+     "query": "J’ai besoin d’une perceuse pour le béton, pas d’une imprimante d’étiquettes",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S05": [
+    {
+     "label": "appareil léger pour percer la pierre disponible à Londres à moins de £200",
+     "query": "appareil léger pour percer la pierre disponible à Londres à moins de £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "outil abordable pour forer la pierre de taille à Londres",
+     "query": "outil abordable pour forer la pierre de taille à Londres",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "de quoi faire des ouvertures dans la pierre, à retirer à Londres pour moins de £200",
+     "query": "de quoi faire des ouvertures dans la pierre, à retirer à Londres pour moins de £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "outil économique pour installer des étagères sur un mur en pierre à Londres",
+     "query": "outil économique pour installer des étagères sur un mur en pierre à Londres",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S06": [
+    {
+     "label": "perceuse de maçonnerie 18V légère pour la rénovation à domicile",
+     "query": "perceuse de maçonnerie 18V légère pour la rénovation à domicile",
+     "boostSubtype": "freshness",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "perceuse de maçonnerie sans fil pour un projet à la maison",
+     "query": "perceuse de maçonnerie sans fil pour un projet à la maison",
+     "boostSubtype": "freshness",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "perceuse légère pour murs en briques près du centre de Londres",
+     "query": "perceuse légère pour murs en briques près du centre de Londres",
+     "boostSubtype": "distance",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004"
+     ],
+     "forbidden": [
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "perceuse sans fil pour murs en briques à retirer à Londres",
+     "query": "perceuse sans fil pour murs en briques à retirer à Londres",
+     "boostSubtype": "distance",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004"
+     ],
+     "forbidden": [
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S07": [
+    {
+     "label": "Le bloc de ma visseuse sans fil ne prend plus le jus, six semaines après l'achat. Que faire ?",
+     "query": "Le bloc de ma visseuse sans fil ne prend plus le jus, six semaines après l'achat. Que faire ?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "La brique de ma perceuse Zava a rendu l'âme en semaine six. Remboursement ou réparation ?",
+     "query": "La brique de ma perceuse Zava a rendu l'âme en semaine six. Remboursement ou réparation ?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Ma perceuse Zava : la brique ne prend plus le jus depuis la semaine six. Avoir, réparation ou échange ?",
+     "query": "Ma perceuse Zava : la brique ne prend plus le jus depuis la semaine six. Avoir, réparation ou échange ?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Le bloc de ma visseuse Zava a lâché en semaine sept. Je peux me faire rembourser ?",
+     "query": "Le bloc de ma visseuse Zava a lâché en semaine sept. Je peux me faire rembourser ?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S08": [
+    {
+     "label": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "query": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "presetId": "zava-s08-recall-exposure",
+     "relevant": [
+      "BOM-2026-01",
+      "INC-2026-017",
+      "POL-RECALL-v2"
+     ],
+     "forbidden": [
+      "DRILL-1002",
+      "BAT-18V-B",
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "query": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "presetId": "zava-s08-case-recall",
+     "relevant": [
+      "CASE-001",
+      "POL-RECALL-v2",
+      "INC-2026-017"
+     ],
+     "forbidden": [
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "query": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "presetId": "zava-s08-warranty-exclusion",
+     "relevant": [
+      "CASE-002",
+      "WAR-BAT-2026-01"
+     ],
+     "forbidden": [
+      "CASE-001"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "query": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "presetId": "zava-s08-false-premise-x10",
+     "relevant": [
+      "SUP-BUL-017",
+      "POL-RECALL-v2"
+     ],
+     "criterion": "graph"
+    }
+   ],
+   "S09": [
+    {
+     "label": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "query": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "presetId": "zava-s09-themes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
+    },
+    {
+     "label": "What should a new Zava store associate know?",
+     "query": "What should a new Zava store associate know?",
+     "presetId": "zava-s09-store-associate",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
+    },
+    {
+     "label": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "query": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "presetId": "zava-s09-battery-subthemes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
+    },
+    {
+     "label": "What do Zava customers ask about?",
+     "query": "What do Zava customers ask about?",
+     "presetId": "zava-s09-customer-asks",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
+    }
+   ],
+   "S10": [
+    {
+     "label": "Quel est le diamètre maximal de perçage dans le béton du modèle DCD796 ?",
+     "query": "Quel est le diamètre maximal de perçage dans le béton du modèle DCD796 ?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "Quel est le diamètre de perçage dans le béton de DCD797 ?",
+     "query": "Quel est le diamètre de perçage dans le béton de DCD797 ?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "Le diamètre de perçage dans le béton de DCD796 est-il de 16 mm ?",
+     "query": "Le diamètre de perçage dans le béton de DCD796 est-il de 16 mm ?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "Comparer les diamètres de perçage de DCD796 dans le béton et le bois",
+     "query": "Comparer les diamètres de perçage de DCD796 dans le béton et le bois",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    }
+   ],
+   "S11": [
+    {
+     "label": "Chapeau bleu groupé - image uniquement",
+     "query": "",
+     "image": "/samples/zava-hat-blue.png",
+     "relevant": [
+      "HAT-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Bol bleu groupé + trouver cet article",
+     "query": "Trouver cet article",
+     "image": "/samples/zava-bowl-blue.png",
+     "relevant": [
+      "BOWL-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Chapeau rouge groupé + requête chapeau rouge en coton",
+     "query": "Bob rouge en coton avec bord rond.",
+     "image": "/samples/zava-hat-red.png",
+     "relevant": [
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Texte uniquement - un couvre-chef pour une journée ensoleillée",
+     "query": "un couvre-chef pour une journée ensoleillée",
+     "relevant": [
+      "HAT-001",
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    }
+   ]
+  },
+  "es": {
+   "S01": [
+    {
+     "label": "taladro percutor DCD796",
+     "query": "taladro percutor DCD796",
+     "relevant": [
+      "DRILL-1001"
+     ],
+     "forbidden": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "taladro inalámbrico para mampostería",
+     "query": "taladro inalámbrico para mampostería",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "impresora de etiquetas DCD796",
+     "query": "impresora de etiquetas DCD796",
+     "relevant": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "taladro BAT-18V-A",
+     "query": "taladro BAT-18V-A",
+     "relevant": [
+      "DRILL-1001",
+      "BAT-18V-A"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S02": [
+    {
+     "label": "algo para hacer aberturas en la piedra",
+     "query": "algo para hacer aberturas en la piedra",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "algo para cubrirme la cabeza del sol",
+     "query": "algo para cubrirme la cabeza del sol",
+     "relevant": [
+      "HAT-001",
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "un recipiente para batir huevos",
+     "query": "un recipiente para batir huevos",
+     "relevant": [
+      "BOWL-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "una herramienta para colgar estantes en una casa antigua de piedra",
+     "query": "una herramienta para colgar estantes en una casa antigua de piedra",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S03": [
+    {
+     "label": "aparato barato para perforar piedra",
+     "query": "aparato barato para perforar piedra",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "herramienta asequible para perforar sillería",
+     "query": "herramienta asequible para perforar sillería",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "algo para hacer aberturas en la piedra por menos de £200",
+     "query": "algo para hacer aberturas en la piedra por menos de £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "herramienta económica para montar estantes en una pared de piedra",
+     "query": "herramienta económica para montar estantes en una pared de piedra",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S04": [
+    {
+     "label": "Mejor taladro para pequeñas reformas en el hogar",
+     "query": "Mejor taladro para pequeñas reformas en el hogar",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1002",
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "¿Qué taladro usa una batería no afectada por el defecto B-17?",
+     "query": "¿Qué taladro usa una batería no afectada por el defecto B-17?",
+     "relevant": [
+      "DRILL-1002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "taladro compacto sin escobillas para bricolaje en casa",
+     "query": "taladro compacto sin escobillas para bricolaje en casa",
+     "relevant": [
+      "DRILL-1002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "¿Qué taladro es más fácil de sostener al perforar ladrillo por encima de la cabeza?",
+     "query": "¿Qué taladro es más fácil de sostener al perforar ladrillo por encima de la cabeza?",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S05": [
+    {
+     "label": "aparato para perforar piedra disponible en Londres por menos de £200",
+     "query": "aparato para perforar piedra disponible en Londres por menos de £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "herramienta asequible para perforar sillería en Londres",
+     "query": "herramienta asequible para perforar sillería en Londres",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "algo para hacer aberturas en la piedra que pueda recoger en Londres por menos de £200",
+     "query": "algo para hacer aberturas en la piedra que pueda recoger en Londres por menos de £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "herramienta económica para montar estantes en una pared de piedra en Londres",
+     "query": "herramienta económica para montar estantes en una pared de piedra en Londres",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S06": [
+    {
+     "label": "taladro para mampostería de 18V ligero para reformas en el hogar",
+     "query": "taladro para mampostería de 18V ligero para reformas en el hogar",
+     "boostSubtype": "freshness",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "taladro inalámbrico para mampostería para un proyecto en casa",
+     "query": "taladro inalámbrico para mampostería para un proyecto en casa",
+     "boostSubtype": "freshness",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "taladro ligero para paredes de ladrillo cerca del centro de Londres",
+     "query": "taladro ligero para paredes de ladrillo cerca del centro de Londres",
+     "boostSubtype": "distance",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004"
+     ],
+     "forbidden": [
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "taladro inalámbrico para paredes de ladrillo que pueda recoger en Londres",
+     "query": "taladro inalámbrico para paredes de ladrillo que pueda recoger en Londres",
+     "boostSubtype": "distance",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004"
+     ],
+     "forbidden": [
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S07": [
+    {
+     "label": "El ladrillo de batería de mi taladro Zava se rindió en la semana seis. ¿Vale de tienda o reparación?",
+     "query": "El ladrillo de batería de mi taladro Zava se rindió en la semana seis. ¿Vale de tienda o reparación?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "El ladrillo recargable de mi taladro murió en la séptima semana. ¿Me devuelven el dinero?",
+     "query": "El ladrillo recargable de mi taladro murió en la séptima semana. ¿Me devuelven el dinero?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "El pack de mi taladro ya no agarra carga después de siete semanas. ¿Reembolso, reparación o cambio?",
+     "query": "El pack de mi taladro ya no agarra carga después de siete semanas. ¿Reembolso, reparación o cambio?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "La batería-ladrillo de mi taladro se murió en la séptima semana y ya no tengo la caja. ¿Me la arreglan o me devuelven el dinero?",
+     "query": "La batería-ladrillo de mi taladro se murió en la séptima semana y ya no tengo la caja. ¿Me la arreglan o me devuelven el dinero?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S08": [
+    {
+     "label": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "query": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "presetId": "zava-s08-recall-exposure",
+     "relevant": [
+      "BOM-2026-01",
+      "INC-2026-017",
+      "POL-RECALL-v2"
+     ],
+     "forbidden": [
+      "DRILL-1002",
+      "BAT-18V-B",
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "query": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "presetId": "zava-s08-case-recall",
+     "relevant": [
+      "CASE-001",
+      "POL-RECALL-v2",
+      "INC-2026-017"
+     ],
+     "forbidden": [
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "query": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "presetId": "zava-s08-warranty-exclusion",
+     "relevant": [
+      "CASE-002",
+      "WAR-BAT-2026-01"
+     ],
+     "forbidden": [
+      "CASE-001"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "query": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "presetId": "zava-s08-false-premise-x10",
+     "relevant": [
+      "SUP-BUL-017",
+      "POL-RECALL-v2"
+     ],
+     "criterion": "graph"
+    }
+   ],
+   "S09": [
+    {
+     "label": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "query": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "presetId": "zava-s09-themes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
+    },
+    {
+     "label": "What should a new Zava store associate know?",
+     "query": "What should a new Zava store associate know?",
+     "presetId": "zava-s09-store-associate",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
+    },
+    {
+     "label": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "query": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "presetId": "zava-s09-battery-subthemes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
+    },
+    {
+     "label": "What do Zava customers ask about?",
+     "query": "What do Zava customers ask about?",
+     "presetId": "zava-s09-customer-asks",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
+    }
+   ],
+   "S10": [
+    {
+     "label": "¿Cuál es el diámetro máximo de perforación en hormigón del modelo DCD796?",
+     "query": "¿Cuál es el diámetro máximo de perforación en hormigón del modelo DCD796?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "¿Cuál es el diámetro de perforación en hormigón de DCD797?",
+     "query": "¿Cuál es el diámetro de perforación en hormigón de DCD797?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "¿El diámetro de perforación en hormigón de DCD796 es 16 mm?",
+     "query": "¿El diámetro de perforación en hormigón de DCD796 es 16 mm?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "Comparar los diámetros de perforación en hormigón y madera de DCD796",
+     "query": "Comparar los diámetros de perforación en hormigón y madera de DCD796",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    }
+   ],
+   "S11": [
+    {
+     "label": "Sombrero azul incluido en el lote - solo imagen",
+     "query": "",
+     "image": "/samples/zava-hat-blue.png",
+     "relevant": [
+      "HAT-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Bol azul incluido en el lote + buscar este artículo",
+     "query": "Buscar este artículo",
+     "image": "/samples/zava-bowl-blue.png",
+     "relevant": [
+      "BOWL-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Sombrero rojo incluido en el lote + consulta de sombrero pescador rojo de algodón",
+     "query": "Sombrero pescador rojo de algodón con ala redonda.",
+     "image": "/samples/zava-hat-red.png",
+     "relevant": [
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Solo texto - algo para la cabeza en un día soleado",
+     "query": "algo para la cabeza en un día soleado",
+     "relevant": [
+      "HAT-001",
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    }
+   ]
+  },
+  "ja": {
+   "S01": [
+    {
+     "label": "DCD796 ハンマードリル",
+     "query": "DCD796 ハンマードリル",
+     "relevant": [
+      "DRILL-1001"
+     ],
+     "forbidden": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "コードレス組積造ドリル",
+     "query": "コードレス組積造ドリル",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "DCD796 ラベルプリンター",
+     "query": "DCD796 ラベルプリンター",
+     "relevant": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "BAT-18V-A ドリル",
+     "query": "BAT-18V-A ドリル",
+     "relevant": [
+      "DRILL-1001",
+      "BAT-18V-A"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S02": [
+    {
+     "label": "石材に開口部を作るための軽いもの",
+     "query": "石材に開口部を作るための軽いもの",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "日差しから頭を守るかぶりもの",
+     "query": "日差しから頭を守るかぶりもの",
+     "relevant": [
+      "HAT-001",
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "卵を泡立てるための器",
+     "query": "卵を泡立てるための器",
+     "relevant": [
+      "BOWL-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "古い石造りの家に棚を取り付けるための道具",
+     "query": "古い石造りの家に棚を取り付けるための道具",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S03": [
+    {
+     "label": "石材用の安い穴あけ機",
+     "query": "石材用の安い穴あけ機",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "石積みに穴を開ける手頃な工具",
+     "query": "石積みに穴を開ける手頃な工具",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "£200 未満で石材に開口部を作れる軽いもの",
+     "query": "£200 未満で石材に開口部を作れる軽いもの",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "石の壁に棚を取り付けるための低価格な工具",
+     "query": "石の壁に棚を取り付けるための低価格な工具",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S04": [
+    {
+     "label": "小規模な自宅リフォームに最適なドリル",
+     "query": "小規模な自宅リフォームに最適なドリル",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1002",
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "B-17 の欠陥の影響を受けないバッテリーを使うドリルはどれですか？",
+     "query": "B-17 の欠陥の影響を受けないバッテリーを使うドリルはどれですか？",
+     "relevant": [
+      "DRILL-1002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "ブラシレスモーターを搭載したドリルはどれですか？",
+     "query": "ブラシレスモーターを搭載したドリルはどれですか？",
+     "relevant": [
+      "DRILL-1002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "組積造ではなく自宅リフォーム向けのドリル",
+     "query": "組積造ではなく自宅リフォーム向けのドリル",
+     "relevant": [
+      "DRILL-1002"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S05": [
+    {
+     "label": "ロンドンで買える £200 未満の石材用の軽い穴あけ機",
+     "query": "ロンドンで買える £200 未満の石材用の軽い穴あけ機",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "ロンドンで買える石積みに穴を開ける手頃な工具",
+     "query": "ロンドンで買える石積みに穴を開ける手頃な工具",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "ロンドンで £200 未満で受け取れる、石材に開口部を作るためのもの",
+     "query": "ロンドンで £200 未満で受け取れる、石材に開口部を作るためのもの",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "ロンドンで買える、石の壁に棚を取り付けるための低価格な工具",
+     "query": "ロンドンで買える、石の壁に棚を取り付けるための低価格な工具",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S06": [
+    {
+     "label": "自宅リフォーム向けの 18V 軽量組積造ドリル",
+     "query": "自宅リフォーム向けの 18V 軽量組積造ドリル",
+     "boostSubtype": "freshness",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "自宅の作業向けのコードレス組積造ドリル",
+     "query": "自宅の作業向けのコードレス組積造ドリル",
+     "boostSubtype": "freshness",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "ロンドン中心部の近くで買えるレンガ壁用の軽量ドリル",
+     "query": "ロンドン中心部の近くで買えるレンガ壁用の軽量ドリル",
+     "boostSubtype": "distance",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004"
+     ],
+     "forbidden": [
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "ロンドンで受け取れるレンガ壁用のコードレスドリル",
+     "query": "ロンドンで受け取れるレンガ壁用のコードレスドリル",
+     "boostSubtype": "distance",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004"
+     ],
+     "forbidden": [
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S07": [
+    {
+     "label": "ドリルの充電式ブロックが7週目に死にました。お金は返ってきますか？",
+     "query": "ドリルの充電式ブロックが7週目に死にました。お金は返ってきますか？",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "ドリルのパックが7週目でうんともすんとも言いません。お金は戻りますか？",
+     "query": "ドリルのパックが7週目でうんともすんとも言いません。お金は戻りますか？",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "ドリルのパックが7週間で充電を受け付けなくなりました。返金、修理、交換のどれになりますか？",
+     "query": "ドリルのパックが7週間で充電を受け付けなくなりました。返金、修理、交換のどれになりますか？",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "電動ドリルの充電パックが7週間でダメになりました。店舗クレジット、修理、交換のどれですか？",
+     "query": "電動ドリルの充電パックが7週間でダメになりました。店舗クレジット、修理、交換のどれですか？",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S08": [
+    {
+     "label": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "query": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "presetId": "zava-s08-recall-exposure",
+     "relevant": [
+      "BOM-2026-01",
+      "INC-2026-017",
+      "POL-RECALL-v2"
+     ],
+     "forbidden": [
+      "DRILL-1002",
+      "BAT-18V-B",
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "query": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "presetId": "zava-s08-case-recall",
+     "relevant": [
+      "CASE-001",
+      "POL-RECALL-v2",
+      "INC-2026-017"
+     ],
+     "forbidden": [
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "query": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "presetId": "zava-s08-warranty-exclusion",
+     "relevant": [
+      "CASE-002",
+      "WAR-BAT-2026-01"
+     ],
+     "forbidden": [
+      "CASE-001"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "query": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "presetId": "zava-s08-false-premise-x10",
+     "relevant": [
+      "SUP-BUL-017",
+      "POL-RECALL-v2"
+     ],
+     "criterion": "graph"
+    }
+   ],
+   "S09": [
+    {
+     "label": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "query": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "presetId": "zava-s09-themes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
+    },
+    {
+     "label": "What should a new Zava store associate know?",
+     "query": "What should a new Zava store associate know?",
+     "presetId": "zava-s09-store-associate",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
+    },
+    {
+     "label": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "query": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "presetId": "zava-s09-battery-subthemes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
+    },
+    {
+     "label": "What do Zava customers ask about?",
+     "query": "What do Zava customers ask about?",
+     "presetId": "zava-s09-customer-asks",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
+    }
+   ],
+   "S10": [
+    {
+     "label": "DCD796 モデルの最大コンクリート穴あけ径はいくつですか？",
+     "query": "DCD796 モデルの最大コンクリート穴あけ径はいくつですか？",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "DCD797 のコンクリート穴あけ径はいくつですか？",
+     "query": "DCD797 のコンクリート穴あけ径はいくつですか？",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "DCD796 のコンクリート穴あけ径は 16 mm ですか？",
+     "query": "DCD796 のコンクリート穴あけ径は 16 mm ですか？",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "DCD796 のコンクリートと木材の穴あけ径を比較してください",
+     "query": "DCD796 のコンクリートと木材の穴あけ径を比較してください",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    }
+   ],
+   "S11": [
+    {
+     "label": "同梱ブルーハット - 画像のみ",
+     "query": "",
+     "image": "/samples/zava-hat-blue.png",
+     "relevant": [
+      "HAT-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "同梱ブルーボウル + この商品を探す",
+     "query": "この商品を探す",
+     "image": "/samples/zava-bowl-blue.png",
+     "relevant": [
+      "BOWL-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "同梱レッドハット + 赤いコットンハットのクエリ",
+     "query": "丸いつば付きのレッドコットン製バケットハット。",
+     "image": "/samples/zava-hat-red.png",
+     "relevant": [
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "テキストのみ - 晴れた日にかぶるもの",
+     "query": "晴れた日にかぶるもの",
+     "relevant": [
+      "HAT-001",
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    }
+   ]
+  },
+  "de": {
+   "S01": [
+    {
+     "label": "DCD796 Schlagbohrmaschine",
+     "query": "DCD796 Schlagbohrmaschine",
+     "relevant": [
+      "DRILL-1001"
+     ],
+     "forbidden": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "kabellose Mauerwerksbohrmaschine",
+     "query": "kabellose Mauerwerksbohrmaschine",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "DCD796 Kennzeichendrucker",
+     "query": "DCD796 Kennzeichendrucker",
+     "relevant": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "BAT-18V-A Bohrmaschine",
+     "query": "BAT-18V-A Bohrmaschine",
+     "relevant": [
+      "DRILL-1001",
+      "BAT-18V-A"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S02": [
+    {
+     "label": "etwas, um Öffnungen in Naturstein zu machen",
+     "query": "etwas, um Öffnungen in Naturstein zu machen",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Kopfbedeckung gegen die Sonne",
+     "query": "Kopfbedeckung gegen die Sonne",
+     "relevant": [
+      "HAT-001",
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "ein Gefäß zum Eierschlagen",
+     "query": "ein Gefäß zum Eierschlagen",
+     "relevant": [
+      "BOWL-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "ein Werkzeug, um Regale in einem alten Steinhaus aufzuhängen",
+     "query": "ein Werkzeug, um Regale in einem alten Steinhaus aufzuhängen",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S03": [
+    {
+     "label": "günstiges Gerät für Steinarbeiten",
+     "query": "günstiges Gerät für Steinarbeiten",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "erschwingliches Werkzeug für Löcher in Naturstein",
+     "query": "erschwingliches Werkzeug für Löcher in Naturstein",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "etwas für Öffnungen in Naturstein unter £200",
+     "query": "etwas für Öffnungen in Naturstein unter £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "preiswertes Werkzeug, um Regale an einer Steinwand anzubringen",
+     "query": "preiswertes Werkzeug, um Regale an einer Steinwand anzubringen",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S04": [
+    {
+     "label": "Beste Bohrmaschine für kleine Heimrenovierungen",
+     "query": "Beste Bohrmaschine für kleine Heimrenovierungen",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1002",
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Welche Bohrmaschine hat einen Akku, der nicht vom B-17-Defekt betroffen ist?",
+     "query": "Welche Bohrmaschine hat einen Akku, der nicht vom B-17-Defekt betroffen ist?",
+     "relevant": [
+      "DRILL-1002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "kompakte bürstenlose Bohrmaschine für Heimwerker",
+     "query": "kompakte bürstenlose Bohrmaschine für Heimwerker",
+     "relevant": [
+      "DRILL-1002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Ich brauche eine Bohrmaschine für Beton, keinen Etikettendrucker",
+     "query": "Ich brauche eine Bohrmaschine für Beton, keinen Etikettendrucker",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1005",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1006"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S05": [
+    {
+     "label": "Gerät für Naturstein, in London verfügbar, unter £200",
+     "query": "Gerät für Naturstein, in London verfügbar, unter £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "erschwingliches Werkzeug zum Bohren in Backstein in London",
+     "query": "erschwingliches Werkzeug zum Bohren in Backstein in London",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "etwas für Öffnungen in Naturstein, abholbar in London für unter £200",
+     "query": "etwas für Öffnungen in Naturstein, abholbar in London für unter £200",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "preiswertes Werkzeug, um Regale an einer Steinwand anzubringen, in London",
+     "query": "preiswertes Werkzeug, um Regale an einer Steinwand anzubringen, in London",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S06": [
+    {
+     "label": "leichte 18V Mauerwerksbohrmaschine für Heimrenovierungen",
+     "query": "leichte 18V Mauerwerksbohrmaschine für Heimrenovierungen",
+     "boostSubtype": "freshness",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "kabellose Mauerwerksbohrmaschine für ein Heimprojekt",
+     "query": "kabellose Mauerwerksbohrmaschine für ein Heimprojekt",
+     "boostSubtype": "freshness",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004",
+      "DRILL-1007"
+     ],
+     "forbidden": [
+      "DRILL-1005"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "leichte Bohrmaschine für Ziegelwände in der Nähe der Londoner Innenstadt",
+     "query": "leichte Bohrmaschine für Ziegelwände in der Nähe der Londoner Innenstadt",
+     "boostSubtype": "distance",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004"
+     ],
+     "forbidden": [
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "kabellose Bohrmaschine für Ziegelwände, abholbar in London",
+     "query": "kabellose Bohrmaschine für Ziegelwände, abholbar in London",
+     "boostSubtype": "distance",
+     "relevant": [
+      "DRILL-1001",
+      "DRILL-1003",
+      "DRILL-1004"
+     ],
+     "forbidden": [
+      "DRILL-1007"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S07": [
+    {
+     "label": "Der Akkuklotz meines Zava-Akkuschraubers ist nach sechs Wochen hinüber. Geld zurück oder Reparatur?",
+     "query": "Der Akkuklotz meines Zava-Akkuschraubers ist nach sechs Wochen hinüber. Geld zurück oder Reparatur?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Der Akkuklotz meiner Zava-Bohrmaschine hat in Woche sechs den Geist aufgegeben. Gutschrift oder Reparatur?",
+     "query": "Der Akkuklotz meiner Zava-Bohrmaschine hat in Woche sechs den Geist aufgegeben. Gutschrift oder Reparatur?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Der Akkupack meines Akkuschraubers nimmt nach sieben Wochen keinen Saft mehr an. Erstattung, Reparatur oder Tausch?",
+     "query": "Der Akkupack meines Akkuschraubers nimmt nach sieben Wochen keinen Saft mehr an. Erstattung, Reparatur oder Tausch?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Der Akkupack meines Zava-Akkuschraubers nimmt seit Woche sieben keinen Saft mehr an. Geld zurück oder Reparatur?",
+     "query": "Der Akkupack meines Zava-Akkuschraubers nimmt seit Woche sieben keinen Saft mehr an. Geld zurück oder Reparatur?",
+     "relevant": [
+      "POL-DEF-2026-02",
+      "WAR-BAT-2026-01",
+      "POL-RET-2026-01"
+     ],
+     "criterion": "ranking"
+    }
+   ],
+   "S08": [
+    {
+     "label": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "query": "Which drill, battery pack, cell and production lots are exposed to the supplier cell incident, and which current recall guidance applies to those lots?",
+     "presetId": "zava-s08-recall-exposure",
+     "relevant": [
+      "BOM-2026-01",
+      "INC-2026-017",
+      "POL-RECALL-v2"
+     ],
+     "forbidden": [
+      "DRILL-1002",
+      "BAT-18V-B",
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "query": "Which customer support case involves a production lot that current recall guidance says to isolate, and which incident affects that lot?",
+     "presetId": "zava-s08-case-recall",
+     "relevant": [
+      "CASE-001",
+      "POL-RECALL-v2",
+      "INC-2026-017"
+     ],
+     "forbidden": [
+      "CASE-002"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "query": "Which support case reports damage that the battery warranty explicitly excludes, and which product does that case involve?",
+     "presetId": "zava-s08-warranty-exclusion",
+     "relevant": [
+      "CASE-002",
+      "WAR-BAT-2026-01"
+     ],
+     "forbidden": [
+      "CASE-001"
+     ],
+     "criterion": "graph"
+    },
+    {
+     "label": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "query": "SUP-017's CELL-X10 cell is also defective. Which Zava drills use CELL-X10 and must be recalled?",
+     "presetId": "zava-s08-false-premise-x10",
+     "relevant": [
+      "SUP-BUL-017",
+      "POL-RECALL-v2"
+     ],
+     "criterion": "graph"
+    }
+   ],
+   "S09": [
+    {
+     "label": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "query": "What are the main themes across Zava's support and product content, and how much of it concerns the battery incident?",
+     "presetId": "zava-s09-themes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
+    },
+    {
+     "label": "What should a new Zava store associate know?",
+     "query": "What should a new Zava store associate know?",
+     "presetId": "zava-s09-store-associate",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
+    },
+    {
+     "label": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "query": "Break down Zava's battery-related content: which sub-themes does it contain and how large is each?",
+     "presetId": "zava-s09-battery-subthemes",
+     "relevant": [],
+     "topicKind": "corpus-themes",
+     "criterion": "topics"
+    },
+    {
+     "label": "What do Zava customers ask about?",
+     "query": "What do Zava customers ask about?",
+     "presetId": "zava-s09-customer-asks",
+     "relevant": [],
+     "topicKind": "facet-coverage",
+     "criterion": "topics"
+    }
+   ],
+   "S10": [
+    {
+     "label": "Wie groß ist der maximale Betonbohrdurchmesser des Modells DCD796?",
+     "query": "Wie groß ist der maximale Betonbohrdurchmesser des Modells DCD796?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "Wie groß ist der Betonbohrdurchmesser des DCD797?",
+     "query": "Wie groß ist der Betonbohrdurchmesser des DCD797?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "Ist der Betonbohrdurchmesser des DCD796 16 mm?",
+     "query": "Ist der Betonbohrdurchmesser des DCD796 16 mm?",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    },
+    {
+     "label": "Vergleiche die Beton- und Holzbohrdurchmesser des DCD796",
+     "query": "Vergleiche die Beton- und Holzbohrdurchmesser des DCD796",
+     "relevant": [
+      "MAN-DRILL-1001"
+     ],
+     "criterion": "row"
+    }
+   ],
+   "S11": [
+    {
+     "label": "Gebündelter blauer Hut – nur Bild",
+     "query": "",
+     "image": "/samples/zava-hat-blue.png",
+     "relevant": [
+      "HAT-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Gebündelte blaue Schüssel + diesen Artikel finden",
+     "query": "Diesen Artikel finden",
+     "image": "/samples/zava-bowl-blue.png",
+     "relevant": [
+      "BOWL-001"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Gebündelter roter Hut + Anfrage roter Baumwoll-Fischerhut",
+     "query": "Roter Fischerhut aus Baumwolle mit rundum verlaufender Krempe.",
+     "image": "/samples/zava-hat-red.png",
+     "relevant": [
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    },
+    {
+     "label": "Nur Text – Kopfbedeckung für einen sonnigen Tag",
+     "query": "Kopfbedeckung für einen sonnigen Tag",
+     "relevant": [
+      "HAT-001",
+      "HAT-002"
+     ],
+     "criterion": "ranking"
+    }
+   ]
+  }
+ }
+}

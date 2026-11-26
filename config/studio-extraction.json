@@ -1,0 +1,58 @@
+{
+  "sourceId": "MAN-DRILL-1001",
+  "sourceUrl": "/samples/zava-manual.pdf",
+  "sourceHash": "55e56ccd6e063318b0f45d09a7e06089c672d14fc9df3a7ad1af653be24daf44",
+  "extractionLabel": "Deterministically extracted from original canonical uncompressed PDF; NOT Azure Content Understanding.",
+  "basic": {
+    "version": "zava-basic-v1",
+    "pages": [
+      {
+        "page": 1,
+        "text": "Zava Retail - ORIGINAL FICTIONAL MANUAL MAN-DRILL-1001. Synthetic demonstration, not real product specifications. Battery: DRILL-1001 uses BAT-18V-A. DRILL-1002 uses BAT-18V-B. For charging failures contact support; never bypass a safety circuit."
+      },
+      {
+        "page": 2,
+        "text": "MAN-DRILL-1001 - Table T-1 - synthetic specifications Model          Concrete (mm)       Wood (mm)       Steel (mm) DCD796 13 40 13 DCD797 16 38 13 Top-left row rectangles in points: (60,120,470,24) and (60,144,470,24). Adjacent rows deliberately differ. These are invented model values."
+      }
+    ],
+    "limitation": "Flattened reading-order text; cell coordinates and row association removed."
+  },
+  "layout": {
+    "version": "zava-layout-v1",
+    "page": 2,
+    "tableId": "T-1",
+    "rows": [
+      {
+        "sku": "DCD796",
+        "row": 1,
+        "concrete": 13,
+        "wood": 40,
+        "steel": 13,
+        "coordinates": {
+          "page": 2,
+          "unit": "pt",
+          "x": 60,
+          "y": 120,
+          "width": 470,
+          "height": 24
+        }
+      },
+      {
+        "sku": "DCD797",
+        "row": 2,
+        "concrete": 16,
+        "wood": 38,
+        "steel": 13,
+        "coordinates": {
+          "page": 2,
+          "unit": "pt",
+          "x": 60,
+          "y": 144,
+          "width": 470,
+          "height": 24
+        }
+      }
+    ],
+    "coordinateSystem": "top-left PDF points; page size 612 x 792"
+  }
+}

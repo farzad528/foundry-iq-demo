@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>About · Foundry IQ Demo Studio</title>
+  <meta name="description" content="Why the Foundry IQ Demo Studio exists, how Sample and Live modes work, and what each S01–S11 retrieval scenario compares.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <script src="/assets/theme.js"></script>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Foundry IQ Demo Studio home"><img src="/assets/foundry.svg" alt="" width="26" height="26"><span>Foundry IQ Demo Studio</span></a>
+    <div class="actions">
+      <button class="btn" id="share" type="button" aria-label="Share this demo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+        <span class="btn-label">Share</span>
+      </button>
+      <a class="icon-btn" id="github" href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer" aria-label="View the source on GitHub (opens in a new tab)" title="GitHub">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+      </a>
+      <div class="menu-anchor">
+        <button class="avatar" id="profile-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="profile-menu" aria-label="Open the menu" title="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.7"/><path d="M4.8 20c.9-3.6 3.8-5.6 7.2-5.6s6.3 2 7.2 5.6"/></svg>
+        </button>
+        <div class="popover" id="profile-menu" role="menu" aria-label="Menu" hidden>
+          <button class="menuitem" id="menu-settings" type="button" role="menuitem" tabindex="-1" aria-haspopup="dialog" aria-controls="settings-panel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+            Settings
+          </button>
+          <a class="menuitem" id="menu-help" role="menuitem" tabindex="-1" href="https://learn.microsoft.com/en-us/azure/search/" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17.2h.01"/></svg>
+            Help
+            <svg class="external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+            <span class="sr-only">(opens in a new tab)</span>
+          </a>
+          <a class="menuitem" id="menu-about" role="menuitem" tabindex="-1" href="/about">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6h.01"/></svg>
+            About
+          </a>
+        </div>
+        <div class="popover settings-panel" id="settings-panel" role="dialog" aria-modal="false" aria-labelledby="settings-title" hidden>
+          <h2 id="settings-title">Settings <button class="icon-btn" id="settings-close" type="button" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></h2>
+          <fieldset>
+            <legend>Document language</legend>
+            <div class="choice-list" id="language-options">
+              <label class="choice"><input type="radio" name="document-language" value="en" checked> English</label>
+              <label class="choice"><input type="radio" name="document-language" value="fr"> Français</label>
+              <label class="choice"><input type="radio" name="document-language" value="es"> Español</label>
+              <label class="choice"><input type="radio" name="document-language" value="ja"> 日本語</label>
+              <label class="choice"><input type="radio" name="document-language" value="de"> Deutsch</label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Theme</legend>
+            <div class="segmented" id="theme-options">
+              <label title="Follow the system setting"><input type="radio" name="theme" value="system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>System</label>
+              <label><input type="radio" name="theme" value="light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Light</label>
+              <label><input type="radio" name="theme" value="dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>Dark</label>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+  </header>
+  <main class="about">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">›</span> <span aria-current="page">About</span></nav>
+    <div class="about-hero">
+      <h1><img src="/assets/foundry.svg" alt="" width="40" height="40">About Foundry IQ Demo Studio</h1>
+      <a class="btn primary back" href="/">Open the demo</a>
+    </div>
+
+    <section aria-labelledby="why">
+      <h2 id="why">Why this demo exists</h2>
+      <p class="lead">Compare Foundry IQ retrieval patterns side by side with real queries and citations.</p>
+      <p>Foundry IQ (Azure AI Search) offers many retrieval techniques: keyword, vector, hybrid, semantic ranking, scoring profiles, agentic retrieval, multimodal search and more. They are easy to describe and hard to feel. This studio puts each technique side by side as a <strong>BEFORE</strong> and <strong>AFTER</strong> comparison on the same synthetic Zava Retail corpus, the same query and the same evidence budget. You see real ranked documents and citations, not marketing claims.</p>
+    </section>
+
+    <div class="two-col">
+      <section aria-labelledby="helps">
+        <h2 id="helps">How it helps</h2>
+        <ul>
+          <li>Shows what changes, and what does not, when you switch on a retrieval feature.</li>
+          <li>Every curated example explains why AFTER wins, written from its recorded Live run.</li>
+          <li>Every result links to its source document, page or table row. Open a result for its fields, scores and rank change.</li>
+          <li><strong>API log</strong> shows the exact Foundry IQ request and response for each side, with the service host and key hidden.</li>
+          <li><strong>Technical details</strong> show the exact index, filters, API version, request IDs and timing for each arm.</li>
+          <li>Five document languages show language-specific analyzers and multilingual vectors.</li>
+          <li>Failures are shown as failures; the app never invents passages, citations or timings.</li>
+        </ul>
+      </section>
+      <section aria-labelledby="modes">
+        <h2 id="modes">Sample mode vs Live data</h2>
+        <p><strong>Live data</strong> sends real queries from the server to Foundry IQ. Query vectors are computed by the index vectorizers inside Foundry IQ. Your browser never sees a key.</p>
+        <p><strong>Sample mode</strong> replays real Live responses that were recorded for every curated example, in all five languages, with the capture date shown. It sends no query to Foundry IQ. Sample is always labeled and is never used as a silent fallback when Live fails.</p>
+        <p>Open <strong>Advanced options</strong> under the search box to switch mode and evidence count.</p>
+      </section>
+    </div>
+
+    <section aria-labelledby="scenarios">
+      <h2 id="scenarios">The scenarios</h2>
+      <div class="cards">
+        <article class="scenario-card"><h3>S01 Keyword search <span class="tag live">Live</span></h3><p>Plain app-style substring matching vs Foundry IQ full-text search with language analyzers and synonym maps.</p><p class="why">Why it matters: “drill” should find a “hammer drill”, and typed product names should still match.</p></article>
+        <article class="scenario-card"><h3>S02 Vector search <span class="tag live">Live</span></h3><p>Keyword (BM25) ranking vs vector similarity from the index’s text-embedding-3-small vectorizer.</p><p class="why">Why it matters: describe the need (“a light tool for holes in brick”) instead of guessing product words. Exact IDs can still favor keyword.</p></article>
+        <article class="scenario-card"><h3>S03 Hybrid search <span class="tag live">Live</span></h3><p>Keyword vs hybrid (keyword + vector with reciprocal rank fusion) under identical category and price filters.</p><p class="why">Why it matters: hybrid keeps exact matches and adds meaning, while filters still apply.</p></article>
+        <article class="scenario-card"><h3>S04 Semantic reranking <span class="tag live">Live</span></h3><p>The same hybrid candidates before and after the Foundry IQ semantic ranker.</p><p class="why">Why it matters: shows rank movement only. No new documents appear, so the effect is easy to attribute.</p></article>
+        <article class="scenario-card"><h3>S05 Retail search <span class="tag live">Live</span></h3><p>Location, stock, category and price filters, with keyword vs hybrid results plus category facets.</p><p class="why">Why it matters: commerce search needs hard eligibility rules and navigation, not just relevance.</p></article>
+        <article class="scenario-card"><h3>S06 Document boosting <span class="tag live">Live</span></h3><p>The same hybrid query with and without a reviewed scoring profile: freshness, magnitude, distance, tags or availability.</p><p class="why">Why it matters: business signals can reorder relevant results in an explainable way.</p></article>
+        <article class="scenario-card"><h3>S07 Agentic search <span class="tag live">Live</span> <span class="tag">Evidence only</span></h3><p>Single-pass hybrid retrieval vs native single-index agentic retrieval on the same support index, with a bounded runtime. AFTER lists the follow-up sub-queries Microsoft Retriever 1 issued.</p><p class="why">Why it matters: a complex support question needs policy, warranty and manual evidence together. This deployment compares retrieved documents and citations; it does not generate answers.</p></article>
+        <article class="scenario-card"><h3>S08 Entity graph search <span class="tag live">Live</span></h3><p>Plain retrieval (hybrid search with the semantic ranker) vs native Foundry IQ entity-graph search. Curated questions run graph queries that return each relationship path, cited by the passages it was extracted from.</p><p class="why">Why it matters: no single document links a support case to a recall, or a drill to a defective cell. The graph joins them, excludes look-alikes and can prove that a path does not exist.</p></article>
+        <article class="scenario-card"><h3>S09 Topic graph search <span class="tag live">Live</span></h3><p>The same hybrid search with topic diversification off vs on, plus the corpus themes and their share of passages from the native Foundry IQ topic graph.</p><p class="why">Why it matters: broad questions deserve results from every area of the content, not five near-duplicates, and themes show how the content is organized.</p></article>
+        <article class="scenario-card"><h3>S10 PDF layout extraction <span class="tag live">Live</span> <span class="tag">Pre-ingested</span></h3><p>Content Understanding Read pages vs Layout table rows from the same PDF. Extraction ran at ingestion; queries run live.</p><p class="why">Why it matters: table-aware extraction cites the exact page and row (for example, a model’s drilling diameter).</p></article>
+        <article class="scenario-card"><h3>S11 Multimodal image search <span class="tag live">Live</span> <span class="tag">Preview</span></h3><p>Keyword search over image metadata vs image embeddings computed by Foundry IQ, from an uploaded image or a text description.</p><p class="why">Why it matters: shoppers often have a picture, not the right words. Uploads are bounded to 40 KiB and never stored.</p></article>
+      </div>
+    </section>
+
+    <div class="two-col">
+      <section aria-labelledby="languages">
+        <h2 id="languages">Five document languages</h2>
+        <p>Each language has its own translated corpus and indexes, with language-specific analyzers. Outside S08 and S09, English is never substituted for another language; those two always use the English Zava graph, with a visible note.</p>
+        <ul class="lang-list"><li>English</li><li>Français</li><li>Español</li><li>日本語</li><li>Deutsch</li></ul>
+        <p>Change the language from the profile menu: <strong>Settings</strong> › <strong>Document language</strong>.</p>
+      </section>
+      <section aria-labelledby="limits">
+        <h2 id="limits">Current limitations</h2>
+        <ul>
+          <li>All content is synthetic (Zava Retail); no customer data.</li>
+          <li>S07 compares retrieval evidence only; it relies on paid Standard knowledge retrieval and has no generated answers here.</li>
+          <li>S08 graph traversal runs on four curated questions; other questions show plain retrieval only, because turning free text into a graph query needs a model. S08 and S09 use the English Zava graph in every language.</li>
+          <li>S10 uses PDFs processed by Content Understanding at ingestion; new PDF uploads are not supported.</li>
+          <li>S11 uses a preview vectorizer; uploads are limited to 40 KiB JPEG, PNG or WebP.</li>
+          <li>Requests are rate limited. The first Live query after a quiet period can take longer while the service warms up.</li>
+        </ul>
+      </section>
+    </div>
+
+    <section aria-labelledby="data-sources">
+      <h2 id="data-sources">Data sources</h2>
+      <div class="sources">
+        <!-- DATA_SOURCES:START -->
+        <p>Synthetic demo data: the Zava store, its products, support articles and images are fictional.</p>
+        <!-- DATA_SOURCES:END -->
+      </div>
+    </section>
+
+    <section aria-labelledby="learn">
+      <h2 id="learn">Learn more</h2>
+      <p><a href="https://learn.microsoft.com/en-us/azure/search/" target="_blank" rel="noopener noreferrer">Foundry IQ documentation</a> · <a href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer">Source on GitHub</a></p>
+      <p><a class="btn primary back" href="/">Back to the demo</a></p>
+    </section>
+    <footer><span>Synthetic demo content · Zava Retail · S01–S11</span><span><a href="https://learn.microsoft.com/en-us/azure/search/" target="_blank" rel="noopener noreferrer">Foundry IQ docs</a> · <a href="https://github.com/farzad528/foundry-iq-demo" target="_blank" rel="noopener noreferrer">GitHub</a></span></footer>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script type="module" src="/assets/about.mjs"></script>
+</body>
+</html>

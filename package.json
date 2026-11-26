@@ -1,22 +1,22 @@
 {
-  "name": "foundryiq-customer-demos",
+  "name": "foundry-iq-demo-studio",
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "description": "Side-by-side BEFORE/AFTER demos of Foundry IQ retrieval, deployed as a Search-only Vercel app.",
+  "license": "MIT",
   "scripts": {
-    "dev": "node --env-file-if-exists=.env.local scripts/dev.mjs",
-    "build": "node scripts/build.mjs",
-    "start": "node --env-file-if-exists=.env.local scripts/start.mjs",
-    "start:live": "node scripts/local-live.mjs --start",
-    "pretest": "node scripts/build.mjs",
-    "test": "node --test scripts/verify.mjs",
+    "build": "node --env-file-if-exists=.env.local scripts/build-vercel.mjs",
+    "start": "node --env-file-if-exists=.env.local scripts/serve.mjs",
+    "dev": "npm run build && npm start",
+    "test": "node --test scripts/vercel-tests.mjs scripts/studio-tests.mjs scripts/studio-language-tests.mjs scripts/readme-tests.mjs",
+    "test:browser": "npm run build && node --test scripts/studio-browser-tests.mjs",
     "validate": "node scripts/validate-artifact.mjs"
   },
   "engines": {
-    "node": ">=22"
+    "node": "26.x"
   },
-  "dependencies": {
-    "@azure/identity": "^4.12.0",
-    "@azure/storage-blob": "^12.29.1"
+  "devDependencies": {
+    "playwright": "^1.58.0"
   }
 }

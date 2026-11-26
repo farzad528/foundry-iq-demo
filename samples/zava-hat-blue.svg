@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180" viewBox="0 0 240 180" role="img" aria-label="Original illustrative blue bucket hat">
+  <rect width="240" height="180" fill="#f4f5f6"/>
+  <path d="M76 55h88l16 64H60z" fill="#2855a0"/>
+  <ellipse cx="120" cy="123" rx="90" ry="22" fill="#356bbb"/>
+  <path d="M76 95h88" stroke="#c6dcff" stroke-width="5"/>
+</svg>

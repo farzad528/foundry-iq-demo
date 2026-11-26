@@ -1,306 +1,1201 @@
-import { sourceIcon } from './source-icons.mjs';
+import { initHeader, currentLanguage, currentLanguageLabel, setLanguageLocked } from './header.mjs';
+import { displayText, passageView, repairMojibake, notConfigured } from './display.mjs';
 
-const DATA = JSON.parse(document.getElementById('catalog').textContent);
-const $ = id => document.getElementById(id);
-const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({
-  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-})[character]);
-const pretty = value => JSON.stringify(value, null, 2);
-let scenario = DATA[0];
-let tab = 'sources';
-let result = null;
-let selectedRef = null;
-let busy = false;
-let config = {};
-let lastRequest = null;
-let cancellation;
-let previewId = 0;
+const element = id => document.getElementById(id);
+let scenarios = [];
+let sequence = 0;
+let active;
+let selectedFile;
+let objectUrl;
+let configuration;
+let activeSuggestion = -1;
+let bundledFile = false;
+let lastResult;
+// Industry and scenario live in the URL (?industry=healthcare&scenario=S04) so Share links open the same view.
+const startParams = new URLSearchParams(location.search);
+// Industries compiled into this build; an unknown industry in a link opens the Zava demo without a failed request.
+const builtIndustries = (document.querySelector('meta[name="studio-industries"]')?.content || '').split(',').filter(Boolean);
+// `industry` is the committed industry: it changes only together with the catalog it renders, so a request never
+// pairs one industry with another industry's scenarios or examples.
+const startIndustry = builtIndustries.includes(startParams.get('industry')) ? startParams.get('industry') : 'zava';
+let industry = 'zava';
+let pendingScenario = /^S(?:0[1-9]|1[01])$/.test(startParams.get('scenario') || '') ? startParams.get('scenario') : null;
+// In-flight catalog load ({ controller, target, changed, modeTouched }). Separate from comparisons: invalidate() never cancels it.
+let catalogLoad;
+const languageFor = id => id === 'zava' ? currentLanguage() : 'en';
+const requestLanguage = () => languageFor(industry);
+const searchBlocked = () => !!catalogLoad || notConfigured(selectedScenario());
+// Industry corpora are English-only public documents; see displayText for the extraction-artifact rule.
+const shownText = value => displayText(value, { englishOnly: industry !== 'zava' });
+// Industry graph passages may carry the source file's metadata header; cards and the drawer show the body (or "Metadata only")
+// under the header's title, and repair code-page mojibake. Raw hit JSON and the API log keep the exact retrieved text.
+// Siblings: every hit in the response, so a header-only chunk can borrow its document's title from another chunk.
+const viewOf = hit => passageView(hit, { englishOnly: industry !== 'zava', siblings: [...(lastResult?.baseline?.hits || []), ...(lastResult?.enhanced?.hits || [])] });
+const shownTitle = hit => viewOf(hit).title;
+const shownPassage = hit => viewOf(hit).passage;
+const shownValue = value => industry !== 'zava' && typeof value === 'string' ? repairMojibake(value) : value;
+const BOOST_LABELS = { freshness: 'Freshness', magnitude: 'Magnitude', distance: 'Distance', tags: 'Tags', availability: 'Availability',
+  authority: 'Authority', impact: 'Impact' };
+const recordedSampleMode = () => element('mode').value === 'sample' && !!selectedScenario()?.sample?.recorded;
 
-function safeLink(value) {
+const node = (tag, text, className) => {
+  const result = document.createElement(tag);
+  if (text !== undefined) result.textContent = text;
+  if (className) result.className = className;
+  return result;
+};
+const selectedScenario = () => scenarios.find(item => item.id === element('scenario').value);
+function setStatus(message, quiet = false) {
+  element('status').textContent = message;
+  element('status').classList.toggle('sr-only', quiet);
+}
+const safeUrl = value => {
   if (typeof value !== 'string') return null;
-  if (/^\/samples\/[a-z0-9-]+\.(?:md|csv)$/.test(value)) return value;
   try {
-    const url = new URL(value);
-    return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : null;
-  } catch {
-    return null;
-  }
+    const url = new URL(value, location.origin);
+    if (url.username || url.password) return null;
+    if (url.origin === location.origin) return url.pathname.startsWith('/samples/') ? url.href : null;
+    // Industry citations open the original public source, only on that industry's reviewed hosts.
+    const hosts = configuration?.industry?.sourceHosts || [];
+    return url.protocol === 'https:' && !url.port && hosts.includes(url.host) ? url.href : null;
+  } catch { return null; }
+};
+const armLabels = {
+  substring: 'Simple app search', fulltext: 'Analyzers + synonyms', lexical: 'Lexical relevance',
+  vector: 'Vector similarity', hybrid: 'Hybrid retrieval', rerank: 'Semantic reranking',
+  retail: 'Filtered retail + merchandising', boost: 'Scoring-profile boost',
+  singlePass: 'Single-pass retrieval', planned: 'Single-index agentic retrieval',
+  documents: 'Source-document retrieval', graph: 'Foundry IQ entity graph',
+  topic: 'Topic-balanced retrieval + themes', basic: 'Basic text extraction', layout: 'Layout-aware extraction',
+  metadata: 'Text-only product metadata', image: 'Image-vector similarity',
+  plainKeyword: 'Plain keyword: every term', filteredHybrid: 'Filtered hybrid + facets',
+};
+const label = (value, fallback) => typeof value === 'string' ? armLabels[value] || value : value?.label || fallback;
+const errorText = value => typeof value === 'string' ? value : value?.message || value?.code || 'This arm could not complete.';
+const queryList = scenario => (scenario?.queries || scenario?.curatedQueries || [scenario?.sampleQuery]).map(item => typeof item === 'string' ? item : item.query).filter(Boolean);
+const presetList = () => selectedScenario()?.id === 'S11' && element('mode').value === 'sample' && !selectedScenario()?.sample?.recorded
+  ? queryList(selectedScenario()).slice(0, 4).map(query => ({ label: `${query} (fixed blue-hat Sample)`, query }))
+  : selectedScenario()?.demoPresets || queryList(selectedScenario()).slice(0, 4).map(query => ({ label: query, query }));
+
+function closeSuggestions() {
+  element('query-suggestions').hidden = true;
+  element('query').setAttribute('aria-expanded', 'false');
+  element('query').removeAttribute('aria-activedescendant');
+  activeSuggestion = -1;
 }
 
-function badge(kind) {
-  const entry = sourceIcon(kind);
-  return `<span class="source-badge"><img src="${entry.icon}" alt="" width="18" height="18">${esc(entry.label)} · ${esc(entry.access)}</span>`;
-}
-
-function sourceParams() {
-  return scenario.sources.map((source, index) => ({
-    kind: source.kind,
-    knowledgeSourceName: source.name,
-    includeReferences: true,
-    includeReferenceSourceData: $('include-' + index)?.checked ?? true,
-    ...($('effort').value !== 'minimal' ? { alwaysQuerySource: $('always-' + index)?.checked ?? false } : {}),
+// Presets shown in the search-bar listbox. Typing filters them; focus or click shows all of the scenario's examples.
+let visiblePresets = [];
+function showSuggestions(filter = false) {
+  const text = filter ? element('query').value.trim().toLocaleLowerCase() : '';
+  visiblePresets = presetList().filter(preset => !text || `${preset.label} ${preset.query} ${preset.hint || ''}`.toLocaleLowerCase().includes(text));
+  const list = element('query-suggestions');
+  list.setAttribute('aria-label', `Example queries for ${selectedScenario()?.title || 'this scenario'}`);
+  list.replaceChildren(...visiblePresets.map((preset, index) => {
+    const option = node('div', undefined, 'suggestion');
+    option.id = `query-example-${index}`;
+    option.setAttribute('role', 'option');
+    option.setAttribute('aria-selected', 'false');
+    if (preset.image) {
+      const thumb = Object.assign(node('img'), { src: preset.image, alt: '', width: 28, height: 28 });
+      option.append(thumb);
+    }
+    const text = node('span', undefined, 'suggestion-text');
+    text.append(node('span', preset.label || preset.query));
+    if (preset.hint) text.append(node('span', preset.hint, 'suggestion-hint'));
+    option.append(text);
+    option.addEventListener('mousedown', event => event.preventDefault());
+    option.addEventListener('click', () => choosePreset(preset));
+    return option;
   }));
+  activeSuggestion = -1;
+  list.hidden = !visiblePresets.length;
+  element('query').setAttribute('aria-expanded', String(!list.hidden));
+  element('query').removeAttribute('aria-activedescendant');
+}
+function moveSuggestion(next) {
+  const options = [...element('query-suggestions').children];
+  if (!options.length) return;
+  activeSuggestion = (next + options.length) % options.length;
+  options.forEach((option, index) => option.setAttribute('aria-selected', String(index === activeSuggestion)));
+  element('query').setAttribute('aria-activedescendant', options[activeSuggestion].id);
+  options[activeSuggestion].scrollIntoView({ block: 'nearest' });
 }
 
-function payload() {
-  return {
-    ...($('effort').value === 'minimal'
-      ? { intents: [{ type: 'semantic', search: $('question').value.trim() }] }
-      : { messages: [{ role: 'user', content: [{ type: 'text', text: $('question').value.trim() }] }] }),
-    includeActivity: $('include-activity').checked,
-    retrievalReasoningEffort: { kind: $('effort').value },
-    outputMode: $('output').value,
-    ...($('runtime').value ? { maxRuntimeInSeconds: Number($('runtime').value) } : {}),
-    ...($('tokens').value ? { maxOutputSize: Number($('tokens').value) } : {}),
-    knowledgeSourceParams: sourceParams(),
-  };
-}
-
-function updateCapabilities() {
-  const allowed = scenario.execution === 'sample'
-    ? ['low', 'medium', 'minimal', 'auto']
-    : config.capabilities?.[scenario.id]?.efforts || ['low', ...(scenario.sources.some(source => source.kind === 'web') ? [] : ['minimal']), 'auto'];
-  for (const option of $('effort').options) option.disabled = !allowed.includes(option.value);
-  if (!allowed.includes($('effort').value)) $('effort').value = 'low';
-  const minimal = $('effort').value === 'minimal';
-  if (minimal) $('output').value = 'extractiveData';
-  $('output').disabled = minimal || busy;
-  scenario.sources.forEach((_, index) => { if ($('always-' + index)) $('always-' + index).disabled = minimal || busy; });
-  $('mode').value = scenario.execution;
-  $('mode-badge').textContent = scenario.execution === 'sample' ? 'SYNTHETIC REPLAY' : 'LIVE KNOWLEDGE BASE';
-  $('composer-label').textContent = scenario.execution === 'sample'
-    ? 'Fixed synthetic example · never a live fallback'
-    : config.liveEnabled ? 'Public content only · server-side retrieval' : 'Live queries paused / not configured';
-  $('privacy').textContent = scenario.sources.some(source => source.kind === 'web')
-    ? 'Public demo: do not enter sensitive information. Web queries can leave Azure compliance and geographic boundaries. Web evidence is a cited summary, not verbatim source text.'
-    : 'Public demo: do not enter sensitive information. Samples are fictional and are not operational instructions.';
-}
-
-function selectScenario(id) {
-  if (busy) return;
-  scenario = DATA.find(item => item.id === id);
-  $('question').value = scenario.question;
-  $('current-title').textContent = scenario.name;
-  $('kb-label').textContent = scenario.execution === 'live' ? 'LIVE CATALOG' : 'SAMPLE';
-  $('source-count').textContent = `${scenario.sources.length} knowledge sources`;
-  $('scenario-list').innerHTML = ['live', 'sample'].map(execution =>
-    `<div class="eyebrow catalog-group">${execution === 'live' ? 'Live public knowledge bases' : 'Synthetic replays'}</div>` +
-    DATA.filter(item => item.execution === execution).map(item => `
-      <button class="scenario ${item.id === id ? 'active' : ''}" data-id="${esc(item.id)}" aria-pressed="${item.id === id}">
-        <span class="symbol">${badge(item.sources[0]?.kind)}</span>
-        <div><strong>${esc(item.name)}</strong><small>${item.sources.length} sources · ${execution === 'live' ? 'Live / public' : 'Sample only'}</small></div>
-      </button>`).join('')).join('');
-  $('scenario-list').querySelectorAll('button').forEach(button => { button.onclick = () => selectScenario(button.dataset.id); });
-  $('source-controls').innerHTML = scenario.sources.map((source, index) => `
-    <div class="source-mini">${badge(source.kind)} ${esc(source.title)}</div>
-    <label class="hint"><input type="checkbox" id="include-${index}" checked> Include source data</label><br>
-    <label class="hint"><input type="checkbox" id="always-${index}"> Always query source</label>`).join('');
-  $('source-controls').querySelectorAll('input').forEach(input => { input.onchange = renderInspector; });
-  $('error').textContent = '';
-  updateCapabilities();
-  renderInspector();
-}
-
-function referenceFor(id) {
-  const matches = result?.normalized.references.filter(reference => reference.id === id) || [];
-  return matches.length === 1 ? matches[0] : null;
-}
-
-function citation(id) {
-  const reference = referenceFor(id);
-  if (!reference) return `<span class="unresolved">[unresolved citation ${esc(id)}]</span>`;
-  const index = previewId++;
-  return `<span class="citation-wrap">
-    <button class="cite" data-ref="${esc(id)}" aria-label="Inspect citation ${esc(id)}: ${esc(reference.title)}" aria-describedby="preview-${index}">${esc(id)}</button>
-    <span class="citation-preview" role="tooltip" id="preview-${index}">${badge(reference.kind)}<strong>${esc(reference.title)}</strong>${esc(reference.passage?.slice(0, 280) || 'No passage text returned. Inspect the annotation.')}</span>
-  </span>`;
-}
-
-function inspectReference(id) {
-  selectedRef = id;
-  setTab('sources');
-  const index = result.normalized.references.findIndex(reference => reference.id === id);
-  const article = $('reference-' + index);
-  article?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  article?.focus({ preventScroll: true });
-}
-
-function positionPreview(wrapper) {
-  wrapper.classList.remove('preview-dismissed');
-  const preview = wrapper.querySelector('.citation-preview');
-  preview.style.left = '';
-  if (!preview.getClientRects().length) return;
-  const bounds = preview.getBoundingClientRect();
-  const width = document.documentElement.clientWidth;
-  const shift = bounds.left < 12 ? 12 - bounds.left : bounds.right > width - 12 ? width - 12 - bounds.right : 0;
-  preview.style.left = `${(parseFloat(getComputedStyle(preview).left) || 0) + shift}px`;
-}
-
-function renderResult() {
-  if (!result) {
-    $('result').innerHTML = '<div class="answer"><div class="answer-head">Grounded answer <span class="muted">Ready to explore</span></div><div class="answer-body empty">Choose a live knowledge base to ask a question, or explicitly select a synthetic replay.</div></div>';
-    return;
-  }
-  const normalized = result.normalized;
-  previewId = 0;
-  const answer = result.output === 'extractiveData' ? `<pre>${esc(normalized.text)}</pre>` : normalized.text.split('\n\n')
-    .map(paragraph => `<p>${esc(paragraph).replace(/\[ref_id:([^\]]+)\]/g, (_, id) => citation(id))}</p>`).join('');
-  $('result').innerHTML = `<div class="answer">
-    <div class="answer-head"><span>${result.output === 'extractiveData' ? 'Retrieved content' : 'Grounded answer'}</span><span class="pill">${result.sample ? 'SYNTHETIC SAMPLE' : normalized.partial ? 'PARTIAL LIVE RESPONSE' : 'LIVE RESPONSE'}</span></div>
-    <div class="run-context hint">Last completed run · ${esc(result.scenarioName)} · request ${esc(result.requestId)}</div>
-    <div class="answer-body">${answer || '<p>No text response returned. Inspect the sanitized response.</p>'}</div>
-    <div class="answer-foot"><span>${normalized.references.length} references</span><span>${normalized.activityReported ? normalized.activities.length + ' reported activities' : 'Activity not reported'}</span><span>${result.sample ? 'Illustrative fixture timings' : result.elapsed + ' ms round trip (not service duration)'}</span></div></div>
-    ${normalized.limitations.map(limitation => `<p class="notice">${esc(limitation)}</p>`).join('')}
-    <div class="evidence-list">${normalized.references.map(reference => `<button class="evidence-chip" data-ref="${esc(reference.id)}">${badge(reference.kind)}<span>${esc(reference.id ?? 'Missing ID')}</span>${esc(reference.title)}</button>`).join('')}</div>`;
-  $('result').querySelectorAll('[data-ref]').forEach(button => { button.onclick = () => inspectReference(button.dataset.ref); });
-  $('result').querySelectorAll('.citation-wrap').forEach(wrapper => {
-    wrapper.onmouseenter = () => positionPreview(wrapper);
-    wrapper.addEventListener('focusin', () => positionPreview(wrapper));
-  });
-}
-
-function setTab(next) {
-  tab = next;
-  document.querySelectorAll('[data-tab]').forEach(button => {
-    const active = button.dataset.tab === next;
-    button.classList.toggle('active', active);
-    button.setAttribute('aria-selected', String(active));
-    button.tabIndex = active ? 0 : -1;
-  });
-  $('inspect').setAttribute('aria-labelledby', 'tab-' + next);
-  renderInspector();
-}
-
-function renderInspector() {
-  if (tab === 'request') {
-    const snapshot = lastRequest;
-    $('inspect').innerHTML = `<p class="hint">${snapshot ? 'Retained request for the last run; editing controls does not change it.' : 'Draft request; the effective sent payload will be retained after a run.'}<br>api-version=2026-08-01-preview · maxOutputSize (tokens)</p>
-      <pre>${esc(pretty(snapshot || payload()))}</pre><button class="plain" id="copy">Copy request</button>
-      <details><summary class="hint">Sanitized service response</summary><pre>${esc(result ? pretty(result.data) : 'Run retrieval to inspect the service response.')}</pre></details>`;
-    $('copy').onclick = async () => {
-      try { await navigator.clipboard.writeText(pretty(snapshot || payload())); $('copy').textContent = 'Copied'; }
-      catch { $('copy').textContent = 'Select the JSON to copy'; }
-    };
-    return;
-  }
-  if (tab === 'activity') {
-    if (!result) { $('inspect').innerHTML = '<div class="empty">Run retrieval to inspect reported activity.</div>'; return; }
-    const activities = result.normalized.activities;
-    $('inspect').innerHTML = `<div class="notice">${result.sample ? 'Illustrative fixture timings; controls do not change this replay.' : 'Only service-reported activities and timings. IDs link evidence; array order is not identity. Parallel durations are not added.'}</div>
-      ${!activities.length ? '<p class="empty">No activities returned.</p>' : ''}
-      <div class="trace">${activities.map(activity => `<div class="step"><b>${esc(activity.type || 'Unreported type')} · ID ${esc(activity.id ?? 'not reported')}</b>
-        <small>${Number.isFinite(activity.elapsedMs) ? esc(activity.elapsedMs) + ' ms' : 'Timing not reported'}</small>
-        <p>${badge(activity.type)} ${esc(activity.knowledgeSourceName || 'Knowledge base')}</p>
-        ${activity.error ? `<p class="error">Service activity failed: ${esc(activity.error.code || 'unknown error')}</p>` : ''}
-        <details><summary class="hint">Inspect activity</summary><pre>${esc(pretty(activity))}</pre></details></div>`).join('')}</div>
-      ${result.sample && result.sql ? `<div class="notice">Illustrative SQL, not service diagnostics. Live Fabric is out of scope.</div><pre>${esc(result.sql)}</pre>` : ''}`;
-    return;
-  }
-  const references = result?.normalized.references || [];
-  $('inspect').innerHTML = `<div class="eyebrow">${result ? 'CITED EVIDENCE · LAST RUN' : 'KNOWLEDGE MANIFEST'}</div>
-    <p class="hint">${result ? 'Inspect passages and the safe original annotation. Sensitive URL parameters and credential fields are redacted.' : 'Live entries identify configured public sources; catalog membership is not evidence that any source was queried.'}</p>` +
-    (result ? references.map((reference, index) => {
-      const link = safeLink(reference.url);
-      return `<article tabindex="-1" id="reference-${index}" class="source-card ${reference.id === selectedRef ? 'selected-ref' : ''}">
-        ${badge(reference.kind)}<span class="pill">REFERENCE ${esc(reference.id ?? 'ID missing')}</span><h3>${esc(reference.title)}</h3>
-        <p>${esc(reference.sourceName || 'Source name not reported')} · ${reference.activityLinked ? 'activity ID ' + esc(reference.activityId) : 'Activity linkage not reported / unresolved'}</p>
-        ${reference.location ? `<p>Location: ${esc(reference.location)}</p>` : ''}
-        ${reference.kind === 'web' ? '<p class="notice">Service-provided cited Web summary, not a guaranteed verbatim passage.</p>' : ''}
-        <blockquote>${esc(reference.passage || 'No passage text returned. Inspect the annotation below.')}</blockquote>
-        ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open source ↗</a><p class="hint">Some source URLs may require separate authorization; the demo never proxies them.</p>` : '<p class="hint">No safe public source link was returned.</p>'}
-        <details ${reference.id === selectedRef ? 'open' : ''}><summary>Full sanitized annotation</summary><pre>${esc(pretty(reference.annotation))}</pre></details></article>`;
-    }).join('') || '<p class="empty">No references returned; grounding is unverified.</p>' : scenario.sources.map(source => `<article class="source-card">
-      ${badge(source.kind)}<span class="pill">${scenario.execution === 'sample' ? 'SAMPLE' : 'LIVE CATALOG'}</span><h3>${esc(source.title)}</h3><p>${esc(source.detail)}</p>
-      <p class="hint">${esc(source.name)}</p>
-      ${source.files.map(file => `<details><summary>${esc(file.title)}</summary><blockquote>${esc(file.text)}</blockquote><a href="${esc(safeLink(file.url) || '#')}" target="_blank" rel="noopener noreferrer">Open public synthetic source ↗</a></details>`).join('')}</article>`).join('')) +
-    (scenario.requiresIdentity ? '<div class="notice">Fabric and remote SharePoint are synthetic replay only. No anonymous access to private content is implemented.</div>' : '');
-}
-
-async function run() {
-  if (busy) return;
-  if (!$('question').value.trim()) { $('error').textContent = 'Enter a question.'; return; }
-  if (!$('runtime').checkValidity() || !$('tokens').checkValidity()) { $('error').textContent = 'Check the runtime and token limits.'; return; }
-  const request = payload();
-  const submitted = scenario;
-  busy = true;
-  result = null;
-  lastRequest = null;
-  cancellation = new AbortController();
-  $('run').disabled = true;
-  $('cancel').hidden = false;
-  $('run').textContent = 'Retrieving…';
-  $('error').textContent = '';
-  $('result').innerHTML = '<div class="answer"><p class="run-context" role="status">Retrieval in progress. No replay will replace a failed live query.</p></div>';
-  updateCapabilities();
+async function choosePreset(preset) {
+  invalidate();
+  element('query').value = preset.query;
+  // S06 examples each demonstrate one boost; choosing one selects it.
+  if (preset.boostSubtype && selectedScenario()?.id === 'S06') element('boost').value = preset.boostSubtype;
+  element('query').focus({ preventScroll: true });
+  closeSuggestions();
+  setStatus('Demo query selected. Click Search to compare.');
+  if (!preset.image) return;
+  clearFile();
+  const epoch = sequence;
+  element('search').disabled = true;
+  setStatus('Loading bundled synthetic image locally; nothing has been sent to Foundry IQ.');
   try {
-    const start = performance.now();
-    const response = await fetch('/api/retrieve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scenarioId: submitted.id, mode: submitted.execution, request }),
-      signal: cancellation.signal,
-    });
-    const body = await response.json();
-    lastRequest = body.effectiveRequest || null;
-    if (!response.ok) throw new Error(`${body.error || 'Retrieval failed'}${body.serviceError?.message ? ' ' + body.serviceError.message : ''} (request ${body.requestId || response.headers.get('x-request-id') || 'unavailable'}${body.retryAfter ? '; retry after ' + body.retryAfter + 's' : ''})`);
-    result = {
-      ...body,
-      elapsed: Math.round(performance.now() - start),
-      output: request.outputMode,
-      scenarioName: submitted.name,
-      sql: submitted.sql,
-    };
-    renderResult();
+    if (!['/samples/zava-hat-blue.png', '/samples/zava-hat-red.png', '/samples/zava-bowl-blue.png'].includes(preset.image)) throw new Error('Unsupported bundled image.');
+    const response = await fetch(preset.image);
+    if (!response.ok) throw new Error('The bundled image could not be loaded. Choose a local image instead.');
+    const bytes = await response.arrayBuffer();
+    if (epoch !== sequence) return;
+    await selectFile(new File([bytes], preset.image.split('/').pop(), { type: 'image/png' }), epoch, true);
+    const name = selectedFile?.name;
+    if (epoch === sequence && selectedFile) setStatus(recordedSampleMode()
+      ? `Bundled example image ${name} selected. Click Search to replay its recorded result; nothing is sent to Foundry IQ.`
+      : element('mode').value !== 'live' ? `Bundled synthetic image ${name} selected. Switch to Live data to search with it.`
+        : selectedScenario().liveAvailable ? `Bundled synthetic image ${name} selected. Click Search to send it to Foundry IQ.`
+          : `Bundled synthetic image ${name} selected, but Live image search is currently unavailable. Switch to Sample to try the bundled examples.`);
   } catch (error) {
-    $('error').className = 'error';
-    $('error').textContent = cancellation.signal.aborted ? 'Retrieval cancelled. A reserved live call still counts against quotas.' : error.message;
-    renderResult();
+    if (epoch === sequence) showError(error.message);
   } finally {
-    busy = false;
-    $('run').disabled = false;
-    $('cancel').hidden = true;
-    $('run').textContent = 'Run retrieval ↗';
-    updateCapabilities();
-    renderInspector();
+    if (epoch === sequence) element('search').disabled = searchBlocked();
   }
 }
 
-$('run').onclick = run;
-$('cancel').onclick = () => cancellation?.abort();
-$('suggest').onclick = () => { $('question').value = scenario.question; renderInspector(); };
-$('question').oninput = renderInspector;
-$('question').onkeydown = event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); void run(); } };
-document.querySelectorAll('[data-tab]').forEach((button, index, buttons) => {
-  button.onclick = () => setTab(button.dataset.tab);
-  button.onkeydown = event => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-    const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
-    setTab(buttons[next].dataset.tab);
-    buttons[next].focus();
-  };
-});
-['effort', 'output', 'runtime', 'tokens', 'include-activity'].forEach(id => {
-  $(id).onchange = () => { updateCapabilities(); renderInspector(); };
-});
-$('mode').onchange = () => { selectScenario(DATA.find(item => item.execution === $('mode').value).id); };
-$('connect').onclick = () => $('connection').showModal();
-document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') document.querySelectorAll('.citation-wrap').forEach(wrapper => wrapper.classList.add('preview-dismissed'));
-});
-window.addEventListener('resize', () => document.querySelectorAll('.citation-wrap').forEach(wrapper => {
-  if (!wrapper.classList.contains('preview-dismissed')) positionPreview(wrapper);
-}));
-selectScenario(DATA[0].id);
-renderResult();
-try {
-  const response = await fetch('/api/config');
-  if (!response.ok) throw new Error('Server status unavailable.');
-  config = await response.json();
-  $('connection-status').textContent = `${config.configured ? 'Dependencies configured' : 'Server dependencies missing'} · ${config.liveEnabled ? 'Live switch enabled' : 'Live switch paused'}. ${config.contractStatus}`;
-  $('contract-status').textContent = config.contractStatus;
-  updateCapabilities();
-} catch (error) {
-  $('connection-status').textContent = error.message;
-  $('error').textContent = 'Could not load server status. Live availability is unverified.';
+function clearFile() {
+  bundledFile = false;
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+  objectUrl = undefined;
+  selectedFile = undefined;
+  element('file').value = '';
+  element('file-preview').removeAttribute('src');
+  element('file-preview').hidden = true;
+  element('remove-file').hidden = true;
+  element('query').required = true;
 }
+
+function invalidate() {
+  sequence++;
+  lastResult = undefined;
+  active?.abort();
+  active = undefined;
+  closeSuggestions();
+  // Typing invalidates results; it must not re-enable Search for a scenario that isn't configured or while a catalog loads.
+  const blocked = notConfigured(selectedScenario());
+  element('search').disabled = blocked || !!catalogLoad;
+  element('query').disabled = blocked;
+  element('search').textContent = 'Search';
+  element('cancel').hidden = true;
+  element('results').hidden = true;
+  element('baseline').replaceChildren();
+  element('enhanced').replaceChildren();
+  element('metrics').replaceChildren();
+  element('error').hidden = true;
+  element('error').textContent = '';
+}
+
+function showError(message) {
+  element('error').textContent = message;
+  element('error').hidden = false;
+}
+
+function modeChanged() {
+  invalidate();
+  const mode = element('mode').value;
+  const scenario = selectedScenario();
+  const recorded = scenario?.sample?.recorded;
+  element('mode-badge').hidden = true;
+  element('mode-badge').textContent = recorded ? `Recorded Sample · ${recorded.recordedAt}` : 'Sample mode';
+  element('mode-help').textContent = mode === 'live'
+    ? 'Live sends real Foundry IQ queries from the server. Failures are shown as errors; Sample results are never substituted.'
+    : recorded ? `Recorded Live responses captured on ${recorded.recordedAt}. Curated questions only; nothing is sent to Foundry IQ now.`
+      : 'Curated synthetic examples computed in the app. Nothing is sent to Foundry IQ, and timings are not service measurements.';
+  element('weight').disabled = mode === 'live';
+  element('weight-field').hidden = scenario?.id !== 'S06' || !!(mode === 'sample' && recorded);
+  element('query').required = !(mode === 'live' && selectedScenario()?.id === 'S11' && selectedScenario()?.liveAvailable && selectedFile);
+  setStatus(mode === 'live'
+    ? (selectedScenario()?.status === 'custom_retrieval_verified' ? 'Ready to search. This example uses custom pre-extracted PDF content.'
+      : selectedScenario()?.liveAvailable ? 'Ready to search.' : selectedScenario()?.live?.reason || 'Live data is currently unavailable for this scenario.')
+    : 'Curated sample mode ready.', mode === 'live' && selectedScenario()?.liveAvailable);
+  element('sample-reference').hidden = selectedScenario()?.id !== 'S11' || mode !== 'sample' || !!selectedScenario()?.sample?.recorded;
+  // A scenario this deployment hasn't configured (industry graph search) shows why and sends nothing.
+  element('search').disabled = element('query').disabled = notConfigured(scenario);
+  if (catalogLoad) {
+    element('search').disabled = true;
+    setStatus(catalogLoad.message);
+  }
+  closeSuggestions();
+  if (['S10', 'S11'].includes(scenario?.id)) element('upload-help').textContent = uploadHelp(scenario, mode);
+}
+
+function uploadHelp(scenario, mode) {
+  if (scenario.id === 'S10' && industry !== 'zava') return 'Both arms search the same public PDF, extracted at ingestion; each example chooses its PDF, and citations open the original document at the page. Uploading new PDFs isn’t supported in this demo.';
+  if (scenario.id === 'S10') return 'Both arms search the same bundled product manual PDF, and citations open the exact page. Uploading new PDFs isn’t supported in this demo.';
+  if (mode === 'live' && scenario.liveAvailable) return 'PNG, JPEG or WebP up to 40 KiB, sent once to Foundry IQ, which turns it into image embeddings. Nothing is stored or indexed. Without an image, your text is matched against the image vectors (text-to-image).';
+  if (mode === 'live') return 'Live image search is currently unavailable for this scenario. Switch to Sample to try the bundled example images.';
+  if (scenario.sample?.recorded) return 'Sample replays recorded results for the bundled example images and queries. Switch to Live data to search with your own PNG, JPEG or WebP image (up to 40 KiB).';
+  return 'Sample uses the bundled blue hat illustration with curated example queries. Switch to Live data, where available, to search with your own PNG, JPEG or WebP image (up to 40 KiB).';
+}
+
+function scenarioChanged() {
+  invalidate();
+  clearFile();
+  const scenario = selectedScenario();
+  document.querySelector('.surface').dataset.tone = ['S10', 'S11'].includes(scenario.id) ? 'blue' : 'lavender';
+  element('demo-title').textContent = scenario.title;
+  element('query').value = scenario.sampleQuery || queryList(scenario)[0] || '';
+  const sampleOption = element('mode').querySelector('[value=sample]');
+  sampleOption.disabled = !scenario.sample?.available;
+  if (sampleOption.disabled && element('mode').value === 'sample') element('mode').value = 'live';
+  element('boost-field').hidden = scenario.id !== 'S06';
+  if (scenario.id === 'S06') {
+    const subtypes = scenario.boostSubtypes || Object.keys(BOOST_LABELS).slice(0, 5);
+    element('boost').replaceChildren(...subtypes.map(value => Object.assign(node('option', BOOST_LABELS[value] || value), { value })));
+    element('boost').value = scenario.defaultBoostSubtype || subtypes[0];
+  }
+  element('weight-field').hidden = scenario.id !== 'S06';
+  element('upload-area').hidden = !['S10', 'S11'].includes(scenario.id);
+  element('file').accept = scenario.id === 'S10' ? 'application/pdf' : 'image/jpeg,image/png,image/webp';
+  element('file-label').textContent = 'Optional image';
+  // S10 always searches the bundled manual; new PDF uploads are not supported, so no picker is offered.
+  element('file').closest('.field').hidden = scenario.id === 'S10';
+  if (scenario.id === 'S11') element('sample-reference').src = '/samples/zava-hat-blue.svg';
+  modeChanged();
+  updateUrl();
+}
+
+// Industry facets: the top three values per field, the rest behind a disclosure; long values are truncated with a tooltip.
+function facetSummary(facets) {
+  const box = node('div', undefined, 'facet-summary');
+  box.setAttribute('aria-label', 'Facets returned by this arm');
+  const label = value => typeof value.value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value.value) ? value.value.slice(0, 10) : String(value.value);
+  const chip = value => Object.assign(node('span', `${label(value)} (${value.count})`, 'facet-chip'), { title: `${label(value)} (${value.count})` });
+  for (const [field, values] of Object.entries(facets)) {
+    if (!Array.isArray(values) || !values.length) continue;
+    const row = node('div', undefined, 'facet-row');
+    row.append(node('span', configuration?.industry?.facetLabels?.[field] || field, 'facet-name'), ...values.slice(0, 3).map(chip));
+    if (values.length > 3) {
+      const more = node('details', undefined, 'facet-more');
+      more.append(node('summary', `+${values.length - 3} more`), ...values.slice(3).map(chip));
+      row.append(more);
+    }
+    box.append(row);
+  }
+  return box;
+}
+
+function updateUrl() {
+  const params = new URLSearchParams();
+  if (industry !== 'zava') params.set('industry', industry);
+  if (element('scenario').value && element('scenario').value !== scenarios[0]?.id) params.set('scenario', element('scenario').value);
+  history.replaceState(history.state, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
+}
+
+function sourceLink(hit) {
+  let url = safeUrl(hit.url);
+  if (url && Number.isInteger(hit.page)) {
+    const pageUrl = new URL(url);
+    pageUrl.hash = `page=${hit.page}`;
+    url = pageUrl.href;
+  }
+  if (!url) return node('span', 'Source link unavailable', 'source-missing');
+  const external = new URL(url).origin !== location.origin;
+  const name = `Open source document${external ? ` on ${new URL(url).host}` : ''}${Number.isInteger(hit.page) ? `, page ${hit.page}` : ''}`;
+  const link = Object.assign(node('a', undefined, 'source-link'), { href: url, target: '_blank', rel: 'noopener noreferrer', title: `${name} (opens in a new tab)` });
+  link.setAttribute('aria-label', `${name} (opens in a new tab)`);
+  link.innerHTML = OPEN_ICON;
+  return link;
+}
+const OPEN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+
+function renderHit(hit, side, index, baselineIds) {
+  const card = node('article', undefined, 'card' + (hit.thumbnailUrl ? ' image-card' : '') + (hit.page !== undefined ? ' pdf-card' : ''));
+  card.id = `${side}-evidence-${index}`;
+  card.tabIndex = -1;
+  const head = node('div', undefined, 'card-top');
+  const originalRank = baselineIds?.indexOf(hit.id);
+  head.append(node('span', `#${hit.rank || index + 1}`, 'rank'), sourceLink(hit));
+  card.append(head);
+  const image = safeUrl(hit.thumbnailUrl);
+  if (image) card.append(Object.assign(node('img'), { src: image, alt: shownTitle(hit) || 'Synthetic product illustration', loading: 'lazy' }));
+  const content = node('div', undefined, 'hit-body');
+  // The title opens the result details drawer; its hit area covers the card (links and disclosures stay on top).
+  const open = node('button', shownTitle(hit) || hit.id, 'hit-open');
+  open.type = 'button';
+  open.setAttribute('aria-haspopup', 'dialog');
+  open.addEventListener('click', () => openDrawer(side, index, open));
+  const heading = node('h3');
+  heading.append(open);
+  // Public-document chunks can be long: cards show the first lines, and the details drawer shows the full passage.
+  content.append(heading, node('p', shownPassage(hit) || 'No passage returned.', industry === 'zava' ? 'snippet' : 'snippet clamp-long'));
+  const meta = node('div', undefined, 'meta');
+  meta.append(node('span', hit.sourceId || hit.id || 'No source ID'));
+  if (hit.page !== undefined) meta.append(node('span', `Page ${hit.page}`));
+  if (hit.coordinates) meta.append(node('span', hit.coordinates.cells
+    ? `Row ${hit.row}: native ${hit.coordinates.unit} cell coordinates`
+    : `Source coordinates: ${JSON.stringify(hit.coordinates)}`));
+  if (hit.score !== undefined) meta.append(node('span', `${hit.scoreType || 'Service score'}: ${Number.isFinite(hit.score) ? hit.score.toFixed(3) : hit.score}`));
+  if (side === 'enhanced' && originalRank >= 0 && originalRank !== index) meta.append(node('span', `Rank ${originalRank + 1} → ${index + 1}`));
+  if (hit.document?.agency) meta.append(node('span', hit.document.agency));
+  if (typeof hit.document?.publishedDate === 'string') meta.append(node('span', hit.document.publishedDate.slice(0, 10)));
+  if (hit.topic?.title) meta.append(node('span', `Theme: ${hit.topic.title}`, 'theme-chip'));
+  if (Number.isInteger(hit.citedBy) && hit.citedBy > 0) meta.append(node('span', `Cites ${hit.citedBy} path row${hit.citedBy === 1 ? '' : 's'}`));
+  content.append(meta);
+  if (hit.coordinates?.cells) {
+    const coordinates = node('details');
+    coordinates.append(node('summary', 'Source cell coordinates'), node('pre', JSON.stringify(hit.coordinates, null, 2)));
+    content.append(coordinates);
+  }
+  card.append(content);
+  return card;
+}
+
+function renderArm(side, arm, scenario, result) {
+  const container = element(side);
+  const heading = node('div', undefined, 'arm-heading');
+  heading.append(node('div', side === 'baseline' ? 'BEFORE' : 'AFTER', 'arm-label'),
+    node('h2', arm?.label || label(scenario[side], side === 'baseline' ? 'Baseline' : 'Enhanced')));
+  if (Array.isArray(arm?.apiLog) && arm.apiLog.length) {
+    const calls = arm.apiLog.length;
+    const button = node('button', undefined, 'apilog-btn');
+    button.type = 'button';
+    button.setAttribute('aria-haspopup', 'dialog');
+    button.title = 'Show the exact Foundry IQ requests and responses for this arm';
+    // The accessible name starts with the visible text (WCAG 2.5.3) and adds hidden context.
+    button.append(node('span', 'API log'), ' ', node('span', String(calls), 'count'),
+      node('span', ` Foundry IQ call${calls === 1 ? '' : 's'} for ${side === 'baseline' ? 'BEFORE' : 'AFTER'}`, 'sr-only'));
+    button.addEventListener('click', () => openApiLog(side, button));
+    heading.append(button);
+  }
+  container.replaceChildren(heading);
+  if (!arm || arm.status === 'error' || arm.status === 'unavailable' || arm.status === 'failed') {
+    container.append(node('p', errorText(arm?.error || 'This arm is unavailable.'), 'error'));
+    return;
+  }
+  if (arm.error) container.append(node('p', `Partial result: ${errorText(arm.error)}`, 'error'));
+  if (arm.applied?.length) {
+    // What this arm applied from the curated example: filter, facets, scoring profile or PDF.
+    const applied = node('p', undefined, 'applied');
+    for (const item of arm.applied) {
+      const part = node('span', undefined, 'applied-item');
+      part.append(node('span', `${item.label}: `, 'applied-label'), node('code', item.value));
+      applied.append(part);
+    }
+    container.append(applied);
+  }
+  if (arm.trace?.configuration?.agenticSearch) container.append(agenticPlan(arm.trace.configuration.agenticSearch));
+  // "Insufficient evidence." is a refusal, not an answer: without hits the empty state says it; with hits, say so plainly.
+  const noAnswer = arm.answer === 'Insufficient evidence.';
+  // An "answer" that only concatenates the ranked snippets adds nothing beyond the results themselves.
+  const first = arm.hits?.[0];
+  // S10's AFTER answer is the extracted table row itself, so it is always shown.
+  const extractOnly = scenario.id !== 'S10' && !!first && typeof arm.answer === 'string' && arm.answer.startsWith(`[${first.id}] ${first.snippet}`);
+  if (arm.answer && !extractOnly && !(noAnswer && !arm.hits?.length)) {
+    const answer = node('article', undefined, 'card');
+    answer.append(node('h3', arm.answerKind === 'note' ? 'Why this arm can’t answer' : noAnswer ? 'No grounded answer' : 'Grounded answer'),
+      node('p', noAnswer ? 'The retrieved evidence doesn’t answer this question.' : arm.answer, 'snippet answer-text'));
+    // Long answers are clamped so the ranked results stay visible; the full text is one click away.
+    if (!noAnswer && arm.answer.length > 220) {
+      const text = answer.querySelector('.answer-text');
+      text.classList.add('clamped');
+      const more = node('button', 'Show full answer', 'link-btn');
+      more.type = 'button';
+      more.setAttribute('aria-expanded', 'false');
+      more.addEventListener('click', () => {
+        const expanded = text.classList.toggle('clamped') === false;
+        more.textContent = expanded ? 'Show less' : 'Show full answer';
+        more.setAttribute('aria-expanded', String(expanded));
+      });
+      answer.append(more);
+    }
+    const citations = node('div', undefined, 'citations');
+    (arm.citations || []).forEach((citation, i) => {
+      const id = typeof citation === 'string' ? citation : citation.sourceId || citation.id || citation.referenceId;
+      const index = arm.hits?.findIndex(hit => hit.sourceId === id || hit.id === id);
+      if (index >= 0) {
+        const link = node('a', `[${i + 1}] ${id}`);
+        link.href = `#${side}-evidence-${index}`;
+        link.addEventListener('click', () => element(`${side}-evidence-${index}`).focus());
+        citations.append(link);
+      } else citations.append(node('span', `Unresolved citation: ${id || i + 1}`));
+    });
+    // Four citations stay visible; the rest are one click away so rankings remain above the fold.
+    if (citations.children.length > 4) {
+      const hidden = [...citations.children].slice(4);
+      hidden.forEach(item => { item.hidden = true; });
+      const more = node('button', `+${hidden.length} more`, 'link-btn');
+      more.type = 'button';
+      more.setAttribute('aria-expanded', 'false');
+      more.setAttribute('aria-label', `Show ${hidden.length} more citations`);
+      more.addEventListener('click', () => { hidden.forEach(item => { item.hidden = false; }); more.remove(); });
+      citations.append(more);
+    }
+    if (!noAnswer) answer.append(citations);
+    container.append(answer);
+  }
+  if (arm.topicCoverage) container.append(coverageLine(arm.topicCoverage));
+  if (arm.graph?.kind === 'native') container.append(renderNativeGraph(arm, side));
+  if (arm.topics?.kind === 'native') container.append(renderThemes(arm));
+  if (arm.graph?.edges) {
+    const details = node('details', undefined, 'graph-details');
+    const graph = node('div', undefined, 'graph');
+    arm.graph.edges.forEach(edge => graph.append(node('span', `${edge.from} → ${edge.to} · ${edge.sourceId || 'source unavailable'}`)));
+    details.append(node('summary', `Graph path · ${arm.graph.edges.length} sourced edge${arm.graph.edges.length === 1 ? '' : 's'}`), graph);
+    container.append(details);
+  }
+  if (Array.isArray(arm.topics) && arm.topics.length) {
+    for (const topic of arm.topics) {
+      const card = node('article', undefined, 'card');
+      card.append(node('h3', topic.title || topic.id), node('p', topic.summary || '', 'snippet clamped'));
+      card.append(node('p', `Experimental · ${topic.id || topic.topicId} · revision ${topic.revision || topic.version} · ${topic.accessScope || 'scope unavailable'} · refreshed ${topic.lastRefreshedAt || topic.updatedAt || 'unavailable'}`, 'meta'));
+      card.append(node('p', `Source IDs: ${(topic.sourceDocumentIds || []).join(', ') || 'unavailable'}`, 'meta'));
+      container.append(card);
+    }
+  }
+  if (arm.facets && industry !== 'zava') container.append(facetSummary(arm.facets));
+  else if (arm.facets) {
+    const facets = node('div', undefined, 'metrics');
+    Object.entries(arm.facets).forEach(([field, values]) => {
+      (Array.isArray(values) ? values : []).forEach(value => facets.append(node('span', `${field}: ${value.value} (${value.count})`, 'metric')));
+    });
+    container.append(facets);
+  }
+  const hits = node('div', undefined, arm.kind === 'gallery' || arm.hits?.some(hit => hit.thumbnailUrl) ? 'gallery' : '');
+  const baselineIds = result.baseline?.hits?.map(hit => hit.id);
+  (arm.hits || []).forEach((hit, index) => hits.append(renderHit(hit, side, index, baselineIds)));
+  if (arm.themesOnly) hits.append(node('p', 'These themes and their share of passages come straight from the topic graph; no passage search was needed.', 'meta'));
+  else if (!arm.hits?.length && !arm.curatedOnly) hits.append(node('p', arm.graph?.kind === 'native' ? 'No cited passages were returned for these paths.' : 'No matching results for this query in this arm.', 'empty'));
+  if (arm.graph?.kind === 'native' && arm.hits?.length) container.append(node('h3', 'Cited passages', 'section-label'));
+  container.append(hits);
+  const trace = node('details', undefined, 'trace');
+  trace.append(node('summary', 'Technical details'), node('pre', JSON.stringify({ executionMode: result.mode, status: arm.status, trace: arm.trace, usage: arm.usage, sharedComparison: result.comparison }, null, 2)));
+  container.append(trace);
+}
+
+// The agentic plan: Search ranks the original question first; sub-queries are the follow-up searches the model issued.
+function subQueryList(agentic) {
+  const queries = Array.isArray(agentic.subQueries) ? agentic.subQueries.filter(query => typeof query?.search === 'string') : [];
+  const turns = new Set(queries.map(query => query.iteration)).size > 1;
+  const list = node('ol', undefined, 'plan-queries');
+  for (const query of queries) {
+    const item = node('li');
+    item.append(node('span', query.search, 'plan-query'));
+    if (turns && Number.isInteger(query.iteration)) item.append(node('span', ` turn ${query.iteration}`, 'plan-turn'));
+    list.append(item);
+  }
+  return { list, shown: queries.length };
+}
+function subQueryCount(agentic) {
+  return Number.isInteger(agentic.subQueryCount) ? agentic.subQueryCount : (agentic.subQueries || []).length;
+}
+function agenticPlan(agentic) {
+  const count = subQueryCount(agentic);
+  const plan = node('div', undefined, 'agentic-plan');
+  const line = node('p', undefined, 'plan-line');
+  line.append(node('strong', 'Agentic plan'), count
+    ? `Microsoft Retriever 1 reviewed the first ranked results, then issued ${count} follow-up sub-quer${count === 1 ? 'y' : 'ies'}:`
+    : 'Microsoft Retriever 1 reviewed the ranked results for your question and issued no follow-up sub-queries.');
+  plan.append(line);
+  const { list, shown } = subQueryList(agentic);
+  if (shown) plan.append(list);
+  if (count > shown) plan.append(node('p', `${count - shown} more in the API log`, 'meta'));
+  return plan;
+}
+
+// Native Foundry IQ graph rows: each row is one path, drawn as entity —relationship→ entity chains, with the passages it cites.
+function chains(hops) {
+  const out = [];
+  for (const hop of hops) {
+    const last = out.at(-1);
+    if (last && last.at(-1).to === hop.from) last.push(hop); else out.push([hop]);
+  }
+  return out;
+}
+function pathText(statement, row) {
+  if (!statement.hops?.length) return Object.entries(row.values).map(([key, value]) => `${key}: ${shownValue(value)}`).join(' · ');
+  return chains(statement.hops).map(chain => [shownValue(row.values[chain[0].from]), ...chain.map(hop => `—${hop.relation}→ ${shownValue(row.values[hop.to])}`)].join(' ')).join('; ');
+}
+function entityChip(value, role) {
+  const chip = node('span', undefined, 'entity');
+  chip.append(node('span', role.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(), 'entity-role'), node('span', shownValue(String(value ?? '—')), 'entity-name'));
+  return chip;
+}
+function renderPathRow(statement, row, side, arm) {
+  const item = node('li', undefined, 'graph-row');
+  const path = node('div', undefined, 'graph-path');
+  // Screen readers get the whole path as text; the drawn chips are decorative (aria-label isn't allowed on a plain div).
+  path.append(node('span', pathText(statement, row), 'sr-only'));
+  if (statement.hops?.length) {
+    chains(statement.hops).forEach((chain, i) => {
+      const segment = node('span', undefined, 'graph-chain');
+      segment.setAttribute('aria-hidden', 'true');
+      segment.append(entityChip(row.values[chain[0].from], chain[0].from));
+      for (const hop of chain) segment.append(node('span', hop.relation, 'rel'), entityChip(row.values[hop.to], hop.to));
+      path.append(segment);
+    });
+  } else {
+    for (const [key, value] of Object.entries(row.values)) path.append(entityChip(value, key));
+  }
+  item.append(path);
+  if (row.sources?.length) {
+    const cited = node('div', undefined, 'graph-cited');
+    cited.append(node('span', 'Cited by', 'graph-cited-label'));
+    for (const id of row.sources.slice(0, 8)) {
+      const index = (arm.hits || []).findIndex(hit => hit.sourceId === id);
+      // Prefer the passage shown on the page; otherwise open the original source document.
+      const url = index < 0 ? safeUrl(arm.graph?.sourceLinks?.[id]) : null;
+      if (index >= 0) {
+        const link = node('a', id);
+        link.href = `#${side}-evidence-${index}`;
+        link.addEventListener('click', () => element(`${side}-evidence-${index}`).focus());
+        cited.append(link);
+      } else if (url) {
+        const link = node('a', id, 'graph-source-link');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.title = `Open ${id}, the original source (new tab)`;
+        link.append(node('span', ' (opens original source in a new tab)', 'sr-only'));
+        cited.append(link);
+      } else cited.append(node('span', `${id} · citation unavailable`, 'graph-cited-missing'));
+    }
+    item.append(cited);
+  } else if (row.citationUnavailable) {
+    item.append(node('p', 'Citation unavailable: Foundry IQ returned no evidence for this row. Nothing was substituted.', 'graph-cited graph-cited-label'));
+  }
+  return item;
+}
+function renderNativeGraph(arm, side) {
+  const section = node('section', undefined, 'graph-native');
+  section.setAttribute('aria-label', 'Graph paths');
+  for (const statement of arm.graph.statements) {
+    const block = node('div', undefined, 'graph-statement');
+    const head = node('div', undefined, 'graph-head');
+    const count = statement.rows?.length || 0;
+    head.append(node('h3', statement.label), node('span', statement.outcome === 'absence' ? 'No path: proof of absence'
+      : statement.outcome === 'none' ? 'No relationship found' : `${count} path${count === 1 ? '' : 's'}`, `graph-outcome ${statement.outcome}`));
+    block.append(head);
+    if (statement.outcome === 'absence') block.append(node('p', 'Foundry IQ returned no rows for this pattern, so no such path exists in the graph.', 'graph-note'));
+    else if (statement.outcome === 'none') block.append(node('p', 'The graph has no relationship for this. Nothing was substituted.', 'graph-note'));
+    if (count) {
+      const list = node('ul', undefined, 'graph-rows');
+      statement.rows.slice(0, 4).forEach(row => list.append(renderPathRow(statement, row, side, arm)));
+      block.append(list);
+      if (count > 4) block.append(node('p', `+${count - 4} more rows in the API log`, 'meta'));
+    }
+    section.append(block);
+  }
+  return section;
+}
+function coverageLine(coverage) {
+  const line = node('p', undefined, 'coverage');
+  // Large topic graphs list only the themes these results cover.
+  line.append(node('strong', coverage.compact ? `Themes covered: ${coverage.covered.length}` : `Themes covered: ${coverage.covered.length} of ${coverage.total}`));
+  for (const leaf of coverage.leaves) {
+    const covered = coverage.covered.includes(leaf.id);
+    const chip = node('span', `${covered ? '✓' : '–'} ${leaf.title}`, `coverage-chip${covered ? ' on' : ''}`);
+    chip.title = covered ? 'At least one result belongs to this theme' : 'No result from this theme';
+    line.append(chip);
+  }
+  return line;
+}
+function renderThemes(arm) {
+  const section = node('details', undefined, 'themes');
+  section.open = true;
+  const covered = new Set(arm.topicCoverage?.covered || []);
+  section.append(node('summary', 'Corpus themes from the Foundry IQ topic graph'));
+  const list = node('ul', undefined, 'theme-tree');
+  const bar = (topic, depth) => {
+    const item = node('li', undefined, `theme depth-${depth}${covered.has(topic.id) ? ' covered' : ''}`);
+    const pct = Number.isFinite(topic.proportion) ? Math.round(topic.proportion * 100) : null;
+    const label = node('span', topic.title, 'theme-title');
+    if (topic.description) label.title = topic.description;
+    const meter = node('span', undefined, 'theme-bar');
+    meter.setAttribute('aria-hidden', 'true');
+    meter.append(Object.assign(node('span'), { style: `width:${pct ?? 0}%` }));
+    item.append(label, meter, node('span', pct === null ? '' : `${pct}%`, 'theme-pct'));
+    list.append(item);
+    (topic.children || []).forEach(child => bar(child, depth + 1));
+  };
+  (arm.topics.hierarchy || []).forEach(root => bar(root, 0));
+  section.append(list);
+  if (arm.topics.moreRoots > 0) section.append(node('p', `+${arm.topics.moreRoots} smaller theme${arm.topics.moreRoots === 1 ? '' : 's'}`, 'theme-more'));
+  section.append(node('p', arm.themesOnly ? 'Share of passages per theme, from the Foundry IQ topic graph.' : 'Share of passages per theme. Highlighted themes appear in these results.', 'meta'));
+  return section;
+}
+
+function renderResults(result, scenario) {
+  lastResult = result;
+  const sampleLabel = result.recorded ? `Recorded Sample (captured ${result.recorded.recordedAt})` : 'Deterministic Sample mode';
+  element('results-title').replaceChildren(node('span', `Results for “${result.query}”`), ' ',
+    node('span', `${result.mode === 'sample' ? `${sampleLabel} · ` : ''}up to ${element('count').value} per arm`, 'results-meta'));
+  const note = element('why-note');
+  note.hidden = !result.note?.text;
+  if (result.note?.text) note.replaceChildren(node('strong', 'Why AFTER wins'), node('span', result.note.text), node('span', result.note.source, 'note-source'));
+  renderArm('baseline', result.baseline, scenario, result);
+  renderArm('enhanced', result.enhanced, scenario, result);
+  element('metrics').replaceChildren();
+  for (const side of ['baseline', 'enhanced']) {
+    const evaluation = result.comparison?.evaluation?.[side];
+    if (!evaluation) continue;
+    const metric = node('div', undefined, 'metric');
+    metric.append(node('strong', side === 'baseline' ? 'BEFORE' : 'AFTER'));
+    metric.append(node('span', ` · Recall@K ${evaluation.recallAtK.toFixed(2)} · nDCG@K ${evaluation.ndcgAtK.toFixed(2)} · MRR ${evaluation.mrr.toFixed(2)}`));
+    if (evaluation.exactTableValue !== undefined) metric.append(node('span', ` · Exact table value: ${evaluation.exactTableValue ? 'matches gold' : 'does not match gold'}`));
+    element('metrics').append(metric);
+  }
+  if (result.groundTruth) {
+    const details = node('details', undefined, 'trace');
+    details.append(node('summary', 'Applicable curated gold-label evaluation'), node('pre', JSON.stringify(result.groundTruth, null, 2)));
+    element('metrics').append(details);
+  }
+  element('results').hidden = false;
+  setStatus(result.executionStatus === 'partial_success' ? 'Partial success. One arm failed; the other is shown.'
+    : result.executionStatus === 'error' ? 'Both comparison arms failed.' : 'Comparison complete.', result.executionStatus === 'success');
+}
+
+// Tolerates non-JSON platform responses and the Vercel Firewall's 429 body ({ error: { code, message } }).
+async function readResult(response) {
+  let data;
+  try { data = await response.json(); } catch { data = {}; }
+  if (response.ok) return data;
+  if (response.status === 429) {
+    const seconds = Number.parseInt(response.headers.get('retry-after') || data.retryAfter, 10);
+    throw new Error(`Too many requests from this network in the last minute. Wait ${Number.isInteger(seconds) && seconds > 0 && seconds <= 600 ? `${seconds} seconds` : 'about a minute'}, then Search again.`);
+  }
+  throw new Error(typeof data.error === 'string' ? data.error : 'The request failed. Try again shortly.');
+}
+
+async function run(event) {
+  event?.preventDefault();
+  const scenario = selectedScenario();
+  if (catalogLoad) {
+    setStatus(catalogLoad.message);
+    return;
+  }
+  if (notConfigured(scenario)) {
+    setStatus(scenario.live.reason);
+    return;
+  }
+  const imageCompatible = scenario.id === 'S11' && element('mode').value === 'live' && scenario.liveAvailable;
+  const recordedSample = recordedSampleMode();
+  const query = element('query').value.trim() || ((imageCompatible || recordedSample) && selectedFile
+    ? scenario.imageOnlyQuery : '');
+  if (!query) {
+    showError('Enter a query.');
+    return;
+  }
+  const keepBundled = bundledFile;
+  invalidate();
+  const id = sequence;
+  if (selectedFile && !imageCompatible && !(recordedSample && keepBundled)) {
+    showError(recordedSample ? 'Recorded Sample replays the bundled example images only. Switch to Live data to search with your own image.'
+      : scenario.id !== 'S11' ? 'Uploading new PDFs isn’t supported in this demo. Remove the file to search the bundled manual.'
+        : element('mode').value === 'live' ? 'Live image search is currently unavailable for this scenario. Remove the image, or switch to Sample to try the bundled examples.'
+          : 'Searching with your own image needs Live data. Remove the image, or switch to Live data.');
+    return;
+  }
+  if (imageCompatible && selectedFile && selectedFile.size > 40960) {
+    showError('Live image search accepts PNG, JPEG or WebP images up to 40 KiB.');
+    return;
+  }
+  const controller = new AbortController();
+  active = controller;
+  element('search').disabled = true;
+  element('search').textContent = 'Searching…';
+  element('cancel').hidden = false;
+  setStatus('Running both comparison arms…');
+  try {
+    const body = { ...(industry !== 'zava' ? { industry } : {}), scenarioId: scenario.id, query, topK: Number(element('count').value), mode: element('mode').value,
+      language: requestLanguage() };
+    if (selectedFile && imageCompatible) {
+      const bytes = new Uint8Array(await selectedFile.arrayBuffer());
+      if (id !== sequence) return;
+      body.imageInput = { mimeType: selectedFile.type, base64: btoa(String.fromCharCode(...bytes)) };
+    }
+    if (scenario.id === 'S06') {
+      body.options = { boostSubtype: element('boost').value };
+      if (body.mode === 'sample' && !recordedSample) body.options.weight = Number(element('weight').value);
+    }
+    if (body.mode === 'live') {
+      const deadline = Date.now() + 180000;
+      for (;;) {
+        setStatus('Checking live configuration and request limits…');
+        const prepared = await fetch('/api/demo/prepare', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal,
+        });
+        const plan = await readResult(prepared);
+        if (id !== sequence) return;
+        if (plan.ready === true) break;
+        if (!Number.isInteger(plan.retryAfter) || plan.retryAfter < 1 || plan.retryAfter > 61 || Date.now() + plan.retryAfter * 1000 > deadline) {
+          throw new Error('The live allowance is still busy. Wait a minute, then Search again.');
+        }
+        element('search').textContent = 'Waiting…';
+        for (let seconds = plan.retryAfter + 1; seconds > 0; seconds--) {
+          setStatus(`Live allowance resets in ${seconds}s. Your comparison will start automatically; Cancel to stop.`);
+          await new Promise((resolve, reject) => {
+            const abort = () => { clearTimeout(timer); reject(controller.signal.reason); };
+            const timer = setTimeout(() => { controller.signal.removeEventListener('abort', abort); resolve(); }, 1000);
+            controller.signal.addEventListener('abort', abort, { once: true });
+            if (controller.signal.aborted) abort();
+          });
+        }
+      }
+      element('search').textContent = 'Searching…';
+      setStatus('Running both comparison arms…');
+    }
+    const slow = setTimeout(() => { if (id === sequence) setStatus('Still working… Foundry IQ is responding slowly. Each call stops after at most 12 seconds and is never retried.'); }, 6000);
+    let response;
+    try {
+      response = await fetch('/api/demo/run', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal,
+      });
+    } finally { clearTimeout(slow); }
+    const result = await readResult(response);
+    if (id !== sequence) return;
+    renderResults(result, scenario);
+  } catch (error) {
+    if (id !== sequence) return;
+    if (controller.signal.aborted) setStatus('Comparison cancelled.');
+    else {
+      showError(error.message);
+      setStatus('Comparison could not complete. No fallback results.');
+    }
+  } finally {
+    if (id === sequence) {
+      active = undefined;
+      element('search').disabled = searchBlocked();
+      element('search').textContent = 'Search';
+      element('cancel').hidden = true;
+    }
+  }
+}
+
+element('search-form').addEventListener('submit', run);
+element('scenario').addEventListener('change', scenarioChanged);
+const scenarioSelector = element('scenario').closest('.selector');
+element('scenario').addEventListener('pointerdown', () => { scenarioSelector.dataset.pointerFocus = 'true'; });
+const industrySelector = element('industry-selector');
+element('industry').addEventListener('pointerdown', () => { industrySelector.dataset.pointerFocus = 'true'; });
+document.addEventListener('keydown', () => { delete scenarioSelector.dataset.pointerFocus; delete industrySelector.dataset.pointerFocus; }, { capture: true });
+element('industry').addEventListener('change', () => {
+  // The selector shows the requested industry; everything else changes only when its catalog arrives.
+  void loadScenarios('industry', element('industry').value);
+});
+element('mode').addEventListener('change', () => {
+  // A mode chosen while an industry catalog loads is kept when the new catalog is applied.
+  if (catalogLoad) catalogLoad.modeTouched = true;
+  modeChanged();
+});
+element('count').addEventListener('change', () => { invalidate(); setStatus('Result count changed. Search again to apply.'); });
+element('boost').addEventListener('change', () => { invalidate(); setStatus('Boost changed. Search again to apply.'); });
+element('weight').addEventListener('change', () => { invalidate(); setStatus('Weight changed. Search again to apply.'); });
+element('query').addEventListener('focus', () => showSuggestions());
+element('query').addEventListener('click', () => { if (element('query-suggestions').hidden) showSuggestions(); });
+element('query').addEventListener('input', () => { invalidate(); showSuggestions(true); setStatus('Query changed. Search to compare.'); });
+element('query').addEventListener('keydown', event => {
+  const list = element('query-suggestions');
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    if (list.hidden) showSuggestions();
+    moveSuggestion(event.key === 'ArrowDown' ? activeSuggestion + 1 : activeSuggestion < 0 ? -1 : activeSuggestion - 1);
+  } else if ((event.key === 'Home' || event.key === 'End') && !list.hidden && activeSuggestion >= 0) {
+    event.preventDefault();
+    moveSuggestion(event.key === 'Home' ? 0 : list.children.length - 1);
+  } else if (event.key === 'Enter' && !list.hidden && activeSuggestion >= 0) {
+    event.preventDefault();
+    void choosePreset(visiblePresets[activeSuggestion]);
+  } else if (event.key === 'Escape') {
+    // Never the native search-field clear: Escape only closes the list.
+    event.preventDefault();
+    closeSuggestions();
+  } else if (['Tab', 'Enter'].includes(event.key)) closeSuggestions();
+});
+document.addEventListener('pointerdown', event => {
+  if (!event.target.closest('.query')) closeSuggestions();
+});
+element('query').parentElement.addEventListener('focusout', event => {
+  if (!event.currentTarget.contains(event.relatedTarget)) closeSuggestions();
+});
+element('cancel').addEventListener('click', () => { invalidate(); setStatus('Comparison cancelled.'); });
+element('reset').addEventListener('click', () => {
+  invalidate();
+  clearFile();
+  element('query').value = '';
+  element('settings').hidden = true;
+  element('settings-toggle').setAttribute('aria-expanded', 'false');
+  setStatus('Search reset. Scenario and result count retained.');
+  element('query').focus();
+  closeSuggestions();
+});
+element('settings-toggle').addEventListener('click', () => {
+  element('settings').hidden = !element('settings').hidden;
+  element('settings-toggle').setAttribute('aria-expanded', String(!element('settings').hidden));
+});
+element('remove-file').addEventListener('click', () => { invalidate(); clearFile(); setStatus('Reference file removed.'); });
+async function selectFile(file, epoch, bundled = false) {
+  const scenarioId = selectedScenario().id;
+  if (!file) return clearFile();
+  clearFile();
+  const limit = 5 * 1024 * 1024;
+  const bytes = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+  if (epoch !== sequence) return;
+  const pdf = bytes.length >= 5 && bytes.slice(0, 5).every((byte, i) => byte === [37, 80, 68, 70, 45][i]);
+  const jpeg = bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
+  const png = bytes.length >= 8 && bytes.slice(0, 8).every((byte, i) => byte === [137, 80, 78, 71, 13, 10, 26, 10][i]);
+  const webp = String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' && String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP';
+  const valid = scenarioId === 'S10' ? file.type === 'application/pdf' && pdf
+    : (file.type === 'image/jpeg' && jpeg) || (file.type === 'image/png' && png) || (file.type === 'image/webp' && webp);
+  if (file.size > limit || !valid) {
+    showError('Invalid file signature or type, or the file is larger than 5 MiB. Nothing was sent.');
+    return;
+  }
+  selectedFile = file;
+  const transfer = new DataTransfer();
+  transfer.items.add(file);
+  element('file').files = transfer.files;
+  const recordedBundled = bundled && recordedSampleMode();
+  const compatible = (scenarioId === 'S11' && element('mode').value === 'live' && selectedScenario().liveAvailable && file.size <= 40960) || recordedBundled;
+  bundledFile = bundled;
+  element('query').required = !compatible;
+  element('remove-file').hidden = false;
+  if (!pdf) {
+    objectUrl = URL.createObjectURL(file);
+    element('file-preview').src = objectUrl;
+    element('file-preview').hidden = false;
+  }
+  if (recordedBundled) setStatus(`Bundled example ${file.name} selected. Recorded Sample replays its recorded Live result; nothing is sent to Foundry IQ.`);
+  else if (compatible) setStatus(`${file.name} (${Math.ceil(file.size / 1024)} KiB) ready as an ephemeral query reference; not uploaded or indexed.`);
+  else showError(scenarioId === 'S10' ? `Uploading new PDFs isn’t supported in this demo, so ${file.name} won’t be searched. Remove it to search the bundled manual.`
+    : file.size > 40960 ? `${file.name} is ${Math.ceil(file.size / 1024)} KiB. Live image search accepts images up to 40 KiB. Nothing was sent.`
+      : element('mode').value === 'live' ? `Live image search is currently unavailable, so ${file.name} won’t be searched. Nothing was sent.`
+        : `Switch to Live data to search with ${file.name}. Sample replays only the bundled example images. Nothing was sent.`);
+}
+
+element('file').addEventListener('change', async () => {
+  const file = element('file').files[0];
+  invalidate();
+  const epoch = sequence;
+  try {
+    await selectFile(file, epoch);
+  } catch (error) {
+    if (epoch === sequence) showError(`Reference file could not be read: ${error.message}`);
+  }
+});
+
+// Industry selector, blurb, English-only language lock and footer, from the catalog's industry list.
+function renderIndustry() {
+  const list = configuration.industries || [];
+  const multiple = list.length > 1;
+  element('industry-selector').hidden = !multiple;
+  if (multiple) element('industry').replaceChildren(...list.map(item => Object.assign(node('option', item.label), { value: item.id })));
+  element('industry').value = industry;
+  const info = configuration.industry;
+  element('industry-current').textContent = info?.label || '';
+  setLanguageLocked(industry !== 'zava');
+  if (multiple) element('footer-data').replaceChildren('Public and synthetic demo data · ', Object.assign(node('a', 'Data sources'), { href: '/about#data-sources' }));
+}
+
+// changed: false on first load, true after a language change, 'industry' after an industry change.
+// The switch is atomic: `industry`, the catalog, scenarios and examples change together when the catalog arrives.
+// Scenario or mode changes made meanwhile don't cancel it (they're applied to the new catalog); only a newer catalog
+// request supersedes it. If it fails, the selector returns to the industry still shown.
+async function loadScenarios(changed = false, target = industry) {
+  catalogLoad?.controller.abort();
+  const targetLabel = element('industry').selectedOptions?.[0]?.textContent || 'the selected industry';
+  const load = { controller: new AbortController(), target, changed, modeTouched: false,
+    message: changed === 'industry' ? `Loading ${targetLabel}…` : 'Loading scenarios…' };
+  catalogLoad = load;
+  invalidate();
+  clearFile();
+  setStatus(load.message, !changed);
+  try {
+    const request = id => {
+      const params = new URLSearchParams();
+      if (id !== 'zava') params.set('industry', id);
+      if (languageFor(id) !== 'en') params.set('language', languageFor(id));
+      return fetch(`/api/scenarios${params.size ? `?${params}` : ''}`, { signal: load.controller.signal });
+    };
+    let response = await request(target);
+    // An unknown or unavailable industry in a shared link opens the default demo.
+    if (response.status === 400 && target !== 'zava') { target = 'zava'; response = await request(target); }
+    if (!response.ok) throw new Error(changed === 'industry' ? `${targetLabel} could not be loaded.` : 'Scenario catalog could not be loaded.');
+    const next = await response.json();
+    const list = Array.isArray(next) ? next : next?.scenarios;
+    if (!Array.isArray(list) || !list.length) throw new Error('The scenario catalog is unavailable.');
+    if (catalogLoad !== load) return;
+    // Commit: the scenario chosen while loading (or the shared link's) is kept when the new industry has it.
+    const previous = pendingScenario || element('scenario').value;
+    catalogLoad = undefined;
+    industry = target;
+    configuration = next;
+    scenarios = list;
+    renderIndustry();
+    element('scenario').replaceChildren(...scenarios.map(item => Object.assign(node('option', item.title), { value: item.id })));
+    if (scenarios.some(item => item.id === previous)) element('scenario').value = previous;
+    pendingScenario = null;
+    if (changed === 'industry') { if (!load.modeTouched) element('mode').value = configuration.defaultMode === 'sample' ? 'sample' : 'live'; }
+    else if (requestLanguage() !== 'en' || configuration.defaultMode === 'live' && !changed) element('mode').value = 'live';
+    scenarioChanged();
+    if (changed === 'industry') setStatus(`Industry changed to ${configuration.industry?.label || 'the selected industry'}. Search to compare; nothing has run.`);
+    else if (changed) setStatus(`Document language changed to ${currentLanguageLabel()}. Search to compare; nothing has run.`);
+  } catch (error) {
+    // Superseded by a newer catalog request: that request owns the UI.
+    if (catalogLoad !== load) return;
+    catalogLoad = undefined;
+    if (!configuration) {
+      element('search').disabled = true;
+      showError(error.message);
+      return;
+    }
+    // Roll back: the selector matches the industry, scenarios and examples still shown.
+    element('industry').value = industry;
+    element('search').disabled = searchBlocked();
+    showError(changed === 'industry' ? `${error.message} Still showing ${configuration.industry?.label || 'the previous industry'}; choose the industry again to retry.` : error.message);
+    setStatus('Nothing has run.');
+  }
+}
+// Shared header (Share, menu, settings); language changes reload the localized catalog.
+// A language change during an industry switch reloads that pending industry's catalog rather than cancelling the switch.
+const header = initHeader({ onLanguageChange: () => { void loadScenarios(catalogLoad?.changed === 'industry' ? 'industry' : true, catalogLoad?.target ?? industry); } });
+document.addEventListener('keydown', event => {
+  const target = event.target;
+  const typing = target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+  if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    event.preventDefault();
+    header.closeAll();
+    element('query').focus();
+    element('query').select();
+  }
+});
+
+// ---------- Result details drawer and API log (native modal dialogs) ----------
+const armName = side => side === 'baseline' ? 'BEFORE' : 'AFTER';
+const pretty = value => JSON.stringify(value, null, 2) ?? '';
+const FOCUSABLE = 'button:not([disabled]), [href], summary, [tabindex]:not([tabindex="-1"])';
+function setupDialog(dialog) {
+  dialog.addEventListener('close', () => {
+    const opener = dialog.returnFocus;
+    dialog.returnFocus = undefined;
+    if (opener?.isConnected) opener.focus({ preventScroll: true });
+  });
+  // Clicks on the backdrop (outside the sheet) close it.
+  dialog.addEventListener('click', event => {
+    if (event.target !== dialog) return;
+    const box = dialog.getBoundingClientRect();
+    if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.close();
+  });
+  // Explicit focus trap: Tab and Shift+Tab cycle inside the dialog.
+  dialog.addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    const items = [...dialog.querySelectorAll(FOCUSABLE)].filter(item => item.getClientRects().length && !item.closest('[hidden]'));
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+  });
+}
+function showDialog(dialog, opener, focusTarget) {
+  dialog.returnFocus = opener;
+  if (!dialog.open) dialog.showModal();
+  (focusTarget || dialog.querySelector('.sheet-head .icon-btn')).focus({ preventScroll: true });
+}
+function copyButton(label, text, status) {
+  const button = node('button', label, 'copy-btn');
+  button.type = 'button';
+  button.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(text()); status.textContent = `${label}: copied to the clipboard.`; button.textContent = 'Copied'; }
+    catch { status.textContent = 'Copy failed. Select the text and copy it manually.'; }
+    setTimeout(() => { button.textContent = label; }, 1800);
+  });
+  return button;
+}
+function codeBlock(text, name) {
+  const pre = node('pre', text, 'code');
+  pre.tabIndex = 0;
+  pre.setAttribute('aria-label', name);
+  return pre;
+}
+function definition(list, term, value) {
+  if (value === undefined || value === null || value === '') return;
+  list.append(node('dt', term));
+  const detail = node('dd');
+  if (value instanceof Node) detail.append(value); else detail.textContent = String(value);
+  list.append(detail);
+}
+function section(title, ...children) {
+  const box = node('section', undefined, 'sheet-section');
+  box.append(node('h3', title), ...children.filter(Boolean));
+  return box;
+}
+const sameDocument = (a, b) => a.id === b.id || (a.sourceId && a.sourceId === b.sourceId && a.id === b.id);
+function vectorUse(arm) {
+  const queries = (arm.apiLog || []).flatMap(entry => entry.request?.body?.vectorQueries || []);
+  const configuration = arm.trace?.configuration || {};
+  return queries.map(query => ({ field: query.fields, kind: query.kind,
+    dimensions: query.fields === (configuration.imageEncoder?.field || 'imageVector') ? configuration.imageEncoder?.dimensions : configuration.embedding?.dimensions }));
+}
+function openDrawer(side, index, opener) {
+  const result = lastResult;
+  const arm = result?.[side];
+  const hit = arm?.hits?.[index];
+  if (!hit) return;
+  const otherSide = side === 'baseline' ? 'enhanced' : 'baseline';
+  const otherIndex = (result[otherSide]?.hits || []).findIndex(other => sameDocument(other, hit));
+  const configuration = arm.trace?.configuration || {};
+  const document_ = hit.document || {};
+  const header = viewOf(hit).header;
+  // Document facts: the index fields, else the passage's metadata header (industry graph passages), as display text.
+  const fact = name => shownValue(document_[name] ?? (typeof header[name] === 'string' ? header[name] : undefined));
+  element('drawer-eyebrow').textContent = `${armName(side)} · #${hit.rank || index + 1} · ${arm.label || label(selectedScenario()?.[side], armName(side))}`;
+  element('drawer-title').textContent = shownTitle(hit) || hit.id;
+  const status = node('p', undefined, 'sr-only');
+  status.setAttribute('role', 'status');
+
+  const overview = node('dl', undefined, 'facts');
+  definition(overview, 'Document key', hit.id);
+  if (hit.sourceId && hit.sourceId !== hit.id) definition(overview, 'Parent document', hit.sourceId);
+  definition(overview, 'Index', configuration.index);
+  definition(overview, 'Language', hit.language || document_.language || configuration.language || 'en');
+  if (Number.isInteger(hit.page)) definition(overview, 'PDF location', `Page ${hit.page}${Number.isInteger(hit.row) ? `, table row ${hit.row}` : ''}`);
+  const source = safeUrl(hit.url);
+  if (source) {
+    const target = new URL(source);
+    const link = Object.assign(node('a', target.origin === location.origin ? target.pathname : `${target.host}${target.pathname}`), { href: source, target: '_blank', rel: 'noopener noreferrer' });
+    definition(overview, 'Source', link);
+  }
+  definition(overview, 'Agency', fact('agency'));
+  definition(overview, 'Publisher', fact('publisher'));
+  definition(overview, 'Document type', fact('docType'));
+  // Industry graph passages carry no license field: use the passage header when present, never the Zava synthetic license.
+  definition(overview, 'License', fact('license') || (industry === 'zava' ? 'Synthetic demo content (MIT License, this repository)'
+    : 'Not stated in this passage; see the original source and the Data sources list on About.'));
+  definition(overview, 'Published or updated', (typeof fact('publishedDate') === 'string' ? fact('publishedDate').slice(0, 10) : '')
+    || document_.publishedAt || document_.updatedAt || document_.lastRefreshedAt || 'Not recorded in the index');
+
+  const ranking = node('dl', undefined, 'facts');
+  const before = side === 'baseline' ? index : otherIndex;
+  const after = side === 'enhanced' ? index : otherIndex;
+  definition(ranking, 'BEFORE rank', before >= 0 ? `#${before + 1}` : `Not in BEFORE's top ${result.baseline?.hits?.length || 0}`);
+  definition(ranking, 'AFTER rank', after >= 0 ? `#${after + 1}` : `Not in AFTER's top ${result.enhanced?.hits?.length || 0}`);
+  definition(ranking, 'Change', before >= 0 && after >= 0
+    ? before === after ? 'Same position in both arms' : `${before > after ? 'Up' : 'Down'} ${Math.abs(before - after)} in AFTER`
+    : after >= 0 ? 'Found only by AFTER' : 'Found only by BEFORE');
+  const scores = node('dl', undefined, 'facts');
+  definition(scores, '@search.score', hit.search?.score ?? hit.score);
+  definition(scores, '@search.rerankerScore', hit.search?.rerankerScore);
+  if (hit.scoreType) definition(scores, 'Score type', hit.scoreType);
+  if (hit.search?.captions) definition(scores, 'Captions', codeBlock(pretty(hit.search.captions), 'Semantic captions'));
+  if (hit.search?.highlights) definition(scores, 'Highlights', codeBlock(pretty(hit.search.highlights), 'Highlights'));
+  if (!scores.children.length) definition(scores, 'Scores', 'This arm does not expose comparable scores for this result.');
+
+  const retrieval = node('dl', undefined, 'facts');
+  definition(retrieval, 'Retrieval', label(configuration.mechanism || selectedScenario()?.[side], configuration.mechanism));
+  definition(retrieval, 'Search API version', configuration.searchApiVersion);
+  if (configuration.scoringProfile) definition(retrieval, 'Scoring profile', `${configuration.scoringProfile}${configuration.scoringParameters?.length ? ` (${configuration.scoringParameters.join(', ')})` : ''}`);
+  if (configuration.synonymMaps?.length) definition(retrieval, 'Synonym expansion', `Synonym map ${configuration.synonymMaps.join(', ')} applied to keyword matching on title and content`);
+  if (configuration.semanticConfiguration) definition(retrieval, 'Semantic configuration', configuration.semanticConfiguration);
+  for (const use of vectorUse(arm)) definition(retrieval, 'Vector field', `${use.field}${use.dimensions ? ` · ${use.dimensions} dimensions` : ''} · ${use.kind} query (vector values are never shown)`);
+  if (configuration.agenticSearch) {
+    const agentic = configuration.agenticSearch, count = subQueryCount(agentic);
+    const value = node('div');
+    value.append(node('p', `Microsoft Retriever 1 · ${count} sub-quer${count === 1 ? 'y' : 'ies'} · ${agentic.terminationReason}`));
+    const { list, shown } = subQueryList(agentic);
+    if (shown) value.append(list);
+    else value.append(node('p', 'Search ranked the original question; the model issued no follow-up searches.', 'meta'));
+    definition(retrieval, 'Agentic retrieval', value);
+  }
+
+  const related = [];
+  const edges = (arm.graph?.edges || []).filter(edge => edge.sourceId === hit.sourceId || edge.sourceId === hit.id);
+  if (edges.length) related.push(section('Graph path', node('p', edges.map(edge => `${edge.from} —${edge.relation || 'links to'}→ ${edge.to}`).join('\n'), 'path')));
+  const paths = arm.graph?.kind === 'native' ? arm.graph.statements.flatMap(statement => statement.rows
+    .filter(row => row.sources.includes(hit.sourceId)).map(row => pathText(statement, row))) : [];
+  if (paths.length) related.push(section('Graph paths this passage cites', node('p', paths.join('\n'), 'path')));
+  if (hit.topic?.title) related.push(section('Theme', node('p', `${hit.topic.title} (Foundry IQ topic graph)`)));
+  const topics = (Array.isArray(arm.topics) ? arm.topics : []).filter(topic => (topic.sourceDocumentIds || []).includes(hit.sourceId) || (topic.sourceDocumentIds || []).includes(hit.id));
+  if (topics.length) related.push(section('Topic', ...topics.map(topic => node('p', `${topic.title || topic.id} · revision ${topic.revision ?? '?'} (experimental)`))));
+  if (hit.coordinates?.cells) related.push(section('Table cell coordinates', codeBlock(pretty(hit.coordinates), 'Table cell coordinates')));
+
+  const fieldsList = node('dl', undefined, 'facts fields');
+  const allFields = { ...document_, content: hit.snippet };
+  // The passage is shown once, as readable text under Passage; Raw hit JSON keeps the exact retrieved value.
+  for (const [name, value] of Object.entries(allFields)) definition(fieldsList, name, name === 'content' ? 'Shown under Passage; the exact text is in Raw hit JSON.'
+    : typeof value === 'string' ? value : JSON.stringify(value));
+  const passage = section('Passage', node('p', shownPassage(hit) || 'No passage returned.', 'passage-text'));
+  const raw = { ...(hit.search?.score !== undefined ? { '@search.score': hit.search.score } : {}),
+    ...(hit.search?.rerankerScore !== undefined ? { '@search.rerankerScore': hit.search.rerankerScore } : {}),
+    ...(hit.search?.captions ? { '@search.captions': hit.search.captions } : {}), ...(hit.search?.highlights ? { '@search.highlights': hit.search.highlights } : {}),
+    ...(Object.keys(document_).length ? allFields : hit) };
+  const rawSection = section('Raw hit JSON', copyButton('Copy JSON', () => pretty(raw), status), codeBlock(pretty(raw), 'Raw hit JSON'));
+  element('drawer-body').replaceChildren(status, section('Document', overview), section('Ranking', ranking), section('Scores', scores),
+    section('Retrieval', retrieval), ...related, passage, section('Retrievable fields', fieldsList), rawSection);
+  element('drawer-body').scrollTop = 0;
+  showDialog(element('drawer'), opener);
+}
+function openApiLog(side, opener) {
+  const result = lastResult;
+  const log = result?.[side]?.apiLog || [];
+  if (!log.length) return;
+  element('apilog-eyebrow').textContent = `${armName(side)} · ${result[side].label || label(selectedScenario()?.[side], armName(side))}`;
+  element('apilog-title').textContent = `API log · ${log.length} Foundry IQ call${log.length === 1 ? '' : 's'}`;
+  element('apilog-note').textContent = result.recorded
+    ? `Recorded Sample: these calls were captured from Live on ${result.recorded.recordedAt} and replayed without sending a request. Request IDs were removed.`
+    : 'Live calls made by this server for this arm. The service host is a placeholder and the query key is never sent to your browser.';
+  const tabs = element('apilog-tabs');
+  const panels = element('apilog-panels');
+  const status = node('p', undefined, 'sr-only');
+  status.setAttribute('role', 'status');
+  const select = (index, focus = false) => {
+    [...tabs.children].forEach((tab, i) => { tab.setAttribute('aria-selected', String(i === index)); tab.tabIndex = i === index ? 0 : -1; });
+    [...panels.children].forEach((panel, i) => { if (panel.getAttribute('role') === 'tabpanel') panel.hidden = Number(panel.dataset.index) !== index; });
+    if (focus) tabs.children[index].focus();
+  };
+  tabs.replaceChildren(...log.map((entry, index) => {
+    const path = (() => { try { return new URL(entry.url.replace('<your-search-service>', 'service')).pathname.split('/').slice(-2).join('/'); } catch { return 'call'; } })();
+    const tab = node('button', `${index + 1} · ${path}${entry.shared ? ' · shared' : ''}`, 'tab');
+    tab.type = 'button';
+    tab.id = `apilog-tab-${index}`;
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-controls', `apilog-panel-${index}`);
+    tab.addEventListener('click', () => select(index));
+    return tab;
+  }));
+  tabs.onkeydown = event => {
+    const current = [...tabs.children].findIndex(tab => tab.getAttribute('aria-selected') === 'true');
+    const next = { ArrowRight: current + 1, ArrowLeft: current - 1, Home: 0, End: log.length - 1 }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    select((next + log.length) % log.length, true);
+  };
+  panels.replaceChildren(status, ...log.map((entry, index) => {
+    const panel = node('div', undefined, 'apilog-panel');
+    panel.id = `apilog-panel-${index}`;
+    panel.dataset.index = String(index);
+    panel.setAttribute('role', 'tabpanel');
+    panel.setAttribute('aria-labelledby', `apilog-tab-${index}`);
+    const request = node('section', undefined, 'apilog-side');
+    const endpoint = node('p', undefined, 'endpoint');
+    endpoint.append(node('span', entry.method, 'method'), node('code', entry.url));
+    const requestText = `${entry.method} ${entry.url}\n\n${pretty(entry.request?.body)}`;
+    request.append(node('h3', 'Request'), endpoint,
+      codeBlock(Object.entries(entry.request?.headers || {}).map(([name, value]) => `${name}: ${value}`).join('\n'), `Request ${index + 1} headers`),
+      node('div', undefined, 'code-head'), codeBlock(pretty(entry.request?.body), `Request ${index + 1} body`));
+    request.querySelector('.code-head').append(node('span', 'Body'), copyButton('Copy request', () => requestText, status));
+    const response = node('section', undefined, 'apilog-side');
+    const summary = node('p', undefined, 'endpoint');
+    const ok = entry.response?.status >= 200 && entry.response?.status < 300;
+    summary.append(node('span', entry.response?.status ? `HTTP ${entry.response.status}` : 'No response', `status ${ok ? 'ok' : 'bad'}`),
+      node('span', Number.isFinite(entry.response?.latencyMs) ? `${entry.response.latencyMs} ms measured` : '', 'latency'));
+    if (entry.response?.error) summary.append(node('span', entry.response.error, 'latency'));
+    const headerText = Object.entries(entry.response?.headers || {}).map(([name, value]) => `${name}: ${value}`).join('\n');
+    const headerHead = node('div', undefined, 'code-head');
+    headerHead.append(node('span', 'Headers'), copyButton('Copy headers', () => headerText, status));
+    const bodyHead = node('div', undefined, 'code-head');
+    bodyHead.append(node('span', 'Body'), copyButton('Copy body', () => pretty(entry.response?.body), status));
+    response.append(node('h3', 'Response'), summary, headerHead, codeBlock(headerText || '(none)', `Response ${index + 1} headers`),
+      bodyHead, codeBlock(entry.response?.body === undefined ? '(no body)' : pretty(entry.response.body), `Response ${index + 1} body`));
+    panel.append(request, response);
+    return panel;
+  }));
+  select(0);
+  showDialog(element('apilog'), opener, tabs.children[0]);
+}
+setupDialog(element('drawer'));
+setupDialog(element('apilog'));
+element('drawer-close').addEventListener('click', () => element('drawer').close());
+element('apilog-close').addEventListener('click', () => element('apilog').close());
+await loadScenarios(false, startIndustry);
