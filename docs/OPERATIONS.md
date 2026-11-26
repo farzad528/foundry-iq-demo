@@ -27,7 +27,7 @@ Browser ── static UI (dist/vercel/public) ──► /api/* Vercel Functions 
 | `config/` | Public catalogs: scenarios, presets, notes, languages, graph and industry allowlists, recorded Sample |
 | `samples/` | Fictional Zava documents served for citations, S10 PDFs and S11 images |
 | `scripts/` | Build, local server, artifact validation and test suites |
-| `docs/` | This guide and the README image |
+| `docs/` | This guide and the README screenshot |
 
 The API has four routes: `GET /api/scenarios`, `GET /api/health` (also `/healthz`), `POST /api/demo/prepare` and
 `POST /api/demo/run`. Private bindings and attestations exist only inside the built server bundle.
@@ -49,14 +49,14 @@ npm run dev        # npm run build, then npm start on http://localhost:3000
 ## Tests and CI
 
 ```bash
-npm test                         # unit suites: Vercel runtime, Zava comparisons, languages, README examples
+npm test                         # unit suites: Vercel runtime, Zava comparisons, languages, README
 npm run build && npm run validate
 npx playwright install chromium
 npm run test:browser             # builds, then drives the local app in headless Chromium
 ```
 
-- `scripts/readme-tests.mjs` fails if a README search example isn't a shipped preset, a deep link or anchor breaks,
-  or a scenario or industry name drifts from the app.
+- `scripts/readme-tests.mjs` fails if the README's retrieval modes, datasets or languages drift from the app, or a
+  link, anchor or image breaks.
 - `npm run validate` checks the built artifact: layout, the CSP and security headers, public-output hygiene and a
   recorded Sample served through the local server.
 - CI (`.github/workflows/ci.yml`) runs `npm ci`, `npm test`, `npm run build` and `npm run validate` on every push and
