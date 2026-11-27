@@ -294,7 +294,7 @@ licenses and applicability come from the Industry datasets contract
 | ID | Selector label | Index | Scenarios |
 | --- | --- | --- | --- |
 | `zava` (default) | Retail · Zava demo store | `zava-studio-*` | S01–S11, five languages |
-| `retail` | Retail · Product recalls (CPSC) | `foundry-iq-retail` | S01–S09 |
+| `retail` | Retail · Product recalls | `foundry-iq-retail` | S01–S09 |
 | `financial` | Financial services | `foundry-iq-financial` | S01–S10 |
 | `healthcare` | Healthcare & life sciences | `foundry-iq-healthcare` | S01–S10 |
 | `manufacturing` | Manufacturing | `foundry-iq-manufacturing` | S01–S10 |
