@@ -83,8 +83,10 @@ repository with `main` as its production branch, so merging to `main` deploys to
   Function limits as a manual deployment. `scripts/build-vercel.mjs` generates both, and a unit test fails if they drift.
 - A production build without `STUDIO_PRIVATE_BUNDLE` fails, so the previous deployment stays live: Vercel never publishes
   the Sample-only app to production. Other builds without the bundle produce the public Sample-only app.
-- Preview deployments are off. The project's Ignored Build Step, `[ "$VERCEL_ENV" != "production" ]`, skips every
-  non-production build, so branch pushes and pull requests show a skipped Vercel check.
+- Branch pushes and pull requests get preview deployments. These are protected by Vercel Deployment Protection and
+  built as the public Sample-only app, because `STUDIO_PRIVATE_BUNDLE` and the query keys are Production-only, so Live
+  reports "not configured". Don't add an Ignored Build Step that reads `VERCEL_ENV`: the project briefly had
+  `[ "$VERCEL_ENV" != "production" ]`, and it canceled the production build of `main`.
 - Roll back with Instant Rollback in the Vercel dashboard, or `npx vercel promote <previous deployment URL>`.
 
 **Update the private bundle** whenever a private input changes (bindings, attestations, graph bindings or industries),
