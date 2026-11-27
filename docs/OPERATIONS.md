@@ -533,10 +533,12 @@ or `sourceId` field, so the industry select list omits them; hits fall back to
    A schema test (`scripts/fashion-tests.mjs`) checks the templates against
    the industry S05/S06/S11 schema checks.
 
-**As deployed (2026-11-27).** The Vision multimodal embeddings skill must run
-in the same region as the Search service, and the Vision resource is in a
-different region. So the metadata uses the products indexer, and the image
-vectors were computed once offline with the same Vision model version
+**As deployed (2026-11-27).** The Search service's region (West Central US)
+doesn't support the Vision multimodal embeddings skill: creating
+`skillset-images.json` fails with "VectorizeSkill … is not supported in this
+region", even with a keyless East US AI Services connection. So there is no
+image skillset or image indexer. The metadata uses the products indexer, and
+the image vectors were computed once offline with the same Vision model version
 (`2023-04-15`, 1,024 dimensions) and pushed with `mergeOrUpload`. Queries still
 vectorize through the index's `aiServicesVision` vectorizer with the Search
 managed identity. Re-running ingestion means re-pushing the vectors; re-attest,
