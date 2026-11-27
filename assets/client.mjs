@@ -37,7 +37,7 @@ const shownPassage = hit => viewOf(hit).passage;
 const shownValue = value => industry !== 'zava' && typeof value === 'string' ? repairMojibake(value) : value;
 const BOOST_LABELS = { freshness: 'Freshness', magnitude: 'Magnitude', distance: 'Distance', tags: 'Tags', availability: 'Availability',
   authority: 'Authority', impact: 'Impact', newest: 'Newest', season: 'Season', occasion: 'Occasion', colour: 'Colour' };
-// Product attributes shown on industry product cards when the index returns them (fashion catalog).
+// Product attributes shown only on industry product hits (those with an articleType), never on document corpora.
 const PRODUCT_FIELDS = ['gender', 'articleType', 'baseColour', 'season', 'year', 'usage'];
 const recordedSampleMode = () => element('mode').value === 'sample' && !!selectedScenario()?.sample?.recorded;
 
@@ -357,7 +357,7 @@ function renderHit(hit, side, index, baselineIds, reviewed, parts) {
   if (side === 'enhanced' && originalRank >= 0 && originalRank !== index) meta.append(node('span', `Rank ${originalRank + 1} → ${index + 1}`));
   if (hit.document?.agency) meta.append(node('span', hit.document.agency));
   if (typeof hit.document?.publishedDate === 'string') meta.append(node('span', hit.document.publishedDate.slice(0, 10)));
-  if (industry !== 'zava') for (const key of PRODUCT_FIELDS) {
+  if (industry !== 'zava' && typeof hit.document?.articleType === 'string') for (const key of PRODUCT_FIELDS) {
     const value = hit.document?.[key];
     if (typeof value === 'string' && value.trim() || Number.isInteger(value)) meta.append(node('span', String(value)));
   }
