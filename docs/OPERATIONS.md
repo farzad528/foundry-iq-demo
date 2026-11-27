@@ -72,15 +72,43 @@ npm run test:browser             # builds, then drives the local app in headless
 
 ## Build and deploy
 
-Deployments are manual and need the owner's approval. The Vercel project isn't connected to Git.
+**Production deploys automatically from `main`.** The Vercel project `foundry-iq-demo-studio` is connected to this
+repository with `main` as its production branch, so merging to `main` deploys to https://foundry-iq-demo-studio.vercel.app/.
+`main` is protected (locked, with a required code-owner review), so the merge is the owner's approval.
+
+- Vercel runs `npm ci`, then `npm run build:vercel` (the `buildCommand` in `vercel.json`). `scripts/vercel-build.mjs`
+  unpacks the Production Secret `STUDIO_PRIVATE_BUNDLE` into a temporary directory outside the checkout, runs
+  `scripts/build-vercel.mjs` (offline checks and the public-output scan, exactly as below) and deletes the files.
+- The committed root `vercel.json` and `api/` wrappers serve the built `dist/vercel` with the same headers, routes and
+  Function limits as a manual deployment. `scripts/build-vercel.mjs` generates both, and a unit test fails if they drift.
+- A production build without `STUDIO_PRIVATE_BUNDLE` fails, so the previous deployment stays live: Vercel never publishes
+  the Sample-only app to production. Other builds without the bundle produce the public Sample-only app.
+- Preview deployments are off. The project's Ignored Build Step, `[ "$VERCEL_ENV" != "production" ]`, skips every
+  non-production build, so branch pushes and pull requests show a skipped Vercel check.
+- Roll back with Instant Rollback in the Vercel dashboard, or `npx vercel promote <previous deployment URL>`.
+
+**Update the private bundle** whenever a private input changes (bindings, attestations, graph bindings or industries),
+then redeploy. Set the `STUDIO_PRIVATE_*` variables listed below, and keep the packed value outside the repository:
+
+```powershell
+node scripts/vercel-build.mjs --pack <outside the repo>\studio-private-bundle.b64
+cmd /c "npx vercel env add STUDIO_PRIVATE_BUNDLE production --sensitive --force < <outside the repo>\studio-private-bundle.b64"
+Remove-Item <outside the repo>\studio-private-bundle.b64
+```
+
+The value is gzip plus base64 (about 24 KB) and must stay under 56 KB, because Vercel allows 64 KB of environment
+variables per deployment. The packing script validates the inputs and refuses to write inside the repository.
+
+**Manual deployment (optional).** To stage a build without merging, for example to test new private inputs:
 
 1. Set the private inputs (kept outside Git) and build: `npm run build`, then `npm run validate`. The build prints the
    private data hash and refuses incomplete recordings, notes or attestations.
 2. From a folder linked to the Vercel project (`npx vercel link`) that holds the contents of `dist/vercel`, stage it on
-   the production environment without moving the domain: `npx vercel deploy --prod --skip-domain`.
-3. Verify the staged URL (see the [validation checklist](#validation-checklist)). Staged URLs are protected; use a
-   temporary automation-bypass secret and revoke it afterward.
-4. Promote: `npx vercel promote <staged-url>`. To roll back, promote the previous deployment.
+   the production environment without moving the domain: `npx vercel deploy --prod --skip-domain`. Delete the
+   `.env.local` that `vercel link` may create.
+3. Verify the staged URL (see the [validation checklist](#validation-checklist)). Staged URLs are protected; `npx vercel
+   curl <url>` bypasses protection by creating an automation-bypass secret, which you revoke afterward.
+4. Promote: `npx vercel promote <staged-url>`. The next merge to `main` replaces it.
 
 ## Production deployment (Vercel)
 
@@ -130,6 +158,7 @@ Do not commit or publish the private inputs or `dist/vercel`.
 | `AZURE_SEARCH_GRAPH_ENDPOINT` | Industry S08/S09 only. The industry graph Search service, `https://fiq-industry-a30bcd4f-search.search.windows.net` (Production). |
 | `AZURE_SEARCH_GRAPH_QUERY_KEY` | Industry S08/S09 only. A dedicated **query** key on the industry graph service, set by the owner (Sensitive). Redacted like the main key. |
 | `LIVE_DISABLED_INDUSTRIES` | Optional, empty by default; only for builds with industries. A comma-separated list of industry IDs (and `zava`) pauses those demos. Invalid values pause every demo. |
+| `STUDIO_PRIVATE_BUNDLE` | Build input, Production only (Secret). The packed private build inputs for Git deployments; see [Build and deploy](#build-and-deploy). |
 
 If a variable is missing or invalid, Live fails closed with a configuration
 message that never includes the value. Sample results are never substituted.
@@ -424,7 +453,7 @@ re-record. The query key reads these public-domain indexes too.
 
 ## Validation checklist
 
-Before promoting a staged deployment:
+Before merging to `main` (which deploys) or promoting a staged deployment:
 
 - `npm test`, `npm run build`, `npm run validate` and `npm run test:browser` pass, and `git diff --check` is clean.
 - `/api/health` reports `live: configured` and `industryGraph: configured`; `/download` returns 404.
