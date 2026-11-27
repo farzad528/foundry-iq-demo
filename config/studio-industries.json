@@ -21,8 +21,8 @@
  "industries": [
   {
    "id": "retail",
-   "label": "Retail · Product recalls (CPSC)",
-   "short": "Product recalls (CPSC)",
+   "label": "Retail · Product recalls",
+   "short": "Product recalls",
    "group": "Retail",
    "blurb": "U.S. Consumer Product Safety Commission recall notices: hazards, remedies, retailers and injuries.",
    "sources": [

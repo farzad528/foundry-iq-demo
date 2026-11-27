@@ -27,7 +27,7 @@ Explore the power of knowledge retrieval with Microsoft Foundry IQ. Compare retr
 | Datasets | Languages |
 | --- | --- |
 | Retail · Zava demo store — synthetic products, support articles and a product manual | English, French, Spanish, Japanese, German |
-| Retail · Product recalls (CPSC) — U.S. Consumer Product Safety Commission recall notices | English |
+| Retail · Product recalls — U.S. Consumer Product Safety Commission recall notices | English |
 | Financial services — OCC and FDIC examination guidance, CFPB complaint narratives | English |
 | Healthcare & life sciences — FDA drug labels, ICD-10-CM coding guidelines | English |
 | Manufacturing — OSHA injury reports and standards, NIST operational technology guidance | English |

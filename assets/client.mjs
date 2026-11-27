@@ -1,5 +1,6 @@
 import { initHeader, currentLanguage, currentLanguageLabel, setLanguageLocked } from './header.mjs';
 import { displayText, passageView, repairMojibake, notConfigured } from './display.mjs';
+import { renderEntityGraph, renderTopicMap } from './graph-viz.mjs';
 
 const element = id => document.getElementById(id);
 let scenarios = [];
@@ -513,6 +514,29 @@ function entityChip(value, role) {
   chip.append(node('span', role.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(), 'entity-role'), node('span', shownValue(String(value ?? '—')), 'entity-name'));
   return chip;
 }
+// "Cited by" links for graph rows and the graph inspector: the passage shown on the page, else the original source document.
+function citationLinks(ids, side, arm) {
+  return ids.map(id => {
+    const index = (arm.hits || []).findIndex(hit => hit.sourceId === id);
+    const url = index < 0 ? safeUrl(arm.graph?.sourceLinks?.[id]) : null;
+    if (index >= 0) {
+      const link = node('a', id);
+      link.href = `#${side}-evidence-${index}`;
+      link.addEventListener('click', () => element(`${side}-evidence-${index}`).focus());
+      return link;
+    }
+    if (url) {
+      const link = node('a', id, 'graph-source-link');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.title = `Open ${id}, the original source (new tab)`;
+      link.append(node('span', ' (opens original source in a new tab)', 'sr-only'));
+      return link;
+    }
+    return node('span', `${id} · citation unavailable`, 'graph-cited-missing');
+  });
+}
 function renderPathRow(statement, row, side, arm) {
   const item = node('li', undefined, 'graph-row');
   const path = node('div', undefined, 'graph-path');
@@ -532,26 +556,7 @@ function renderPathRow(statement, row, side, arm) {
   item.append(path);
   if (row.sources?.length) {
     const cited = node('div', undefined, 'graph-cited');
-    cited.append(node('span', 'Cited by', 'graph-cited-label'));
-    for (const id of row.sources.slice(0, 8)) {
-      const index = (arm.hits || []).findIndex(hit => hit.sourceId === id);
-      // Prefer the passage shown on the page; otherwise open the original source document.
-      const url = index < 0 ? safeUrl(arm.graph?.sourceLinks?.[id]) : null;
-      if (index >= 0) {
-        const link = node('a', id);
-        link.href = `#${side}-evidence-${index}`;
-        link.addEventListener('click', () => element(`${side}-evidence-${index}`).focus());
-        cited.append(link);
-      } else if (url) {
-        const link = node('a', id, 'graph-source-link');
-        link.href = url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.title = `Open ${id}, the original source (new tab)`;
-        link.append(node('span', ' (opens original source in a new tab)', 'sr-only'));
-        cited.append(link);
-      } else cited.append(node('span', `${id} · citation unavailable`, 'graph-cited-missing'));
-    }
+    cited.append(node('span', 'Cited by', 'graph-cited-label'), ...citationLinks(row.sources.slice(0, 8), side, arm));
     item.append(cited);
   } else if (row.citationUnavailable) {
     item.append(node('p', 'Citation unavailable: Foundry IQ returned no evidence for this row. Nothing was substituted.', 'graph-cited graph-cited-label'));
@@ -571,10 +576,13 @@ function renderNativeGraph(arm, side) {
     if (statement.outcome === 'absence') block.append(node('p', 'Foundry IQ returned no rows for this pattern, so no such path exists in the graph.', 'graph-note'));
     else if (statement.outcome === 'none') block.append(node('p', 'The graph has no relationship for this. Nothing was substituted.', 'graph-note'));
     if (count) {
+      // The entity graph draws every returned row; the path rows below list them with their citations.
+      const visual = renderEntityGraph(statement, { display: shownValue, citations: ids => citationLinks(ids, side, arm) });
+      if (visual) block.append(visual);
       const list = node('ul', undefined, 'graph-rows');
       statement.rows.slice(0, 4).forEach(row => list.append(renderPathRow(statement, row, side, arm)));
       block.append(list);
-      if (count > 4) block.append(node('p', `+${count - 4} more rows in the API log`, 'meta'));
+      if (count > 4) block.append(node('p', `Showing 4 of ${count} path rows${visual ? '; the graph above draws all of them' : ''}. Every row is in the API log.`, 'meta'));
     }
     section.append(block);
   }
@@ -597,6 +605,9 @@ function renderThemes(arm) {
   section.open = true;
   const covered = new Set(arm.topicCoverage?.covered || []);
   section.append(node('summary', 'Corpus themes from the Foundry IQ topic graph'));
+  // The topic map draws the hierarchy; the list below gives every theme as text.
+  const map = renderTopicMap(arm.topics, arm.topicCoverage);
+  if (map) section.append(map);
   const list = node('ul', undefined, 'theme-tree');
   const bar = (topic, depth) => {
     const item = node('li', undefined, `theme depth-${depth}${covered.has(topic.id) ? ' covered' : ''}`);
@@ -611,8 +622,16 @@ function renderThemes(arm) {
     (topic.children || []).forEach(child => bar(child, depth + 1));
   };
   (arm.topics.hierarchy || []).forEach(root => bar(root, 0));
+  const more = arm.topics.moreRoots > 0 ? node('p', `+${arm.topics.moreRoots} smaller theme${arm.topics.moreRoots === 1 ? '' : 's'} not shown`, 'theme-more') : null;
+  if (map) {
+    if (more) section.append(more);
+    const all = node('details', undefined, 'theme-list');
+    all.append(node('summary', 'All themes as a list'), list);
+    section.append(all);
+    return section;
+  }
   section.append(list);
-  if (arm.topics.moreRoots > 0) section.append(node('p', `+${arm.topics.moreRoots} smaller theme${arm.topics.moreRoots === 1 ? '' : 's'}`, 'theme-more'));
+  if (more) section.append(more);
   section.append(node('p', arm.themesOnly ? 'Share of passages per theme, from the Foundry IQ topic graph.' : 'Share of passages per theme. Highlighted themes appear in these results.', 'meta'));
   return section;
 }
