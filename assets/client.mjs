@@ -333,7 +333,12 @@ function renderHit(hit, side, index, baselineIds, reviewed, parts) {
   head.append(node('span', `#${hit.rank || index + 1}`, 'rank'), sourceLink(hit));
   card.append(head);
   const image = safeUrl(hit.thumbnailUrl);
-  if (image) card.append(Object.assign(node('img'), { src: image, alt: shownTitle(hit) || 'Synthetic product illustration', loading: 'lazy' }));
+  if (image) {
+    const img = Object.assign(node('img'), { src: image, alt: shownTitle(hit) || 'Synthetic product illustration', loading: 'lazy' });
+    // Builds bundle only the photos their recorded examples show; a Live hit outside that set gets a labelled placeholder.
+    img.addEventListener('error', () => img.replaceWith(node('div', 'Photo not bundled in this build', 'image-missing')), { once: true });
+    card.append(img);
+  }
   const content = node('div', undefined, 'hit-body');
   // The title opens the result details drawer; its hit area covers the card (links and disclosures stay on top).
   const open = node('button', shownTitle(hit) || hit.id, 'hit-open');

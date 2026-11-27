@@ -378,6 +378,7 @@ a{color:var(--link);text-underline-offset:3px}
 .image-card{display:grid;grid-template-columns:minmax(95px,.55fr) minmax(0,1fr);gap:0 24px;align-items:center}
 .image-card .card-top{grid-column:1/-1}
 .image-card img{width:100%;height:175px;object-fit:contain;background:var(--image-bg);border-radius:9px}
+.image-missing{display:grid;place-items:center;height:175px;padding:10px;text-align:center;font-size:.8rem;color:var(--muted);background:var(--image-bg);border-radius:9px}
 .gallery{display:grid;grid-template-columns:1fr;gap:14px}
 .gallery .card{margin:0}
 .pdf-card{position:relative;padding:19px 22px;text-align:center}

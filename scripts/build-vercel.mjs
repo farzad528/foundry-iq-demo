@@ -183,6 +183,21 @@ export function industryRecordingProblems(catalog, enabled, recorded) {
   return problems;
 }
 
+/** Industry thumbnails bundled into the build, and any recorded thumbnail that would be missing from it. */
+export function industryThumbs(enabled, recorded, root = '.') {
+  const files = enabled.flatMap(id => {
+    const dir = join(root, 'datasets', id, 'thumbs');
+    return existsSync(dir) ? readdirSync(dir).filter(name => /^[a-z0-9-]+\.webp$/.test(name)).map(name => `datasets/${id}/thumbs/${name}`) : [];
+  });
+  const have = new Set(files.map(path => `/${path}`));
+  const missing = new Set();
+  for (const entry of Object.values(recorded.entries || {})) {
+    if (!enabled.includes(entry.industry)) continue;
+    for (const arm of [entry.result?.baseline, entry.result?.enhanced]) for (const hit of arm?.hits || []) if (hit.thumbnailUrl && !have.has(hit.thumbnailUrl)) missing.add(hit.thumbnailUrl);
+  }
+  return { files, missing: [...missing] };
+}
+
 /** Lists the industries compiled into this build on the demo page, so the client never requests an unknown one. */
 export function pageWithIndustries(html, enabled) {
   const marker = '<meta name="studio-industries" content="">';
@@ -292,16 +307,26 @@ export function aboutWithDataSources(html, catalog, enabled, { graph = false } =
   const section = groups.map(item => `<article class="source-card"><h3>${escapeHtml(item.label)}</h3><p>${escapeHtml(item.blurb)}</p><ul>${item.sources.map(source =>
     `<li><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.agency)}: ${escapeHtml(source.name)}</a><span class="license">${escapeHtml(source.license)}</span></li>`).join('')}</ul>${
     item.aboutNote ? `<p class="source-note">${escapeHtml(item.aboutNote)}</p>` : ''}</article>`).join('\n        ');
+  // Government corpora link every result to a .gov source; other public datasets (product images) are credited on their card.
+  const industries = groups.slice(1);
+  const government = industries.filter(item => item.sourceHosts?.some(host => host.endsWith('.gov')));
+  const datasets = industries.filter(item => !government.includes(item));
+  const searches = [government.length ? 'the industry demos search public U.S. government documents in English, and every result links to its original public source'
+    : '', datasets.length ? `${datasets.map(item => item.short).join(', ')} search${datasets.length === 1 ? 'es' : ''} a public dataset credited below` : ''].filter(Boolean).join('; ');
   const intro = enabled.length
-    ? '<p>Public and synthetic demo data. The Zava store is fictional; the industry demos search public U.S. government documents in English, and every result links to its original public source.</p>'
+    ? `<p>Public and synthetic demo data. The Zava store is fictional; ${searches}.</p>`
     : '<p>Synthetic demo data: the Zava store, its products, support articles and images are fictional.</p>';
   let page = html.slice(0, html.indexOf(start) + start.length) + `\n        ${intro}\n        ${section}\n        ` + html.slice(html.indexOf(end));
   if (enabled.length) {
-    const imageIndustries = groups.slice(1).filter(item => item.scenarios?.includes('S11')).map(item => item.label);
+    const imageIndustries = industries.filter(item => item.scenarios?.includes('S11')).map(item => item.label);
     const imageText = imageIndustries.length ? `image search (S11) uses the Zava store and ${imageIndustries.join(', ')}` : 'image search (S11) uses the Zava store';
     const replace = (from, to) => { if (!page.includes(from)) throw new Error(`about.html changed: ${from}`); page = page.replace(from, to); };
+    const corpora = [government.length ? 'Industry demos search public U.S. government documents' : '',
+      ...datasets.map(item => `${item.short} searches a public dataset (credited above)`)].filter(Boolean).join('; ');
+    const coverage = [government.length ? `Government industry demos cover S01–S07, plus S10 where the corpus has PDFs. ${graph ? 'Industry entity and topic graph search (S08, S09) runs on a dedicated Foundry IQ service for the curated questions' : 'Industry graph search (S08, S09) isn’t configured yet'}.` : '',
+      ...datasets.map(item => `${item.short} covers ${item.scenarios.join(', ')}.`), `${imageText[0].toUpperCase()}${imageText.slice(1)}.`].filter(Boolean).join(' ');
     replace('<li>All content is synthetic (Zava Retail); no customer data.</li>',
-      `<li>The Zava store is synthetic. Industry demos search public U.S. government documents, in English only. No customer data.</li>\n          <li>Industry demos cover S01–S07, plus S10 where the corpus has PDFs. ${graph ? 'Industry entity and topic graph search (S08, S09) runs on a dedicated Foundry IQ service for the curated questions' : 'Industry graph search (S08, S09) isn’t configured yet'}, and ${imageText}.</li>`);
+      `<li>The Zava store is synthetic. ${corpora}, in English only. No customer data.</li>\n          <li>${coverage}</li>`);
     replace('<footer><span>Synthetic demo content · Zava Retail · S01–S11</span>', '<footer><span>Public and synthetic demo data · <a href="#data-sources">Data sources</a></span>');
   }
   return page;
@@ -413,6 +438,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (missingIndustrySamples.length) process.stdout.write(`WARNING: development build without industry recorded Sample (${missingIndustrySamples.length} gaps).\n`);
   const recordingProblems = industryRecordingProblems(industryCatalog, enabledIndustries, recorded);
   if (recordingProblems.length) throw new Error(`Invalid industry recordings:\n${recordingProblems.join('\n')}`);
+  const thumbs = industryThumbs(enabledIndustries, recorded);
+  if (thumbs.missing.length) throw new Error(`Recorded industry thumbnails missing from datasets/ (${thumbs.missing.length}):\n${thumbs.missing.slice(0, 8).join('\n')}`);
   // Industry graph (S08/S09): optional private binding plus the graph service's attested schemas.
   const industryGraphConfig = JSON.parse(readFileSync('config/studio-industry-graph.json', 'utf8'));
   const industryGraphPath = process.env.STUDIO_PRIVATE_INDUSTRY_GRAPH, graphAttestationPath = process.env.STUDIO_PRIVATE_INDUSTRY_GRAPH_ATTESTATIONS;
@@ -451,6 +478,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   write('public/LICENSE', readFileSync('LICENSE'));
   for (const path of sampleFiles()) write(`public/${path}`, readFileSync(path));
   for (const [image, index] of sampleImages) write(`public/samples/${image}.png`, illustrationPng(index));
+  for (const path of thumbs.files) write(`public/${path}`, readFileSync(path));
 
   // Server-only modules and private data.
   for (const path of [...SERVER_MODULES, ...serverConfigFiles()]) {

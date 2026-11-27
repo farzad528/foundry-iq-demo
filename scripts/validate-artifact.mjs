@@ -32,6 +32,12 @@ assert.deepEqual(files(dir, 'api').sort(), ['api/demo/prepare.mjs', 'api/demo/ru
 // Public output: static files only, no server modules, private data, source archives or inline scripts.
 const publicFiles = files(join(dir, 'public'));
 assert.ok(publicFiles.every(path => !/^(?:server|lib|config)\/|\.zip$|private|attestation/i.test(path)), 'public/ contains server-only files');
+// Industry dataset files are product thumbnails only: datasets/<industry>/thumbs/<id>.webp, each a real WebP image.
+for (const path of publicFiles.filter(path => path.startsWith('datasets/'))) {
+  assert.match(path, /^datasets\/[a-z]+\/thumbs\/[a-z0-9-]+\.webp$/, `unexpected dataset file ${path}`);
+  const head = readFileSync(join(dir, 'public', path)).subarray(0, 12);
+  assert.ok(head.toString('latin1', 0, 4) === 'RIFF' && head.toString('latin1', 8, 12) === 'WEBP', `${path} is not a WebP image`);
+}
 for (const page of publicFiles.filter(path => path.endsWith('.html'))) {
   const html = readFileSync(join(dir, 'public', page), 'utf8');
   assert.doesNotMatch(html, /<script(?![^>]*\bsrc=)|\son[a-z]+=|javascript:/i, `${page} has an inline script or handler`);

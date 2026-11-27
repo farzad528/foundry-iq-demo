@@ -421,7 +421,7 @@ the default scoring parameters, and S10 searches the first example's PDF).
 **Build inputs and checks.**
 
 ```powershell
-$env:STUDIO_INDUSTRIES = 'retail,financial,healthcare,manufacturing,energy'
+$env:STUDIO_INDUSTRIES = 'retail,financial,healthcare,manufacturing,energy,fashion'
 $env:STUDIO_PRIVATE_INDUSTRIES = '<private>\industry-bindings.json'
 # STUDIO_PRIVATE_ATTESTATIONS must also attest the five industry indexes.
 npm run build
@@ -466,14 +466,23 @@ example `newest`, `season`, `occasion`, `colour`) and S11 (image search). It use
 standard index search only (keyword, vector and hybrid; no agentic retrieval),
 with the semantic ranker off unless measured as worthwhile.
 
-**Status: not enabled.** The planned `fashion` industry uses
+**Status: enabled in the catalog; Live needs the private bundle.** The `fashion`
+industry (index `foundry-iq-fashion`, 3,000 products) uses
 [Fashion Product Images (Small)](https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small),
 uploaded to Kaggle by Param Aggarwal. The uploader labels the dataset MIT, but
 the image rights and provenance have not been independently verified. Product
 photographs and trademarks belong to their respective owners; attribution does
 not itself establish permission to use them. The Hugging Face mirror declares
-no license. Public image use remains blocked pending rights review; downloading
-data, Azure changes, recording and deployment each require separate approval.
+no license. The credit appears in the catalog's About note, the About page's
+Data sources and the README.
+
+The public build (no `STUDIO_INDUSTRIES`) does not include fashion. A private
+build adds `fashion` to `STUDIO_INDUSTRIES` and its binding and attestation to
+the private industry files; without them, fashion stays hidden. Its recorded
+Sample (11 presets, captured 2026-11-27) carries a per-entry `recordedAt`, so its
+label shows its own date rather than the file-wide one. The index has no `url`
+or `sourceId` field, so the industry select list omits them; hits fall back to
+`id`.
 
 - **Catalog entry** (`config/studio-industries.json`): `scenarios` including
   `S11`, its own `boostSubtypes`, an optional `dataNote` (shown instead of
@@ -493,9 +502,11 @@ data, Azure changes, recording and deployment each require separate approval.
   or the arm fails with `studio_image_corpus_mismatch`.
 - **Thumbnails** are returned only as this build's own
   `/datasets/<id>/thumbs/<name>.webp` paths (CSP `img-src 'self'`); any other
-  value is dropped on the server. Copying the 256 px WebP thumbnails into the
-  build (and its artifact check) is deferred until the rights review allows
-  redistribution.
+  value is dropped on the server. Only the thumbnails that recorded hits show
+  are committed (`datasets/fashion/thumbs/`, 172 files, about 430 KB); the build
+  copies them and fails if a recorded hit's thumbnail is missing. A Live hit
+  without a bundled thumbnail shows a “Photo not bundled in this build”
+  placeholder.
 
 **Ingestion (Blob indexer, one readable JSON per product).**
 
@@ -521,6 +532,16 @@ data, Azure changes, recording and deployment each require separate approval.
    `IsDeleted=true` on both blobs, let the indexers run, then delete the blobs.
    A schema test (`scripts/fashion-tests.mjs`) checks the templates against
    the industry S05/S06/S11 schema checks.
+
+**As deployed (2026-11-27).** The Vision multimodal embeddings skill must run
+in the same region as the Search service, and the Vision resource is in a
+different region. So the metadata uses the products indexer, and the image
+vectors were computed once offline with the same Vision model version
+(`2023-04-15`, 1,024 dimensions) and pushed with `mergeOrUpload`. Queries still
+vectorize through the index's `aiServicesVision` vectorizer with the Search
+managed identity. Re-running ingestion means re-pushing the vectors; re-attest,
+rebuild and re-record if the index ETag changes. Measured Live comparisons take
+about 250–370 ms each once warm (about 1 s on a cold first call).
 
 ## Revoke or rotate keys
 

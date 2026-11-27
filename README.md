@@ -32,10 +32,11 @@ Explore the power of knowledge retrieval with Microsoft Foundry IQ. Compare retr
 | Healthcare & life sciences — FDA drug labels, ICD-10-CM coding guidelines | English |
 | Manufacturing — OSHA injury reports and standards, NIST operational technology guidance | English |
 | Energy & utilities — DOE grid incident reports, FERC orders, EIA analysis | English |
+| Retail · Fashion product images — a 3,000-product subset of the Kaggle Fashion Product Images (Small) catalog | English |
 
-Multimodal retrieval is available on the Zava demo store only. In French, Spanish, Japanese and German, the Zava graph scenarios use the English graph. Sources and licenses are listed under [Data sources](https://foundry-iq-demo-studio.vercel.app/about#data-sources).
+Multimodal retrieval is available on the Zava demo store and the fashion product images demo; the fashion demo covers filtered search, scoring profiles and multimodal retrieval only. In French, Spanish, Japanese and German, the Zava graph scenarios use the English graph. Sources and licenses are listed under [Data sources](https://foundry-iq-demo-studio.vercel.app/about#data-sources).
 
-The planned, not-yet-enabled fashion demo credits [Fashion Product Images (Small)](https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small), uploaded by Param Aggarwal. See the [dataset rights note](docs/OPERATIONS.md#product-image-industries-s11-and-the-fashion-product-images-dataset).
+The fashion demo uses [Fashion Product Images (Small)](https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small), uploaded to Kaggle by Param Aggarwal and listed there under the MIT license; the photos are the uploader's catalog images and their rights are as declared by the uploader, not independently verified. See the [dataset rights note](docs/OPERATIONS.md#product-image-industries-s11-and-the-fashion-product-images-dataset).
 
 ## Getting started
 

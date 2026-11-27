@@ -1052,14 +1052,17 @@ test('LIVE_DISABLED_INDUSTRIES pauses chosen industries (zava included) and inva
 test('industry recorded Sample replays only its own curated keys, and an explicit zava industry is the unchanged default demo', async () => {
   const query = industryById('healthcare').presets.S03[0].query;
   const arm = kind => ({ status: 'success', kind, hits: [{ id: 'DOC-1', sourceId: 'DOC-1', rank: 1 }], citations: [{ id: 'DOC-1', sourceId: 'DOC-1' }], trace: { steps: [] } });
-  const recorded = { recordedAt: '2026-11-26', entries: { [`healthcare|en|S03|${query}`]: { industry: 'healthcare', language: 'en', scenarioId: 'S03', query, topK: 10,
+  const recorded = { recordedAt: '2026-11-25', entries: { [`healthcare|en|S03|${query}`]: { industry: 'healthcare', language: 'en', scenarioId: 'S03', query, topK: 10, recordedAt: '2026-11-26',
     result: { mode: 'live', industry: 'healthcare', scenarioId: 'S03', query, executionStatus: 'success', baseline: arm('lexical'), enhanced: arm('hybrid'), comparison: {} } } } };
   const { app, calls } = industryHarness({ recorded });
   const catalog = await (await catalogFor(app, '?industry=healthcare')).json();
-  assert.deepEqual(catalog.scenarios.find(scenario => scenario.id === 'S03').sample.curatedQueries, [query]);
+  const sample = catalog.scenarios.find(scenario => scenario.id === 'S03').sample;
+  assert.deepEqual(sample.curatedQueries, [query]);
+  assert.deepEqual([sample.recorded.recordedAt, sample.label.includes('captured on 2026-11-26')], ['2026-11-26', true], 'an entry recorded later shows its own date');
   assert.equal((await (await catalogFor(app, '?industry=retail')).json()).scenarios.find(scenario => scenario.id === 'S03').sample.available, false);
   const replay = await (await app.handle('run', post('run', industryBody('S03', { mode: 'sample', query })), env())).json();
   assert.equal(replay.recorded.recordedAt, '2026-11-26');
+  assert.match(replay.enhanced.trace.steps[0], /from 2026-11-26/);
   assert.equal(replay.runId, 'recorded-healthcare-en-S03');
   assert.equal(replay.note, undefined, 'historical preset commentary does not assess an unmatched response');
   const zavaKey = await app.handle('run', post('run', { scenarioId: 'S03', mode: 'sample', query, language: 'en', industry: 'zava' }), env());
@@ -1120,6 +1123,12 @@ test('build pins industry bindings to attested ETags, checks the public catalog 
   assert.match(withSources, /<span class="license">CC0 1\.0/);
   assert.match(withSources, /<footer><span>Public and synthetic demo data · <a href="#data-sources">Data sources<\/a>/);
   assert.ok(!withSources.includes('All content is synthetic (Zava Retail)'));
+  const withFashion = aboutWithDataSources(about, industryCatalog, ['healthcare', 'fashion']);
+  assert.match(withFashion, /Fashion Product Images \(Small\)<\/a><span class="license">MIT, as declared by the uploader \(not independently verified\)/);
+  assert.match(withFashion, /Dataset by Param Aggarwal/);
+  assert.match(withFashion, /Fashion product images searches a public dataset credited below/);
+  assert.match(withFashion, /Fashion product images covers S05, S06, S11\./);
+  assert.ok(!aboutWithDataSources(about, industryCatalog, ['fashion']).includes('U.S. government'), 'a dataset-only build makes no government claim');
   const zavaOnly = aboutWithDataSources(about, industryCatalog, []);
   assert.match(zavaOnly, /Synthetic demo data: the Zava store/);
   assert.ok(!zavaOnly.includes('open.fda.gov'));
@@ -1671,7 +1680,7 @@ test('a Vercel build unpacks the bundle into private file paths, and production 
   }
 });
 
-// A product-image industry (fixture only; the real catalog entry ships after its presets are probed and recorded).
+// A product-image industry fixture, swapped in for the real catalog entry so these tests stay independent of its presets.
 const fashionIndustry = () => ({ id: 'fashion', label: 'Fashion retail', short: 'Fashion', group: 'Retail', blurb: 'Fixture.', sources: [], languages: ['en'],
   status: 'ready', scenarios: ['S05', 'S06', 'S11'], boostSubtypes: ['newest', 'season'], facetLabels: { articleType: 'Article type' },
   sourceHosts: ['www.kaggle.com'], dataNote: 'Public product catalog (fixture)', scenarioDescriptions: { S11: 'Product photos searched by text or image.' },
@@ -1682,7 +1691,7 @@ const fashionIndustry = () => ({ id: 'fashion', label: 'Fashion retail', short: 
 const fashionImage = { field: 'imageVector', profile: 'fpi-image-profile', vectorizer: 'fpi-vision', model: 'azure-vision-multimodal',
   modelVersion: '2023-04-15', dimensions: 1024, manifestHash: 'b'.repeat(64) };
 const fashionSchema = () => ({ name: 'foundry-iq-fashion', fields: [
-  { name: 'id', type: 'Edm.String', key: true, searchable: true, filterable: true, analyzer: 'keyword' }, stringField('sourceId', { filterable: true }),
+  { name: 'id', type: 'Edm.String', key: true, searchable: true, filterable: true, analyzer: 'keyword' },
   ...['title', 'content'].map(name => ({ name, type: 'Edm.String', searchable: true, analyzer: 'en.lucene' })),
   ...['scope', 'variant'].map(name => stringField(name, { filterable: true })),
   ...['gender', 'articleType', 'season'].map(name => stringField(name, { filterable: true, facetable: true })),
@@ -1695,12 +1704,17 @@ const fashionSchema = () => ({ name: 'foundry-iq-fashion', fields: [
   vectorSearch: { profiles: [{ name: 'fpi-image-profile', algorithm: 'hnsw', vectorizer: 'fpi-vision' }], algorithms: [{ name: 'hnsw', kind: 'hnsw' }],
     vectorizers: [{ name: 'fpi-vision', kind: 'aiServicesVision', aiServicesVisionParameters: {
       resourceUri: 'https://vision-test.cognitiveservices.azure.com', modelVersion: '2023-04-15', apiKey: null, authIdentity: null } }] } });
-const fashionDoc = (id, extra = {}) => ({ id, sourceId: id, title: `Shoe ${id}`, content: `Red running shoe ${id}`, scope: 'public', gender: 'Men',
+const fashionDoc = (id, extra = {}) => ({ id, title: `Shoe ${id}`, content: `Red running shoe ${id}`, scope: 'public', gender: 'Men',
   articleType: 'Sports Shoes', season: 'Summer', year: 2017, thumbnailUrl: `/datasets/fashion/thumbs/${id}.webp`, imageModel: 'azure-vision-multimodal',
   imageModelVersion: '2023-04-15', imageDimensions: 1024, imageManifestHash: 'b'.repeat(64), '@search.score': 0.8, ...extra });
 async function withFashion(run) {
+  const at = industryCatalog.industries.findIndex(item => item.id === 'fashion');
+  const [real] = at >= 0 ? industryCatalog.industries.splice(at, 1) : [];
   industryCatalog.industries.push(fashionIndustry());
-  try { return await run(); } finally { industryCatalog.industries.pop(); }
+  try { return await run(); } finally {
+    industryCatalog.industries.pop();
+    if (real) industryCatalog.industries.splice(at, 0, real);
+  }
 }
 function fashionHarness(handler, image = fashionImage) {
   const entries = [{ index: 'foundry-iq-fashion', etag: '"fashion-1"', schema: fashionSchema() }];
@@ -1724,7 +1738,8 @@ test('a product-image industry runs S11 text-to-image and image queries on its o
   assert.equal(searchVersion(vectorCall.url), AGENTIC_SEARCH_API_VERSION);
   assert.deepEqual(body(vectorCall).vectorQueries, [{ kind: 'text', text: 'red running shoes', fields: 'imageVector', k: 10, exhaustive: true }]);
   assert.equal(body(vectorCall).search, undefined);
-  assert.ok(calls.every(call => !body(call).select.split(',').includes('url')), 'an index without url never selects it');
+  assert.ok(calls.every(call => !body(call).select.split(',').some(field => ['url', 'sourceId'].includes(field))), 'an index without url or sourceId never selects them');
+  assert.equal(text.enhanced.hits[0].sourceId, 'fpi-1', 'hits fall back to the document id');
   assert.equal(text.enhanced.hits[0].thumbnailUrl, '/datasets/fashion/thumbs/fpi-1.webp');
   assert.equal(text.enhanced.trace.configuration.imageEncoder.corpusManifestHash, 'b'.repeat(64));
   assert.equal(safeUrl('/datasets/fashion/thumbs/fpi-1.webp'), '/datasets/fashion/thumbs/fpi-1.webp');
