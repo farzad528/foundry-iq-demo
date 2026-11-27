@@ -1,0 +1,71 @@
+{
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build:vercel",
+  "framework": null,
+  "outputDirectory": "dist/vercel/public",
+  "cleanUrls": false,
+  "functions": {
+    "api/**/*.mjs": {
+      "maxDuration": 60,
+      "includeFiles": "dist/vercel/server/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/healthz",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/about",
+      "destination": "/about.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/agents",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/knowledge",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/playground",
+      "destination": "/",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+        }
+      ]
+    }
+  ]
+}

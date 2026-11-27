@@ -314,6 +314,47 @@ const write = (path, body) => {
   writeFileSync(join(out, path), body);
 };
 
+// The four Search-only Functions. dist/vercel/api holds the copies a manual deployment uploads; the committed root api/
+// wrappers serve the same bundle from dist/vercel/server for Vercel Git builds (npm run build:vercel).
+export const API_ROUTES = Object.freeze([
+  { file: 'api/scenarios.mjs', route: 'scenarios', verb: 'GET' },
+  { file: 'api/health.mjs', route: 'health', verb: 'GET' },
+  { file: 'api/demo/prepare.mjs', route: 'prepare', verb: 'POST' },
+  { file: 'api/demo/run.mjs', route: 'run', verb: 'POST' },
+]);
+
+/** Source of a Function entry point that hands one route to the built server app. */
+export function apiEntry(route, verb, appPath) {
+  return `import { app } from '${appPath}';\n\nexport function ${verb}(request) {\n  return app.handle('${route}', request, process.env);\n}\n`;
+}
+
+/** Root api/ wrapper for Git builds: the dist entry pointed at dist/vercel/server. */
+export function rootApiEntry({ file, route, verb }) {
+  return `// Vercel Git builds: npm run build:vercel writes dist/vercel; this serves its server bundle. See docs/OPERATIONS.md.\n${
+    apiEntry(route, verb, `${'../'.repeat(file.split('/').length - 1)}dist/vercel/server/app.mjs`)}`;
+}
+
+const CSP = "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+
+/** vercel.json: security headers, routes and Function limits shared by manual and Git deployments. */
+export function vercelConfig({ outputDirectory, serverFiles, git = false }) {
+  return {
+    ...(git ? { installCommand: 'npm ci', buildCommand: 'npm run build:vercel' } : {}),
+    framework: null, outputDirectory, cleanUrls: false,
+    functions: { 'api/**/*.mjs': { maxDuration: 60, includeFiles: serverFiles } },
+    rewrites: [{ source: '/healthz', destination: '/api/health' }, { source: '/about', destination: '/about.html' }],
+    redirects: ['/agents', '/knowledge', '/playground'].map(source => ({ source, destination: '/', permanent: true })),
+    headers: [{ source: '/(.*)', headers: [
+      { key: 'X-Content-Type-Options', value: 'nosniff' }, { key: 'Referrer-Policy', value: 'no-referrer' },
+      { key: 'X-Frame-Options', value: 'DENY' }, { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+      { key: 'Strict-Transport-Security', value: 'max-age=31536000' }, { key: 'Content-Security-Policy', value: CSP },
+    ] }],
+  };
+}
+
+/** The committed root vercel.json for Vercel Git builds of main. */
+export const rootVercelConfig = () => vercelConfig({ outputDirectory: 'dist/vercel/public', serverFiles: 'dist/vercel/server/**', git: true });
+
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const bindingsPath = process.env.STUDIO_PRIVATE_BINDINGS;
   const attestationsPath = process.env.STUDIO_PRIVATE_ATTESTATIONS;
@@ -413,23 +454,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   write('server/recorded-data.mjs', `export const recorded = ${JSON.stringify(recorded)};\n`);
   write('server/notes-data.mjs', `export const notes = ${JSON.stringify(notes)};\n`);
   write('server/app.mjs', "import { createVercelApp } from './lib/vercel-app.mjs';\nimport { liveConfig, attestations, industries } from './private-data.mjs';\nimport { recorded } from './recorded-data.mjs';\nimport { notes } from './notes-data.mjs';\n\nexport const app = createVercelApp({ liveConfig, attestations, recorded, notes, industries });\n");
-  const entry = (route, depth, verb) => `import { app } from '${'../'.repeat(depth)}server/app.mjs';\n\nexport ${verb === 'GET' ? 'function GET' : 'function POST'}(request) {\n  return app.handle('${route}', request, process.env);\n}\n`;
-  write('api/scenarios.mjs', entry('scenarios', 1, 'GET'));
-  write('api/health.mjs', entry('health', 1, 'GET'));
-  write('api/demo/prepare.mjs', entry('prepare', 2, 'POST'));
-  write('api/demo/run.mjs', entry('run', 2, 'POST'));
-  const csp = "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
-  write('vercel.json', JSON.stringify({
-    framework: null, outputDirectory: 'public', cleanUrls: false,
-    functions: { 'api/**/*.mjs': { maxDuration: 60, includeFiles: 'server/**' } },
-    rewrites: [{ source: '/healthz', destination: '/api/health' }, { source: '/about', destination: '/about.html' }],
-    redirects: ['/agents', '/knowledge', '/playground'].map(source => ({ source, destination: '/', permanent: true })),
-    headers: [{ source: '/(.*)', headers: [
-      { key: 'X-Content-Type-Options', value: 'nosniff' }, { key: 'Referrer-Policy', value: 'no-referrer' },
-      { key: 'X-Frame-Options', value: 'DENY' }, { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-      { key: 'Strict-Transport-Security', value: 'max-age=31536000' }, { key: 'Content-Security-Policy', value: csp },
-    ] }],
-  }, null, 2) + '\n');
+  for (const { file, route, verb } of API_ROUTES) write(file, apiEntry(route, verb, `${'../'.repeat(file.split('/').length - 1)}server/app.mjs`));
+  write('vercel.json', `${JSON.stringify(vercelConfig({ outputDirectory: 'public', serverFiles: 'server/**' }), null, 2)}\n`);
   write('package.json', JSON.stringify({ name: 'foundry-iq-studio-live', version: '1.0.0', private: true, type: 'module', engines: { node: '26.x' } }) + '\n');
   write('.vercelignore', '.env*\n*.log\n');
 
