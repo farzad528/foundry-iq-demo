@@ -69,4 +69,6 @@ export const industryScenarioCopy = {
     limits: 'Theme questions read the corpus themes and their share of passages from the topic graph; other questions compare hybrid retrieval with topic diversification off and on, without the semantic ranker.' },
   S10: { title: 'PDF layout extraction', description: 'Compare Content Understanding Read and Layout extraction of the same public PDF, with page and table-row citations. Extraction ran at ingestion.',
     limits: 'Both arms search one public PDF, extracted at ingestion; examples choose the PDF, and free-text questions search the first example’s PDF.' },
+  S11: { title: 'Multimodal image search', description: 'Compare keyword search over product text with image-embedding similarity: describe the item in words, or (Live) search with an image.',
+    limits: 'Live accepts one PNG, JPEG or WebP image up to 40 KiB per search, or up to 70 words of text. Foundry IQ turns it into image embeddings; the image is not stored or indexed.' },
 };

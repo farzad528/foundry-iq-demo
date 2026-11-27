@@ -36,7 +36,9 @@ const shownTitle = hit => viewOf(hit).title;
 const shownPassage = hit => viewOf(hit).passage;
 const shownValue = value => industry !== 'zava' && typeof value === 'string' ? repairMojibake(value) : value;
 const BOOST_LABELS = { freshness: 'Freshness', magnitude: 'Magnitude', distance: 'Distance', tags: 'Tags', availability: 'Availability',
-  authority: 'Authority', impact: 'Impact' };
+  authority: 'Authority', impact: 'Impact', newest: 'Newest', season: 'Season', occasion: 'Occasion', colour: 'Colour' };
+// Product attributes shown only on industry product hits (those with an articleType), never on document corpora.
+const PRODUCT_FIELDS = ['gender', 'articleType', 'baseColour', 'season', 'year', 'usage'];
 const recordedSampleMode = () => element('mode').value === 'sample' && !!selectedScenario()?.sample?.recorded;
 
 const node = (tag, text, className) => {
@@ -55,7 +57,8 @@ const safeUrl = value => {
   try {
     const url = new URL(value, location.origin);
     if (url.username || url.password) return null;
-    if (url.origin === location.origin) return url.pathname.startsWith('/samples/') ? url.href : null;
+    if (url.origin === location.origin) return url.pathname.startsWith('/samples/')
+      || /^\/datasets\/[a-z]+\/thumbs\/[a-z0-9-]+\.webp$/.test(url.pathname) && !url.search ? url.href : null;
     // Industry citations open the original public source, only on that industry's reviewed hosts.
     const hosts = configuration?.industry?.sourceHosts || [];
     return url.protocol === 'https:' && !url.port && hosts.includes(url.host) ? url.href : null;
@@ -330,7 +333,12 @@ function renderHit(hit, side, index, baselineIds, reviewed, parts) {
   head.append(node('span', `#${hit.rank || index + 1}`, 'rank'), sourceLink(hit));
   card.append(head);
   const image = safeUrl(hit.thumbnailUrl);
-  if (image) card.append(Object.assign(node('img'), { src: image, alt: shownTitle(hit) || 'Synthetic product illustration', loading: 'lazy' }));
+  if (image) {
+    const img = Object.assign(node('img'), { src: image, alt: shownTitle(hit) || 'Synthetic product illustration', loading: 'lazy' });
+    // Builds bundle only the photos their recorded examples show; a Live hit outside that set gets a labelled placeholder.
+    img.addEventListener('error', () => img.replaceWith(node('div', 'Photo not bundled in this build', 'image-missing')), { once: true });
+    card.append(img);
+  }
   const content = node('div', undefined, 'hit-body');
   // The title opens the result details drawer; its hit area covers the card (links and disclosures stay on top).
   const open = node('button', shownTitle(hit) || hit.id, 'hit-open');
@@ -354,6 +362,10 @@ function renderHit(hit, side, index, baselineIds, reviewed, parts) {
   if (side === 'enhanced' && originalRank >= 0 && originalRank !== index) meta.append(node('span', `Rank ${originalRank + 1} → ${index + 1}`));
   if (hit.document?.agency) meta.append(node('span', hit.document.agency));
   if (typeof hit.document?.publishedDate === 'string') meta.append(node('span', hit.document.publishedDate.slice(0, 10)));
+  if (industry !== 'zava' && typeof hit.document?.articleType === 'string') for (const key of PRODUCT_FIELDS) {
+    const value = hit.document?.[key];
+    if (typeof value === 'string' && value.trim() || Number.isInteger(value)) meta.append(node('span', String(value)));
+  }
   if (hit.topic?.title) meta.append(node('span', `Theme: ${hit.topic.title}`, 'theme-chip'));
   if (Number.isInteger(hit.citedBy) && hit.citedBy > 0) meta.append(node('span', `Cites ${hit.citedBy} path row${hit.citedBy === 1 ? '' : 's'}`));
   content.append(meta);

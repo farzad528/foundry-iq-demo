@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { illustrationPng } from './generate-studio.mjs';
 import { studioScenarios } from '../lib/studio.mjs';
-import { filterFields, isFacet } from '../lib/industry.mjs';
+import { filterFields, isFacet, isOrderBy, isScoringParameter } from '../lib/industry.mjs';
 import { evidenceHighlightProblems, evidenceNoteProblems } from '../lib/evidence-note.mjs';
 import { snippetRanges } from '../assets/display.mjs';
 import { SEARCH_API_VERSION } from '../config/studio-live.mjs';
@@ -88,7 +88,7 @@ export function industryBindingsFrom(privateBinding, attestations, enabled, used
     if (!etag) throw new Error(`No schema attestation for industry index ${binding.index}.`);
     used.add(binding.index);
     industries[id] = { index: binding.index, indexETag: etag, semanticConfiguration: binding.semanticConfiguration, vectorField: binding.vectorField,
-      scoringProfiles: { ...binding.scoringProfiles } };
+      scoringProfiles: { ...binding.scoringProfiles }, ...(binding.image ? { image: { ...binding.image } } : {}) };
   }
   return { agentic: { maxRuntimeInSeconds: AGENTIC_MAX_RUNTIME_SECONDS }, industries };
 }
@@ -124,6 +124,11 @@ export function checkIndustryCatalog(catalog, enabled, attestations, bindings) {
     if (!industry) { problems.push(`${id}: not in config/studio-industries.json`); continue; }
     const schema = schemas.get(bindings.industries[id].index);
     const fields = new Map((schema?.fields || []).map(field => [field.name, field]));
+    // A tag-boost parameter must name the tagsParameter of a tag function in the profile its subtype uses.
+    const tagParameters = subtype => new Set((schema?.scoringProfiles || []).find(profile => profile.name === bindings.industries[id].scoringProfiles[subtype])
+      ?.functions?.filter(fn => fn.type === 'tag').map(fn => fn.tag?.tagsParameter) || []);
+    const parametersProblem = (subtype, parameters) => !Array.isArray(parameters) || !parameters.length || parameters.length > 4
+      || parameters.some(value => !isScoringParameter(value) || !tagParameters(subtype).has(value.split('-')[0]));
     for (const boost of industry.boostSubtypes) if (!bindings.industries[id].scoringProfiles[boost]) problems.push(`${id}: no scoring profile for ${boost}`);
     for (const [scenarioId, presets] of Object.entries(industry.presets || {})) {
       if (!industry.scenarios.includes(scenarioId)) problems.push(`${id}: presets for inapplicable ${scenarioId}`);
@@ -135,10 +140,18 @@ export function checkIndustryCatalog(catalog, enabled, attestations, bindings) {
         for (const name of preset.filter ? filterFields(preset.filter) : []) if (!fields.get(name)?.filterable) problems.push(`${where}: filter field ${name}`);
         for (const facet of preset.facets || []) if (scenarioId !== 'S05' || !isFacet(facet) || !fields.get(facet.split(',')[0])?.facetable) problems.push(`${where}: facet ${facet}`);
         if (preset.boostSubtype !== undefined && (scenarioId !== 'S06' || !industry.boostSubtypes.includes(preset.boostSubtype))) problems.push(`${where}: boost`);
+        if (preset.orderby !== undefined && (scenarioId !== 'S05' || !isOrderBy(preset.orderby) || !fields.get(preset.orderby.split(' ')[0])?.sortable)) problems.push(`${where}: orderby`);
+        if (preset.scoringParameters !== undefined && (scenarioId !== 'S06' || !preset.boostSubtype || parametersProblem(preset.boostSubtype, preset.scoringParameters))) problems.push(`${where}: scoring parameters`);
+        // Industry image presets are text-to-image: uploaded images are Live-only and never bundled.
+        if (scenarioId === 'S11' && Object.keys(preset).some(key => /image/i.test(key))) problems.push(`${where}: S11 presets are text-only`);
         if ((scenarioId === 'S10') !== /^[a-f0-9]{64}$/.test(preset.sourceHash || '')) problems.push(`${where}: S10 source hash`);
       }
     }
     for (const facet of industry.defaults?.S05?.facets || []) if (!isFacet(facet) || !fields.get(facet.split(',')[0])?.facetable) problems.push(`${id}: default facet ${facet}`);
+    for (const [subtype, parameters] of Object.entries(industry.defaults?.S06?.scoringParameters || {})) {
+      if (!industry.boostSubtypes.includes(subtype) || parametersProblem(subtype, parameters)) problems.push(`${id}: default scoring parameters for ${subtype}`);
+    }
+    if (industry.scenarios.includes('S11') && !bindings.industries[id].image) problems.push(`${id}: S11 needs a private image binding`);
     if (industry.scenarios.includes('S10') && !/^[a-f0-9]{64}$/.test(industry.defaults?.S10?.sourceHash || '')) problems.push(`${id}: default S10 document`);
     if (!industry.sourceHosts?.length || industry.sourceHosts.some(host => !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(host))) problems.push(`${id}: source hosts`);
   }
@@ -168,6 +181,21 @@ export function industryRecordingProblems(catalog, enabled, recorded) {
     }
   }
   return problems;
+}
+
+/** Industry thumbnails bundled into the build, and any recorded thumbnail that would be missing from it. */
+export function industryThumbs(enabled, recorded, root = '.') {
+  const files = enabled.flatMap(id => {
+    const dir = join(root, 'datasets', id, 'thumbs');
+    return existsSync(dir) ? readdirSync(dir).filter(name => /^[a-z0-9-]+\.webp$/.test(name)).map(name => `datasets/${id}/thumbs/${name}`) : [];
+  });
+  const have = new Set(files.map(path => `/${path}`));
+  const missing = new Set();
+  for (const entry of Object.values(recorded.entries || {})) {
+    if (!enabled.includes(entry.industry)) continue;
+    for (const arm of [entry.result?.baseline, entry.result?.enhanced]) for (const hit of arm?.hits || []) if (hit.thumbnailUrl && !have.has(hit.thumbnailUrl)) missing.add(hit.thumbnailUrl);
+  }
+  return { files, missing: [...missing] };
 }
 
 /** Lists the industries compiled into this build on the demo page, so the client never requests an unknown one. */
@@ -279,14 +307,26 @@ export function aboutWithDataSources(html, catalog, enabled, { graph = false } =
   const section = groups.map(item => `<article class="source-card"><h3>${escapeHtml(item.label)}</h3><p>${escapeHtml(item.blurb)}</p><ul>${item.sources.map(source =>
     `<li><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.agency)}: ${escapeHtml(source.name)}</a><span class="license">${escapeHtml(source.license)}</span></li>`).join('')}</ul>${
     item.aboutNote ? `<p class="source-note">${escapeHtml(item.aboutNote)}</p>` : ''}</article>`).join('\n        ');
+  // Government corpora link every result to a .gov source; other public datasets (product images) are credited on their card.
+  const industries = groups.slice(1);
+  const government = industries.filter(item => item.sourceHosts?.some(host => host.endsWith('.gov')));
+  const datasets = industries.filter(item => !government.includes(item));
+  const searches = [government.length ? 'the industry demos search public U.S. government documents in English, and every result links to its original public source'
+    : '', datasets.length ? `${datasets.map(item => item.short).join(', ')} search${datasets.length === 1 ? 'es' : ''} a public dataset credited below` : ''].filter(Boolean).join('; ');
   const intro = enabled.length
-    ? '<p>Public and synthetic demo data. The Zava store is fictional; the industry demos search public U.S. government documents in English, and every result links to its original public source.</p>'
+    ? `<p>Public and synthetic demo data. The Zava store is fictional; ${searches}.</p>`
     : '<p>Synthetic demo data: the Zava store, its products, support articles and images are fictional.</p>';
   let page = html.slice(0, html.indexOf(start) + start.length) + `\n        ${intro}\n        ${section}\n        ` + html.slice(html.indexOf(end));
   if (enabled.length) {
+    const imageIndustries = industries.filter(item => item.scenarios?.includes('S11')).map(item => item.label);
+    const imageText = imageIndustries.length ? `image search (S11) uses the Zava store and ${imageIndustries.join(', ')}` : 'image search (S11) uses the Zava store';
     const replace = (from, to) => { if (!page.includes(from)) throw new Error(`about.html changed: ${from}`); page = page.replace(from, to); };
+    const corpora = [government.length ? 'Industry demos search public U.S. government documents' : '',
+      ...datasets.map(item => `${item.short} searches a public dataset (credited above)`)].filter(Boolean).join('; ');
+    const coverage = [government.length ? `Government industry demos cover S01–S07, plus S10 where the corpus has PDFs. ${graph ? 'Industry entity and topic graph search (S08, S09) runs on a dedicated Foundry IQ service for the curated questions' : 'Industry graph search (S08, S09) isn’t configured yet'}.` : '',
+      ...datasets.map(item => `${item.short} covers ${item.scenarios.join(', ')}.`), `${imageText[0].toUpperCase()}${imageText.slice(1)}.`].filter(Boolean).join(' ');
     replace('<li>All content is synthetic (Zava Retail); no customer data.</li>',
-      `<li>The Zava store is synthetic. Industry demos search public U.S. government documents, in English only. No customer data.</li>\n          <li>Industry demos cover S01–S07, plus S10 where the corpus has PDFs. ${graph ? 'Industry entity and topic graph search (S08, S09) runs on a dedicated Foundry IQ service for the curated questions' : 'Industry graph search (S08, S09) isn’t configured yet'}, and image search (S11) uses the Zava store.</li>`);
+      `<li>The Zava store is synthetic. ${corpora}, in English only. No customer data.</li>\n          <li>${coverage}</li>`);
     replace('<footer><span>Synthetic demo content · Zava Retail · S01–S11</span>', '<footer><span>Public and synthetic demo data · <a href="#data-sources">Data sources</a></span>');
   }
   return page;
@@ -398,6 +438,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (missingIndustrySamples.length) process.stdout.write(`WARNING: development build without industry recorded Sample (${missingIndustrySamples.length} gaps).\n`);
   const recordingProblems = industryRecordingProblems(industryCatalog, enabledIndustries, recorded);
   if (recordingProblems.length) throw new Error(`Invalid industry recordings:\n${recordingProblems.join('\n')}`);
+  const thumbs = industryThumbs(enabledIndustries, recorded);
+  if (thumbs.missing.length) throw new Error(`Recorded industry thumbnails missing from datasets/ (${thumbs.missing.length}):\n${thumbs.missing.slice(0, 8).join('\n')}`);
   // Industry graph (S08/S09): optional private binding plus the graph service's attested schemas.
   const industryGraphConfig = JSON.parse(readFileSync('config/studio-industry-graph.json', 'utf8'));
   const industryGraphPath = process.env.STUDIO_PRIVATE_INDUSTRY_GRAPH, graphAttestationPath = process.env.STUDIO_PRIVATE_INDUSTRY_GRAPH_ATTESTATIONS;
@@ -436,6 +478,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   write('public/LICENSE', readFileSync('LICENSE'));
   for (const path of sampleFiles()) write(`public/${path}`, readFileSync(path));
   for (const [image, index] of sampleImages) write(`public/samples/${image}.png`, illustrationPng(index));
+  for (const path of thumbs.files) write(`public/${path}`, readFileSync(path));
 
   // Server-only modules and private data.
   for (const path of [...SERVER_MODULES, ...serverConfigFiles()]) {

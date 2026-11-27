@@ -36,7 +36,8 @@ test('README datasets and languages match the app catalog', () => {
   assert.deepEqual(table.map(([name]) => name.split(' — ')[0]), [industryCatalog.zava.label, ...industries.map(item => item.label)]);
   assert.equal(table[0][1], documentLanguages.map(language => LANGUAGE_NAMES[language.code ?? language]).join(', '));
   for (const [name, languages] of table.slice(1)) assert.equal(languages, 'English', `${name} is English-only`);
-  assert.ok(industries.every(item => !item.scenarios.includes('S11')), 'multimodal retrieval is Zava only, as the README says');
+  const multimodal = industries.filter(item => item.scenarios.includes('S11')).map(item => item.label);
+  assert.deepEqual(multimodal, ['Retail · Fashion product images'], 'multimodal retrieval is Zava and fashion only, as the README says');
 });
 
 test('README links, anchors and images resolve, and the playground link is the deployed app', () => {

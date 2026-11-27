@@ -3876,6 +3876,247 @@
      }
     ]
    }
+  },
+  {
+   "id": "fashion",
+   "label": "Retail · Fashion product images",
+   "short": "Fashion product images",
+   "group": "Retail",
+   "blurb": "A 3,000-product subset of the Fashion Product Images (Small) dataset: product photos with gender, category, colour, season, year and usage labels.",
+   "aboutNote": "Dataset by Param Aggarwal, published on Kaggle as Fashion Product Images (Small); the uploader declares the MIT license, which this demo has not independently verified. Credit is not a rights clearance. Product names and labels are shown as published; season and usage are the dataset's own labels, and no popularity, price or inventory signal is added.",
+   "sources": [
+    {
+     "agency": "Kaggle (Param Aggarwal)",
+     "name": "Fashion Product Images (Small)",
+     "url": "https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small",
+     "license": "MIT, as declared by the uploader (not independently verified); 3,000-product subset, thumbnails resized to WebP"
+    }
+   ],
+   "languages": [
+    "en"
+   ],
+   "status": "final",
+   "evaluatedAt": "2026-11-27T18:40:35Z",
+   "scenarios": [
+    "S05",
+    "S06",
+    "S11"
+   ],
+   "boostSubtypes": [
+    "occasion",
+    "season",
+    "newest"
+   ],
+   "facetLabels": {
+    "gender": "Gender",
+    "masterCategory": "Category",
+    "subCategory": "Subcategory",
+    "articleType": "Article type",
+    "baseColour": "Colour",
+    "season": "Season",
+    "usage": "Usage",
+    "year": "Year"
+   },
+   "sourceHosts": [
+    "www.kaggle.com"
+   ],
+   "dataNote": "Public product-image dataset (Kaggle, MIT as declared by the uploader)",
+   "scenarioDescriptions": {
+    "S11": "Product photos searched by what they look like: the text is vectorized into the same image space as the photos, so patterns, prints and logos match even when the product name never mentions them."
+   },
+   "defaults": {
+    "S05": {
+     "facets": [
+      "articleType,count:5",
+      "baseColour,count:5"
+     ]
+    },
+    "S06": {
+     "scoringParameters": {
+      "occasion": [
+       "usageTags-Formal"
+      ],
+      "season": [
+       "seasonTags-Fall,Winter"
+      ]
+     }
+    }
+   },
+   "presets": {
+    "S05": [
+     {
+      "id": "FPI-S05-01",
+      "label": "formal shoes for women",
+      "hint": "Women’s formal footwear",
+      "query": "formal shoes for women",
+      "relevant": [
+       "fpi-15490",
+       "fpi-25017",
+       "fpi-59018"
+      ],
+      "filter": "gender eq 'Women' and usage eq 'Formal' and masterCategory eq 'Footwear'",
+      "facets": [
+       "articleType,count:5",
+       "baseColour,count:5"
+      ]
+     },
+     {
+      "id": "FPI-S05-02",
+      "label": "women's formal wear for the office",
+      "hint": "Women’s office wear",
+      "query": "women's formal wear for the office",
+      "relevant": [
+       "fpi-18712",
+       "fpi-26364",
+       "fpi-18713",
+       "fpi-44646",
+       "fpi-32405"
+      ],
+      "filter": "gender eq 'Women' and usage eq 'Formal'",
+      "facets": [
+       "articleType,count:5",
+       "season,count:4"
+      ]
+     },
+     {
+      "id": "FPI-S05-03",
+      "label": "running shoes for women",
+      "hint": "Newest women’s running shoes",
+      "query": "running shoes for women",
+      "relevant": [
+       "fpi-26449",
+       "fpi-41821",
+       "fpi-31944",
+       "fpi-41822",
+       "fpi-41824"
+      ],
+      "filter": "gender eq 'Women' and articleType eq 'Sports Shoes'",
+      "orderby": "year desc",
+      "facets": [
+       "baseColour,count:5"
+      ]
+     }
+    ],
+    "S06": [
+     {
+      "id": "FPI-S06-01",
+      "label": "shirt for office",
+      "hint": "Boost formal usage",
+      "query": "shirt for office",
+      "relevant": [
+       "fpi-27888",
+       "fpi-23982",
+       "fpi-9507",
+       "fpi-12371",
+       "fpi-9804"
+      ],
+      "boostSubtype": "occasion",
+      "scoringParameters": [
+       "usageTags-Formal"
+      ]
+     },
+     {
+      "id": "FPI-S06-02",
+      "label": "jeans",
+      "hint": "Boost the newest products",
+      "query": "jeans",
+      "relevant": [
+       "fpi-44578",
+       "fpi-44583",
+       "fpi-11348"
+      ],
+      "boostSubtype": "newest"
+     },
+     {
+      "id": "FPI-S06-03",
+      "label": "light jacket",
+      "hint": "Boost fall and winter",
+      "query": "light jacket",
+      "relevant": [
+       "fpi-9981",
+       "fpi-9532",
+       "fpi-25025",
+       "fpi-15462",
+       "fpi-13104"
+      ],
+      "boostSubtype": "season",
+      "scoringParameters": [
+       "seasonTags-Fall,Winter"
+      ]
+     },
+     {
+      "id": "FPI-S06-04",
+      "label": "trousers",
+      "hint": "Boost formal usage",
+      "query": "trousers",
+      "relevant": [
+       "fpi-12212",
+       "fpi-8901",
+       "fpi-39808",
+       "fpi-27903",
+       "fpi-32407"
+      ],
+      "boostSubtype": "occasion",
+      "scoringParameters": [
+       "usageTags-Formal"
+      ]
+     }
+    ],
+    "S11": [
+     {
+      "id": "FPI-S11-01",
+      "label": "plaid shirt",
+      "hint": "Check and plaid patterns",
+      "query": "plaid shirt",
+      "relevant": [
+       "fpi-16401",
+       "fpi-18883",
+       "fpi-2098",
+       "fpi-10441",
+       "fpi-27856"
+      ]
+     },
+     {
+      "id": "FPI-S11-02",
+      "label": "cartoon character print",
+      "hint": "Cartoon print tees",
+      "query": "cartoon character print",
+      "relevant": [
+       "fpi-22218",
+       "fpi-22217",
+       "fpi-54936",
+       "fpi-4317",
+       "fpi-57424"
+      ]
+     },
+     {
+      "id": "FPI-S11-03",
+      "label": "sneakers with a neon green swoosh",
+      "hint": "Logo colour in the photo",
+      "query": "sneakers with a neon green swoosh",
+      "relevant": [
+       "fpi-3177",
+       "fpi-15717",
+       "fpi-44744",
+       "fpi-30204",
+       "fpi-37709"
+      ]
+     },
+     {
+      "id": "FPI-S11-04",
+      "label": "checkered pattern",
+      "hint": "Checkered patterns",
+      "query": "checkered pattern",
+      "relevant": [
+       "fpi-16401",
+       "fpi-39877",
+       "fpi-18883",
+       "fpi-15183",
+       "fpi-2098"
+      ]
+     }
+    ]
+   }
   }
  ]
 }

@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROUTES = Object.freeze({ '/api/scenarios': 'scenarios', '/api/health': 'health', '/healthz': 'health', '/api/demo/prepare': 'prepare', '/api/demo/run': 'run' });
 const TYPES = Object.freeze({ '.html': 'text/html; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.pdf': 'application/pdf',
+  '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.ico': 'image/x-icon', '.pdf': 'application/pdf',
   '.csv': 'text/csv; charset=utf-8', '.md': 'text/markdown; charset=utf-8', '.json': 'application/json' });
 // The app enforces its own 64 KiB request limit; this only stops an unbounded local upload.
 const MAX_BODY_BYTES = 1024 * 1024;

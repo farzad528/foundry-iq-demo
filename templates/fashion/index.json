@@ -1,0 +1,82 @@
+{
+  "name": "<index-name>",
+  "fields": [
+    { "name": "id", "type": "Edm.String", "key": true, "searchable": true, "filterable": true, "analyzer": "keyword" },
+    { "name": "title", "type": "Edm.String", "searchable": true, "analyzer": "en.microsoft" },
+    { "name": "content", "type": "Edm.String", "searchable": true, "analyzer": "en.microsoft" },
+    { "name": "gender", "type": "Edm.String", "filterable": true, "facetable": true },
+    { "name": "masterCategory", "type": "Edm.String", "filterable": true, "facetable": true },
+    { "name": "subCategory", "type": "Edm.String", "filterable": true, "facetable": true },
+    { "name": "articleType", "type": "Edm.String", "searchable": true, "filterable": true, "facetable": true },
+    { "name": "baseColour", "type": "Edm.String", "searchable": true, "filterable": true, "facetable": true },
+    { "name": "season", "type": "Edm.String", "filterable": true, "facetable": true },
+    { "name": "year", "type": "Edm.Int32", "filterable": true, "facetable": true, "sortable": true },
+    { "name": "usage", "type": "Edm.String", "filterable": true, "facetable": true },
+    { "name": "collectionDate", "type": "Edm.DateTimeOffset", "filterable": true, "sortable": true },
+    { "name": "thumbnailUrl", "type": "Edm.String" },
+    { "name": "scope", "type": "Edm.String", "filterable": true },
+    { "name": "variant", "type": "Edm.String", "filterable": true },
+    { "name": "source", "type": "Edm.String" },
+    { "name": "license", "type": "Edm.String" },
+    { "name": "imageModel", "type": "Edm.String", "filterable": true },
+    { "name": "imageModelVersion", "type": "Edm.String", "filterable": true },
+    { "name": "imageDimensions", "type": "Edm.Int32", "filterable": true },
+    { "name": "imageManifestHash", "type": "Edm.String", "filterable": true },
+    { "name": "imageVector", "type": "Collection(Edm.Single)", "searchable": true, "retrievable": false, "stored": false, "dimensions": 1024, "vectorSearchProfile": "image-profile" }
+  ],
+  "vectorSearch": {
+    "algorithms": [
+      { "name": "image-hnsw", "kind": "hnsw", "hnswParameters": { "metric": "cosine", "m": 4, "efConstruction": 400, "efSearch": 500 } }
+    ],
+    "profiles": [
+      { "name": "image-profile", "algorithm": "image-hnsw", "vectorizer": "image-vectorizer" }
+    ],
+    "vectorizers": [
+      {
+        "name": "image-vectorizer",
+        "kind": "aiServicesVision",
+        "aiServicesVisionParameters": { "resourceUri": "https://<vision-resource>.cognitiveservices.azure.com", "modelVersion": "2023-04-15" }
+      }
+    ]
+  },
+  "scoringProfiles": [
+    {
+      "name": "fashion-newest",
+      "text": { "weights": { "title": 3, "articleType": 2 } },
+      "functions": [
+        { "type": "magnitude", "fieldName": "year", "boost": 3, "interpolation": "linear",
+          "magnitude": { "boostingRangeStart": 2011, "boostingRangeEnd": 2019, "constantBoostBeyondRange": true } }
+      ]
+    },
+    {
+      "name": "fashion-season",
+      "functions": [
+        { "type": "tag", "fieldName": "season", "boost": 3, "interpolation": "linear", "tag": { "tagsParameter": "seasonTags" } }
+      ]
+    },
+    {
+      "name": "fashion-occasion",
+      "functions": [
+        { "type": "tag", "fieldName": "usage", "boost": 3, "interpolation": "linear", "tag": { "tagsParameter": "usageTags" } }
+      ]
+    },
+    {
+      "name": "fashion-colour",
+      "functions": [
+        { "type": "tag", "fieldName": "baseColour", "boost": 3, "interpolation": "linear", "tag": { "tagsParameter": "colourTags" } }
+      ]
+    }
+  ],
+  "semantic": {
+    "configurations": [
+      {
+        "name": "fashion-semantic",
+        "prioritizedFields": {
+          "titleField": { "fieldName": "title" },
+          "prioritizedContentFields": [{ "fieldName": "content" }],
+          "prioritizedKeywordsFields": [{ "fieldName": "articleType" }, { "fieldName": "baseColour" }]
+        }
+      }
+    ]
+  }
+}
