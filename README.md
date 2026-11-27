@@ -35,6 +35,8 @@ Explore the power of knowledge retrieval with Microsoft Foundry IQ. Compare retr
 
 Multimodal retrieval is available on the Zava demo store only. In French, Spanish, Japanese and German, the Zava graph scenarios use the English graph. Sources and licenses are listed under [Data sources](https://foundry-iq-demo-studio.vercel.app/about#data-sources).
 
+The planned, not-yet-enabled fashion demo credits [Fashion Product Images (Small)](https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small), uploaded by Param Aggarwal. See the [dataset rights note](docs/OPERATIONS.md#product-image-industries-s11-and-the-fashion-product-images-dataset).
+
 ## Getting started
 
 1. Select a dataset and retrieval scenario.

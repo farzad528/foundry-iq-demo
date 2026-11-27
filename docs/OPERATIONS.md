@@ -466,11 +466,14 @@ example `newest`, `season`, `occasion`, `colour`) and S11 (image search). It use
 standard index search only (keyword, vector and hybrid; no agentic retrieval),
 with the semantic ranker off unless measured as worthwhile.
 
-**Status: not enabled.** The planned `fashion` industry (Kaggle “Fashion Product
-Images”, ~44k products) is blocked on a rights review: the dataset's MIT tag is
-set by the uploader, the images were collected from a retailer, and the
-Hugging Face mirror declares no license. Nothing is downloaded, provisioned,
-recorded or deployed until that review and each Azure step are approved.
+**Status: not enabled.** The planned `fashion` industry uses
+[Fashion Product Images (Small)](https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-small),
+uploaded to Kaggle by Param Aggarwal. The uploader labels the dataset MIT, but
+the image rights and provenance have not been independently verified. Product
+photographs and trademarks belong to their respective owners; attribution does
+not itself establish permission to use them. The Hugging Face mirror declares
+no license. Public image use remains blocked pending rights review; downloading
+data, Azure changes, recording and deployment each require separate approval.
 
 - **Catalog entry** (`config/studio-industries.json`): `scenarios` including
   `S11`, its own `boostSubtypes`, an optional `dataNote` (shown instead of
