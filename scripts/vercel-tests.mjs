@@ -6,6 +6,7 @@ import { randomBytes } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import assert from 'node:assert/strict';
 import { createVercelApp } from '../lib/vercel-app.mjs';
+import { comparisonEvidenceDigest, evidenceHighlightProblems, evidenceNoteProblems, reviewedEvidenceNote } from '../lib/evidence-note.mjs';
 import { liveStatus, searchOnlyFetch, attemptBudget, attestedMetadata, disabledScenarios, disabledIndustries, graphServiceStatus, LIVE_SCENARIOS } from '../lib/search-adapter.mjs';
 import { transformBindings, reduceAttestations, industryBindingsFrom, checkIndustryCatalog, aboutWithDataSources, industryRecordingProblems, pageWithIndustries, industryGraphFrom, industryGraphPresetProblems, API_ROUTES, apiEntry, rootApiEntry, rootVercelConfig, vercelConfig } from './build-vercel.mjs';
 import { packPrivateBundle, unpackPrivateBundle, buildEnvironment, buildStamp, MAX_BUNDLE_CHARS } from './vercel-build.mjs';
@@ -14,7 +15,7 @@ import { SEARCH_API_VERSION, AGENTIC_SEARCH_API_VERSION } from '../config/studio
 import { illustrationPng } from './generate-studio.mjs';
 import { retryAfterSeconds } from '../lib/studio.mjs';
 import { imageOnlyQuery } from '../config/studio-languages.mjs';
-import { displayText, notConfigured, passageView, repairMojibake, frontMatter, METADATA_ONLY } from '../assets/display.mjs';
+import { displayText, notConfigured, passageView, repairMojibake, frontMatter, METADATA_ONLY, snippetRanges } from '../assets/display.mjs';
 import { sanitize, safeUrl } from '../lib/normalize.mjs';
 import { readBounded } from '../lib/protocol.mjs';
 import { entityGraphModel, layoutEntityGraph, packCircles, topicMapModel, layoutTopicMap } from '../assets/graph-viz.mjs';
@@ -52,10 +53,10 @@ const attestations = (schema = productsSchema(), etag = '"e1"', extra = []) => (
 const searchResponse = () => new Response(JSON.stringify({ '@odata.count': 1, value: [{ id: 'DRILL-1001', title: 'Compact hammer drill',
   content: 'Light hammer drill for brick.', url: '/samples/zava-catalog.csv', scope: 'public', '@search.score': 2.5 }] }),
 { status: 200, headers: { 'content-type': 'application/json', 'request-id': 'svc-request-1' } });
-function harness({ handler = async () => searchResponse(), schema, etag, limits, config = liveConfig, extra = [], industries, recorded } = {}) {
+function harness({ handler = async () => searchResponse(), schema, etag, limits, config = liveConfig, extra = [], industries, recorded, notes } = {}) {
   const calls = [];
   const logs = [];
-  const app = createVercelApp({ liveConfig: config, attestations: attestations(schema, etag, extra), limits, log: event => logs.push(event), industries, recorded,
+  const app = createVercelApp({ liveConfig: config, attestations: attestations(schema, etag, extra), limits, log: event => logs.push(event), industries, recorded, notes,
     fetchUpstream: async (url, init) => { calls.push({ url, init }); return handler(url, init); } });
   return { app, calls, logs };
 }
@@ -385,6 +386,58 @@ test('recorded Sample replays curated non-English examples without Azure and nev
   assert.equal(calls.length, 0);
 });
 
+test('assessment requires the same reviewed evidence, not just the same question or document ID', async () => {
+  const body = liveBody();
+  const run = async (app, input = body) => (await app.handle('run', post('run', input), env())).json();
+  const original = await run(harness().app);
+  const key = `en|${body.scenarioId}|${body.query}`;
+  const entry = { language: 'en', scenarioId: body.scenarioId, query: body.query, result: original };
+  const reviewed = { label: 'No material gap', text: 'Both arms return a brick-drilling passage.' };
+  const evidence = comparisonEvidenceDigest(original, 10);
+  const recorded = { recordedAt: '2026-11-25', entries: { [key]: entry } };
+  const { id, snippet } = original.enhanced.hits[0];
+  const highlights = { enhanced: [{ rank: 1, id, spans: [snippet] }] };
+  const notes = { entries: { [key]: { 5: null, 10: { ...reviewed, evidence } } }, highlights: { [key]: highlights } };
+  let changed = false;
+  const { app } = harness({ recorded, notes, handler: async () => {
+    const raw = await searchResponse().json();
+    raw.value[0]['@search.score'] = 9;
+    if (changed) raw.value[0].content = 'Hammer drill for wood only.';
+    return Response.json(raw);
+  } });
+  assert.deepEqual((await run(app)).note, { ...reviewed, source: 'Evidence reviewed against the 2026-11-25 Live recording',
+    highlights: { baseline: [], ...highlights } });
+  assert.equal((await run(app, { ...body, query: 'Unreviewed text' })).note, undefined);
+  assert.equal((await run(app, { ...body, topK: 5 })).note, undefined, 'this count was explicitly unassessed');
+  changed = true;
+  assert.equal((await run(app)).note, undefined, 'the same source ID cannot establish different passage text');
+  const sample = await run(app, { ...body, mode: 'sample' });
+  assert.equal(sample.note.text, reviewed.text, 'changed Live evidence does not change Sample');
+  assert.equal((await run(app, { ...body, mode: 'sample', topK: 5 })).note, undefined);
+  assert.deepEqual(sample.enhanced.apiLog, original.enhanced.apiLog);
+});
+
+test('snippet marks require a unique verbatim match that survives display cleanup', () => {
+  const hit = { snippet: '---\ntitle: Internal title\n---\n**Isolate lot A.** Check lot B. Check lot B.' };
+  const { text, ranges } = snippetRanges(hit, ['Internal title', '**Isolate lot A.**', 'Isolate lot A.', 'lot A.', 'Check lot B.'], { englishOnly: true });
+  assert.deepEqual(ranges.map(({ start, end }) => text.slice(start, end)), ['Isolate lot A.']);
+  assert.equal(snippetRanges({ snippet: 'Hold  for review.' }, ['Hold for review.']).ranges.length, 0, 'display cleanup cannot create a reviewed literal');
+});
+
+test('assessment distinguishes the bundled query image from a different image', () => {
+  const png = illustrationPng(0);
+  const body = { topK: 10, imageInput: { mimeType: 'image/png', base64: png.toString('base64') } };
+  const arm = { status: 'success', hits: [], citations: [] };
+  const result = { mode: 'live', executionStatus: 'success', baseline: arm, enhanced: arm };
+  const entry = { image: 'zava-hat-blue' };
+  const { imageDigests } = JSON.parse(readFileSync(new URL('../config/studio-notes.json', import.meta.url), 'utf8'));
+  const assessments = { 10: { label: 'Missing evidence', text: 'A note.', evidence: comparisonEvidenceDigest(result) } };
+  const assess = input => reviewedEvidenceNote(result, input, entry, assessments, imageDigests, '2026-11-25');
+  assert.ok(assess(body));
+  assert.equal(assess({ topK: 10 }), undefined);
+  assert.equal(assess({ ...body, imageInput: { ...body.imageInput, base64: illustrationPng(1).toString('base64') } }), undefined);
+});
+
 test('responses redact keys, the Search hostname and server paths while keeping index provenance', async () => {
   const leaky = `key ${KEY} host foundry-iq-demos.search.windows.net path C:\\Users\\op\\private\\studio-live-config.json task /var/task/server/private-data.mjs`;
   const { app } = harness({ handler: async () => new Response(JSON.stringify({ '@odata.count': 1, value: [{ id: 'DRILL-1001', title: 'Compact hammer drill',
@@ -527,7 +580,7 @@ test('visible copy says Foundry IQ; Azure product names appear only in title, me
   const app = createVercelApp({ liveConfig, attestations: attestations(), log: () => {} });
   // Visible catalog copy: titles, descriptions, limits, Sample labels, examples, notes and Live reasons (all languages).
   const visible = scenario => [scenario.title, scenario.description, scenario.liveDescription, scenario.difference, scenario.limits, scenario.sample?.label,
-    scenario.live?.reason, ...(scenario.demoPresets || []).flatMap(preset => [preset.label, preset.hint, preset.note]), ...(scenario.sampleImages || []).map(image => image.label)];
+    scenario.live?.reason, ...(scenario.demoPresets || []).flatMap(preset => [preset.label, preset.hint]), ...(scenario.sampleImages || []).map(image => image.label)];
   for (const language of ['en', 'fr', 'es', 'ja', 'de']) {
     const catalog = await (await app.handle('scenarios', new Request(`${ORIGIN}/api/scenarios?language=${language}`), env())).json();
     assert.ok(!JSON.stringify(catalog).includes('Azure AI Search'), language);
@@ -726,11 +779,10 @@ test('S08/S09 honor LIVE_DISABLED_SCENARIOS, and other languages use the English
 });
 
 
-test('every showcase preset is recorded with a curated note, and AFTER clearly beats BEFORE in the top 3', () => {
+test('every showcase preset retains its recorded retrieval evidence', () => {
   const load = file => JSON.parse(readFileSync(new URL(`../config/${file}`, import.meta.url), 'utf8'));
   const { presets } = load('studio-presets.json');
   const recordedFile = load('studio-recorded.json');
-  const notesFile = load('studio-notes.json');
   const ids = hit => [hit?.id, hit?.sourceId];
   const ndcg3 = (arm, preset) => {
     let dcg = 0;
@@ -749,7 +801,6 @@ test('every showcase preset is recorded with a curated note, and AFTER clearly b
         const key = `${language}|${scenarioId}|${(preset.query || imageOnlyQuery(language)).trim()}`;
         const entry = recordedFile.entries[key];
         assert.ok(entry, `recorded: ${key}`);
-        assert.ok(notesFile.entries[key]?.trim(), `note: ${key}`);
         assert.equal(entry.boostSubtype, scenarioId === 'S06' ? preset.boostSubtype : undefined, key);
         const { baseline, enhanced } = entry.result;
         assert.ok(baseline.apiLog?.length && enhanced.apiLog?.length, `API log: ${key}`);
@@ -773,16 +824,12 @@ test('every showcase preset is recorded with a curated note, and AFTER clearly b
           assert.ok(ids(enhanced.hits[0]).some(id => preset.relevant.includes(id)), `${key}: AFTER #1 must be relevant`);
         }
         if (scenarioId === 'S07') {
-          // The note may describe only the agentic planning the recorded response shows: no invented sub-queries.
+          // The displayed agentic plan must match the raw response.
           const agentic = enhanced.trace.configuration.agenticSearch;
           const logged = enhanced.apiLog[0].response.body['@search.debug'].agentic.subQueries;
           assert.equal(agentic.subQueryCount, logged.length, key);
           assert.deepEqual(agentic.subQueries.map(query => query.iteration), logged.slice(0, 10).map(query => query.iteration), key);
           assert.ok(logged.every(query => typeof query.search === 'string' && !query.search.includes('omitted')), `${key}: sub-query text shown`);
-          const note = notesFile.entries[key];
-          assert.doesNotMatch(note, /plans? separate searches|searches .* separately|covers .* separately/i, key);
-          if (agentic.subQueryCount) assert.match(note, new RegExp(`issued ${agentic.subQueryCount} follow-up sub-quer`), key);
-          else assert.match(note, /without needing follow-up sub-queries/, key);
           if (preset === list[0]) assert.ok(agentic.subQueryCount > 0, `${key}: the first S07 preset must show agentic planning`);
         }
         checked++;
@@ -790,7 +837,33 @@ test('every showcase preset is recorded with a curated note, and AFTER clearly b
     }
   }
   assert.equal(checked, 220);
-  assert.equal(Object.keys(notesFile.entries).length, 220);
+});
+
+test('recorded comparisons pin each evidence count and use that count’s review in Sample', async () => {
+  const load = name => JSON.parse(readFileSync(new URL(`../config/studio-${name}.json`, import.meta.url), 'utf8'));
+  const recorded = load('recorded'), notes = load('notes');
+  assert.deepEqual(Object.keys(notes.entries).sort(), Object.keys(recorded.entries).sort());
+  assert.deepEqual(evidenceNoteProblems(notes, recorded), []);
+  assert.deepEqual(evidenceHighlightProblems(notes, recorded, snippetRanges), []);
+  const entry = Object.entries(recorded.entries).find(([key]) => key.startsWith('en|S10|'));
+  const [key, capture] = entry;
+  capture.result.enhanced.hits[0].coordinates.cells[1].content = '16';
+  assert.equal(evidenceNoteProblems(notes, { entries: { [key]: capture } }).length, 2, 'replacing a table cell invalidates both reviews');
+  const query = 'I need a drill for concrete, not a label printer';
+  const rerank = `en|S04|${query}`;
+  const { app } = harness({ notes, recorded: { ...recorded, entries: { [rerank]: recorded.entries[rerank] } } });
+  const replay = async topK => (await app.handle('run', post('run', { query, scenarioId: 'S04', mode: 'sample', topK }), env())).json();
+  const ten = await replay(10), five = await replay(5);
+  assert.equal(ten.note.label, 'Buried evidence');
+  assert.match(ten.note.text, /sixth/);
+  assert.equal(five.note.label, 'Missing evidence');
+  assert.match(five.note.text, /first five/);
+  assert.deepEqual(ten.note.highlights.baseline.map(item => item.rank), [2, 6]);
+  assert.deepEqual(five.note.highlights.baseline.map(item => item.rank), [2]);
+  assert.deepEqual(five.note.highlights.enhanced.map(item => item.rank), [1]);
+  const wrongRank = structuredClone(notes.highlights[rerank]);
+  wrongRank.baseline[0].rank--;
+  assert.match(evidenceHighlightProblems({ ...notes, highlights: { [rerank]: wrongRank } }, recorded, snippetRanges)[0], /must match literal text/);
 });
 
 // Industry demos: public U.S. government corpora compiled in by build configuration; English only; filters, facets,
@@ -867,7 +940,7 @@ test('industries are off by default; when built in, each lists only its applicab
   assert.deepEqual(s06.boostSubtypes, item.boostSubtypes);
   const s03 = healthcare.scenarios.find(scenario => scenario.id === 'S03');
   assert.deepEqual(s03.demoPresets.map(preset => preset.query), item.presets.S03.map(preset => preset.query));
-  assert.equal(s03.demoPresets[0].note, item.presets.S03[0].why);
+  assert.ok(s03.demoPresets.every(preset => !preset.note), 'the catalog must not prejudge result evidence');
   assert.ok(!JSON.stringify(healthcare).includes(item.presets.S03.find(preset => preset.filter).filter), 'preset filters stay on the server');
   const retail = await (await catalogFor(app, '?industry=retail')).json();
   assert.deepEqual(retail.scenarios.map(scenario => scenario.id), industryById('retail').scenarios);
@@ -921,8 +994,7 @@ test('industry arms send the evaluated request shapes as docs/search POSTs with 
   assert.ok(sent.every(body => body.filter === `${BASE_FILTER} and (${filtered.filter})`));
   assert.ok(sent.some(body => body.vectorQueries) && sent.some(body => !body.vectorQueries));
   assert.deepEqual(result.enhanced.applied, [{ label: 'Filter (both arms)', value: filtered.filter }]);
-  assert.equal(result.note.text, filtered.why);
-  assert.match(result.note.source, /verified Live evaluation/);
+  assert.equal(result.note, undefined, 'a known preset alone does not establish a reviewed result');
   ({ sent, result } = await bodies('S03', 'free text with no preset'));
   assert.ok(sent.every(body => body.filter === BASE_FILTER));
   assert.equal(result.note, undefined, 'free text gets no curated note');
@@ -989,7 +1061,7 @@ test('industry recorded Sample replays only its own curated keys, and an explici
   const replay = await (await app.handle('run', post('run', industryBody('S03', { mode: 'sample', query })), env())).json();
   assert.equal(replay.recorded.recordedAt, '2026-11-26');
   assert.equal(replay.runId, 'recorded-healthcare-en-S03');
-  assert.equal(replay.note.text, industryById('healthcare').presets.S03[0].why);
+  assert.equal(replay.note, undefined, 'historical preset commentary does not assess an unmatched response');
   const zavaKey = await app.handle('run', post('run', { scenarioId: 'S03', mode: 'sample', query, language: 'en', industry: 'zava' }), env());
   assert.notEqual((await zavaKey.json()).runId, 'recorded-healthcare-en-S03', 'industry recordings never answer the Zava demo');
   assert.equal(calls.length, 0);
@@ -1009,30 +1081,24 @@ test('build pins industry bindings to attested ETags, checks the public catalog 
   assert.deepEqual(industryBindingsFrom({}, full, []).industries, {}, 'no industries unless the build enables them');
   assert.throws(() => industryBindingsFrom({ industries: {} }, full, ['healthcare']), /STUDIO_PRIVATE_INDUSTRIES/);
   assert.throws(() => industryBindingsFrom(privateIndustryBinding(['energy']), full, ['energy']), /No schema attestation/);
-  assert.deepEqual(checkIndustryCatalog(industryCatalog, ids, full, bindings, { notesOptional: true }), []);
+  assert.deepEqual(checkIndustryCatalog(industryCatalog, ids, full, bindings), []);
   const tampered = structuredClone(industryCatalog);
   const healthcare = tampered.industries.find(item => item.id === 'healthcare');
   healthcare.presets.S01[0].filter = "scope eq 'private'";
   healthcare.presets.S05[0].facets = ['titlePlain'];
   healthcare.presets.S10[0].sourceHash = 'nope';
   healthcare.presets.S03[0].filter = "secretField eq 'x' and search.ismatch('x')";
-  healthcare.presets.S03[1].why = 'Keyword misses it; vector-only ranks it #2; hybrid ranks it #1.';
   healthcare.presets.S11 = [{ id: 'x', query: 'hat' }];
   const problems = checkIndustryCatalog(tampered, ids, full, bindings);
   assert.ok(['agency', 'docType,count:5', 'publishedDate,interval:year', 'agency,sort:-count,count:10'].every(isFacet));
   assert.ok(!['agency,interval:fortnight', 'agency,count:5;x', "agency,values:'a'", ''].some(isFacet));
   assert.deepEqual(filterFields("category eq 'A and b eq c' and retailers/any(r: r eq 'Temu') and search.in(genericName, 'x,y', ',') and hospitalized ge 1"),
     ['category', 'retailers', 'hospitalized', 'genericName']);
-  for (const expected of [/S01.*filter/, /facet titlePlain/, /S10 source hash/, /inapplicable S11/, /S03-01: filter$/, /filter field secretField/, /S03-02: note describes an arm the app doesn’t show/]) assert.ok(problems.some(problem => expected.test(problem)), `${expected}: ${problems}`);
-  // S07 planning varies between runs: a note may claim sub-queries only if the shipped recording shows them.
-  const s07 = structuredClone(industryCatalog);
-  const planned = s07.industries.find(item => item.id === 'healthcare').presets.S07[0];
-  planned.why = 'Agentic retrieval split the question into two sub-queries.';
-  const recording = (count, status = 'success') => ({ entries: { [`healthcare|en|S07|${planned.query}`]: { result: { executionStatus: status,
-    baseline: { status: 'success' }, enhanced: { status: 'success', trace: { configuration: { agenticSearch: { subQueryCount: count } } } } } } } });
-  assert.deepEqual(industryRecordingProblems(s07, ['healthcare'], recording(2)), []);
-  assert.match(industryRecordingProblems(s07, ['healthcare'], recording(0))[0], /claims agentic planning.*0 sub-queries/);
-  assert.match(industryRecordingProblems(s07, ['healthcare'], recording(2, 'partial_success'))[0], /not a successful comparison/);
+  for (const expected of [/S01.*filter/, /facet titlePlain/, /S10 source hash/, /inapplicable S11/, /S03-01: filter$/, /filter field secretField/]) assert.ok(problems.some(problem => expected.test(problem)), `${expected}: ${problems}`);
+  const query = industryById('healthcare').presets.S07[0].query;
+  const partial = { entries: { [`healthcare|en|S07|${query}`]: { result: { executionStatus: 'partial_success',
+    baseline: { status: 'success' }, enhanced: { status: 'error' } } } } };
+  assert.match(industryRecordingProblems(industryCatalog, ['healthcare'], partial)[0], /not a successful comparison/);
   // The default (first) example must show a different #1 whenever another example does.
   const ordered = structuredClone(industryCatalog);
   const s05 = ordered.industries.find(item => item.id === 'healthcare').presets.S05;
@@ -1040,7 +1106,7 @@ test('build pins industry bindings to attested ETags, checks the public catalog 
   const s05Recordings = first => ({ entries: Object.fromEntries(s05.map((preset, i) => [`healthcare|en|S05|${preset.query}`, { result: i === 0 ? top1('A', first) : top1('A', 'B') }])) });
   assert.deepEqual(industryRecordingProblems(ordered, ['healthcare'], s05Recordings('B')), []);
   assert.match(industryRecordingProblems(ordered, ['healthcare'], s05Recordings('A'))[0], /healthcare S05: the first example has the same #1 in both arms/);
-  assert.deepEqual(industryRecordingProblems(s07, ['retail'], recording(0)), [], 'only enabled industries are checked');
+  assert.deepEqual(industryRecordingProblems(industryCatalog, ['retail'], partial), [], 'only enabled industries are checked');
   const page = readFileSync(new URL('../page.html', import.meta.url), 'utf8');
   assert.match(pageWithIndustries(page, ids), /<meta name="studio-industries" content="healthcare,retail">/);
   assert.match(pageWithIndustries(page, []), /<meta name="studio-industries" content="">/);
@@ -1325,7 +1391,7 @@ test('industry S08 runs allowlisted graph statements on the graph service with c
   for (const secret of [G_KEY, 'fiq-industry-test.search.windows.net', 'teststorageacct', TEST_BLOB]) assert.ok(!text.includes(secret), secret);
   assert.match(result.enhanced.apiLog[0].url, /^https:\/\/<your-search-service>\.search\.windows\.net\/indexes\('g-energy-graph'\)\/docs\/search\.graph/);
   assert.match(JSON.stringify(result.enhanced.apiLog), /\[document [0-9a-f]{10}\]/);
-  assert.equal(result.note.text, odessa.why);
+  assert.equal(result.note, undefined, 'a graph result without a matching review gets no preset claim');
   calls.length = 0;
   const free = await (await app.handle('run', post('run', gBody('energy', 'S08', 'Which grid events were caused by squirrels?')), gEnv())).json();
   assert.equal(free.enhanced.curatedOnly, true);
