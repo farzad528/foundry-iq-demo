@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
+import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { createLocalServer } from './serve.mjs';
 
@@ -97,12 +98,34 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
       // Bundled example images load locally before Search; the recorded Sample replays that image's Live result.
       if (shown[0].image) await page.waitForFunction(() => document.querySelector('#status').textContent.includes('Bundled example image'));
       assert.equal(runs, before);
+      const graphResponse = id === 'S08' ? page.waitForResponse('**/api/demo/run') : null;
       await page.locator('#query').press('Enter');
       await page.waitForFunction(() => document.querySelector('#status').textContent === 'Comparison complete.');
       assert.equal(await page.locator('#results').isVisible(), true, `S${i} results`);
       assert.equal(await page.locator('#status').getAttribute('class'), 'sr-only');
       assert.equal(await page.locator('#status').getAttribute('aria-live'), 'polite');
       assert.match(await page.locator('#results-title').textContent(), /Recorded Sample \(captured /);
+      assert.equal(await page.locator('#evidence-note strong').textContent(), 'What the model gets');
+      assert.match(await page.locator('#evidence-note .note-label').textContent(), /^BEFORE: /);
+      if (graphResponse) {
+        const result = await (await graphResponse).json();
+        const graph = page.locator('#enhanced .graph-statement');
+        assert.equal(await graph.locator('.graph-rows, .graph-cited').count(), 0);
+        assert.match(await graph.locator('.kg-caption').textContent(), /Drawn from the 2 rows Foundry IQ returned/);
+        assert.match(await graph.locator('.kg > :last-child .kg-hint').textContent(), /^Hover to focus/);
+        assert.ok(await page.locator('#enhanced [id^=enhanced-evidence-]').count(), 'cited passages remain');
+        await graph.locator('.kg [data-node]').first().focus();
+        await page.keyboard.press('Enter');
+        assert.ok(await graph.locator('.kg-inspector a').count(), 'pinning an entity still shows citations');
+        await page.locator('#enhanced .apilog-btn').click();
+        const displayedRaw = await page.locator('#apilog pre[aria-label="Response 1 body"]').textContent();
+        assert.deepEqual(JSON.parse(displayedRaw), result.enhanced.apiLog[0].response.body);
+        assert.equal(JSON.parse(displayedRaw).value.length, 2, 'both original graph rows are available');
+        await page.keyboard.press('Escape');
+      }
+      if (id === 'S09') {
+        assert.equal(await page.locator('#enhanced .theme-list').count(), 1, 'S09 still offers a text list');
+      }
       assert.ok(await page.locator('#baseline .card').count() || await page.locator('#baseline .empty').count(), `S${i} baseline`);
       assert.ok(await page.locator('#enhanced .card').count() || await page.locator('#enhanced .empty').count(), `S${i} enhanced`);
       assert.equal(await page.locator('#baseline details.trace').getAttribute('open'), null);
@@ -113,6 +136,19 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
       });
       assert.ok(screenshot.afterX > screenshot.beforeX && screenshot.beforeY === screenshot.afterY);
     }
+    // Exercise a recorded single-column industry statement through the same renderer.
+    const { entries } = JSON.parse(readFileSync(new URL('../config/studio-recorded.json', import.meta.url), 'utf8'));
+    const fallback = Object.values(entries).find(entry => entry.industry === 'energy' && entry.scenarioId === 'S08'
+      && entry.result.enhanced.graph.statements.some(statement => statement.rows.length && !statement.hops?.length));
+    await page.route('**/api/demo/run', route => route.fulfill({ json: { ...fallback.result, mode: 'sample' } }));
+    await page.selectOption('#scenario', 'S08');
+    await page.locator('#query').press('Enter');
+    await page.waitForFunction(() => document.querySelector('#status').textContent === 'Comparison complete.');
+    assert.ok(await page.locator('#enhanced .graph-rows .graph-cited').count(), 'non-visual statements keep their cited text rows');
+    assert.equal(await page.locator('#evidence-note .note-label').textContent(), 'Unassessed');
+    assert.equal(await page.locator('#evidence-note .note-source').count(), 0);
+    await page.unroute('**/api/demo/run');
+    await page.selectOption('#scenario', 'S11');
     // Evidence count lives in Advanced options.
     await page.locator('#settings-toggle').click();
     // Recorded Sample was captured with 10 results per arm and replays 5 or 10.

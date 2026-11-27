@@ -13,7 +13,7 @@ const files = (root, prefix = '') => readdirSync(join(root, prefix)).flatMap(nam
   return statSync(join(root, path)).isDirectory() ? files(root, path) : [path];
 });
 assert.ok(existsSync(dir), 'dist/vercel is missing. Run npm run build first.');
-for (const path of ['vercel.json', 'package.json', '.vercelignore', 'server/app.mjs', 'server/private-data.mjs', 'server/recorded-data.mjs', 'server/notes-data.mjs',
+for (const path of ['vercel.json', 'package.json', '.vercelignore', 'server/app.mjs', 'server/private-data.mjs', 'server/recorded-data.mjs', 'server/notes-data.mjs', 'server/lib/evidence-note.mjs',
   'api/scenarios.mjs', 'api/health.mjs', 'api/demo/prepare.mjs', 'api/demo/run.mjs', 'public/index.html', 'public/about.html', 'public/404.html',
   'public/assets/client.mjs', 'public/assets/graph-viz.mjs', 'public/assets/foundry.svg', 'public/favicon.ico']) assert.ok(existsSync(join(dir, path)), `missing ${path}`);
 

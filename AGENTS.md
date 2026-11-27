@@ -26,8 +26,8 @@ two-space JavaScript style and explicit imports.
   facets, scoring profiles and S10 documents come only from the preset allowlist; never accept them from a request.
 - `lib/industry-graph.mjs`, `config/studio-industry-graph.json`: industry S08/S09 on the dedicated graph service
   (`AZURE_SEARCH_GRAPH_*`). Passage and blob keys are hashed; index and storage names stay in private bindings.
-- `config/studio-recorded.json`, `config/studio-notes.json`: recorded Live responses replayed as Sample, and the curated
-  "Why AFTER wins" notes. `samples/`: fictional Zava documents served for citations.
+- `config/studio-recorded.json`, `config/studio-notes.json`: recorded Live responses replayed as Sample, and the evidence
+  assessments shown only when the comparison matches what was reviewed. `samples/`: fictional Zava citation documents.
 - `scripts/build-vercel.mjs` (build), `scripts/serve.mjs` (local server), `scripts/validate-artifact.mjs`, the
   `scripts/*-tests.mjs` suites and `scripts/generate-studio.mjs` (Sample illustrations and test corpus).
 - `vercel.json`, `api/`, `scripts/vercel-build.mjs`: Vercel Git deployments of `main`. The root config and Function

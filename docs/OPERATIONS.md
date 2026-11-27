@@ -37,8 +37,16 @@ map (`assets/graph-viz.mjs`). The entity graph shows each entity once per role a
 entity pair, in the query pattern's order. Bubble area in the topic map is each theme's share of passages; sub-themes sit
 inside their theme and a ✓ marks covered themes. Nothing is added for density. Hover or focus highlights an item with a
 one-line readout; click, tap or Enter pins its details below (relations, sub-themes and the citations of the rows that
-contain the entity). The path rows and the theme list stay as text. Motion is a one-time reveal plus finite pulses on the
-highlighted item, and reduced-motion preferences turn it off.
+contain the entity). S08 shows text rows when a statement cannot be drawn (such as a single-column result); all raw
+response rows remain in the API log. S09 retains the theme list. Motion is a one-time reveal plus finite pulses on
+the highlighted item, and reduced-motion preferences turn it off.
+
+**What the model gets** describes what the displayed retrieval evidence supports, not what a model was prompted
+with or answered. The note names one primary BEFORE gap or **No material gap**. `config/studio-notes.json` pins each
+takeaway to the reviewed 5- or 10-result evidence from `config/studio-recorded.json`, including both arms' ranks,
+content, citations, graph rows, topics and applicable retrieval constraints. Matching Live evidence can use the same
+note; different evidence or image bytes, an unreviewed query, or another result count stays **Unassessed**. A new capture
+that changes the evidence requires review before its note can be reused.
 
 ## Local development
 
@@ -399,9 +407,7 @@ licenses and applicability come from the Industry datasets contract
 Filters, facets, scoring profiles and S10 documents come only from the preset
 allowlist in `config/studio-industries.json`, matched by exact question. The
 browser can't send any of them. Free text runs without a preset filter (S05 uses
-the default facets, and S10 searches the first example's PDF). Notes come from
-the preset's `why`, written from the Industry datasets session's verified Live
-evaluation.
+the default facets, and S10 searches the first example's PDF).
 
 **Build inputs and checks.**
 

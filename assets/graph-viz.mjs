@@ -388,8 +388,9 @@ export function renderEntityGraph(statement, { display = value => value, citatio
   const inspector = htmlEl('div', undefined, 'kg-inspector');
   const card = hoverCard();
   const status = announcer();
-  root.append(patternLegend(model), stage, inspector, status, htmlEl('p', `Drawn from the ${plural(model.rowCount, 'row')} Foundry IQ returned: `
-    + `${plural(model.nodes.length, 'entity', 'entities')} and ${plural(model.edges.length, 'relationship')}. An entity with the same name and role is drawn once.`, 'kg-caption'));
+  root.append(patternLegend(model), stage, htmlEl('p', `Drawn from the ${plural(model.rowCount, 'row')} Foundry IQ returned: `
+    + `${plural(model.nodes.length, 'entity', 'entities')} and ${plural(model.edges.length, 'relationship')}. An entity with the same name and role is drawn once.`, 'kg-caption'),
+  status, inspector);
   const state = { hover: null, focus: null, pinned: null, current: null, intro: true, layout: null, svg: null, order: [] };
 
   const show = value => String(display(value) ?? value);
@@ -403,7 +404,7 @@ export function renderEntityGraph(statement, { display = value => value, citatio
     inspector.replaceChildren();
     inspector.classList.toggle('is-empty', !node);
     if (!node) {
-      inspector.append(htmlEl('p', 'Hover or focus an entity to trace its relationships. Click it, tap it or press Enter to pin its details and citations.', 'kg-hint'));
+      inspector.append(htmlEl('p', 'Hover to focus an entity, or use the arrow keys. Click, tap or press Enter to pin its details and citations.', 'kg-hint'));
       return;
     }
     const pinned = state.pinned === node;
@@ -433,7 +434,7 @@ export function renderEntityGraph(statement, { display = value => value, citatio
       list.append(item);
     }
     inspector.append(list);
-    if (node.edges.length > 10) inspector.append(htmlEl('p', `+${node.edges.length - 10} more relationships in the path rows`, 'kg-meta'));
+    if (node.edges.length > 10) inspector.append(htmlEl('p', `+${node.edges.length - 10} more relationships in the graph and API log`, 'kg-meta'));
     const ids = [...new Set(node.rows.flatMap(index => statement.rows[index]?.sources || []))];
     const cited = htmlEl('div', undefined, 'kg-cited');
     if (ids.length && typeof citations === 'function') {

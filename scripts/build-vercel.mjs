@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { illustrationPng } from './generate-studio.mjs';
 import { studioScenarios } from '../lib/studio.mjs';
 import { filterFields, isFacet } from '../lib/industry.mjs';
+import { evidenceNoteProblems } from '../lib/evidence-note.mjs';
 import { SEARCH_API_VERSION } from '../config/studio-live.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -17,7 +18,8 @@ const out = join(root, 'dist', 'vercel');
 export const sampleFiles = () => readdirSync('samples').filter(name => /^zava-[a-z0-9-]+\.(?:md|csv|pdf|svg)$/.test(name)).sort().map(name => `samples/${name}`);
 export const serverConfigFiles = () => readdirSync('config').filter(name => /^studio-(?!recorded)[a-z-]+\.(?:mjs|json)$/.test(name)).sort().map(name => `config/${name}`);
 export const SERVER_MODULES = Object.freeze(['lib/protocol.mjs', 'lib/normalize.mjs', 'lib/studio.mjs', 'lib/native-graph.mjs', 'lib/industry.mjs', 'lib/industry-graph.mjs',
-  'lib/search-adapter.mjs', 'lib/vercel-app.mjs']);
+  'lib/search-adapter.mjs', 'lib/evidence-note.mjs', 'lib/vercel-app.mjs']);
+const sampleImages = [['zava-hat-blue', 0], ['zava-hat-red', 1], ['zava-bowl-blue', 3]];
 const VECTORIZER = 'zava-text-vectorizer';
 const IMAGE_VECTORIZER = 'zava-image-vectorizer';
 // Verified on foundry-iq-demos: knowledgeRetrieval=standard; agentic canaries complete well within 10 s in all five languages.
@@ -113,7 +115,7 @@ export function industryGraphFrom(privateGraph, graphAttestations, enabled, grap
 }
 
 /** Build-time checks of the public industry catalog against the attested schemas. */
-export function checkIndustryCatalog(catalog, enabled, attestations, bindings, { notesOptional = false } = {}) {
+export function checkIndustryCatalog(catalog, enabled, attestations, bindings) {
   const problems = [];
   const schemas = new Map(attestations.entries.map(entry => [entry.index, entry.schema]));
   for (const id of enabled) {
@@ -133,9 +135,6 @@ export function checkIndustryCatalog(catalog, enabled, attestations, bindings, {
         for (const facet of preset.facets || []) if (scenarioId !== 'S05' || !isFacet(facet) || !fields.get(facet.split(',')[0])?.facetable) problems.push(`${where}: facet ${facet}`);
         if (preset.boostSubtype !== undefined && (scenarioId !== 'S06' || !industry.boostSubtypes.includes(preset.boostSubtype))) problems.push(`${where}: boost`);
         if ((scenarioId === 'S10') !== /^[a-f0-9]{64}$/.test(preset.sourceHash || '')) problems.push(`${where}: S10 source hash`);
-        if (!notesOptional && (typeof preset.why !== 'string' || !preset.why.trim())) problems.push(`${where}: Why AFTER wins note`);
-        // Notes describe only the two arms the app shows; S03 compares keyword with hybrid, never a vector-only third arm.
-        if (scenarioId === 'S03' && /vector-only|three arms|all three/i.test(preset.why || '')) problems.push(`${where}: note describes an arm the app doesn’t show`);
       }
     }
     for (const facet of industry.defaults?.S05?.facets || []) if (!isFacet(facet) || !fields.get(facet.split(',')[0])?.facetable) problems.push(`${id}: default facet ${facet}`);
@@ -145,13 +144,9 @@ export function checkIndustryCatalog(catalog, enabled, attestations, bindings, {
   return problems;
 }
 
-/**
- * Industry recordings must be successful Live comparisons, and an S07 note may claim agentic planning (split, sub-queries)
- * only when the recording that ships shows it: planning varies between runs, so the note must match what visitors see.
- */
+/** Industry recordings must be successful Live comparisons with the strongest showcase example first. */
 export function industryRecordingProblems(catalog, enabled, recorded) {
   const problems = [];
-  const planning = /sub-?quer|\bsplit|\bplann|decompos|follow-up quer/i;
   for (const id of enabled) {
     const industry = catalog.industries.find(item => item.id === id);
     for (const [scenarioId, presets] of Object.entries(industry?.presets || {})) {
@@ -160,8 +155,6 @@ export function industryRecordingProblems(catalog, enabled, recorded) {
         if (!entry) continue;
         const result = entry.result || {};
         if (result.executionStatus !== 'success' || result.baseline?.status !== 'success' || result.enhanced?.status !== 'success') problems.push(`${id} ${preset.id}: recording is not a successful comparison`);
-        const count = result.enhanced?.trace?.configuration?.agenticSearch?.subQueryCount;
-        if (scenarioId === 'S07' && planning.test(preset.why || '') && !(count > 0)) problems.push(`${id} ${preset.id}: note claims agentic planning but the recording shows ${count ?? 'no'} sub-queries`);
       }
       // The first (default) example should show a different #1 in BEFORE and AFTER whenever another example does.
       const sameTop1 = preset => {
@@ -376,7 +369,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (enabledIndustries.length && !(industryPath && existsSync(industryPath))) throw new Error('STUDIO_INDUSTRIES requires STUDIO_PRIVATE_INDUSTRIES (the private industry-bindings.json).');
   const industryBindings = industryBindingsFrom(enabledIndustries.length ? JSON.parse(readFileSync(industryPath, 'utf8')) : null, fullAttestations, enabledIndustries, used);
   const attestations = reduceAttestations(fullAttestations, used);
-  const industryProblems = checkIndustryCatalog(industryCatalog, enabledIndustries, attestations, industryBindings, { notesOptional: process.env.STUDIO_NOTES_OPTIONAL === '1' });
+  const industryProblems = checkIndustryCatalog(industryCatalog, enabledIndustries, attestations, industryBindings);
   if (industryProblems.length) throw new Error(`Industry catalog check failed:\n${industryProblems.join('\n')}`);
   // Recorded Sample (verified Live responses, request IDs removed) must cover every scenario in every language.
   const recorded = existsSync('config/studio-recorded.json') ? JSON.parse(readFileSync('config/studio-recorded.json', 'utf8')) : { entries: {} };
@@ -389,13 +382,11 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (/"request-id":"(?!removed)/.test(recordedText) || /search\.windows\.net/.test(recordedText.split('<your-search-service>.search.windows.net').join(''))) {
     throw new Error('Recorded Sample API logs must use the host placeholder and contain no request IDs.');
   }
-  // "Why AFTER wins" notes: one curated note per preset per language, written from the recorded Live results.
   const notes = existsSync('config/studio-notes.json') ? JSON.parse(readFileSync('config/studio-notes.json', 'utf8')) : { entries: {} };
-  const missingNotes = LANGUAGES.flatMap(language => studioScenarios({}, language).flatMap(item => item.demoPresets
-    .map(preset => `${language}|${item.id}|${(preset.query || item.imageOnlyQuery).trim()}`)))
-    .filter(key => typeof notes.entries[key] !== 'string' || !notes.entries[key].trim());
-  if (missingNotes.length && process.env.STUDIO_NOTES_OPTIONAL !== '1') throw new Error(`Why-AFTER-wins notes are missing: ${missingNotes.slice(0, 8).join(', ')}${missingNotes.length > 8 ? ' …' : ''}`);
-  if (missingNotes.length) process.stdout.write(`WARNING: development build without complete Why-AFTER-wins notes (${missingNotes.length} gaps).\n`);
+  const noteProblems = evidenceNoteProblems(notes, recorded, { optional: process.env.STUDIO_NOTES_OPTIONAL === '1' });
+  for (const [image, index] of sampleImages) if (notes.imageDigests?.[image]
+    && notes.imageDigests[image] !== createHash('sha256').update(illustrationPng(index)).digest('hex')) noteProblems.push(`${image}: reviewed reference image changed`);
+  if (noteProblems.length) throw new Error(`Invalid evidence notes (${noteProblems.length}):\n${noteProblems.slice(0, 8).join('\n')}`);
   // Industry recorded Sample: every curated example of every enabled industry, unless explicitly optional for a development build.
   const missingIndustrySamples = enabledIndustries.flatMap(id => Object.entries(industryCatalog.industries.find(item => item.id === id).presets || {})
     .flatMap(([scenarioId, presets]) => presets.map(preset => `${id}|en|${scenarioId}|${preset.query}`))).filter(key => !recorded.entries[key]);
@@ -404,7 +395,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   }
   if (missingIndustrySamples.length) process.stdout.write(`WARNING: development build without industry recorded Sample (${missingIndustrySamples.length} gaps).\n`);
   const recordingProblems = industryRecordingProblems(industryCatalog, enabledIndustries, recorded);
-  if (recordingProblems.length) throw new Error(`Industry recordings do not support their notes:\n${recordingProblems.join('\n')}`);
+  if (recordingProblems.length) throw new Error(`Invalid industry recordings:\n${recordingProblems.join('\n')}`);
   // Industry graph (S08/S09): optional private binding plus the graph service's attested schemas.
   const industryGraphConfig = JSON.parse(readFileSync('config/studio-industry-graph.json', 'utf8'));
   const industryGraphPath = process.env.STUDIO_PRIVATE_INDUSTRY_GRAPH, graphAttestationPath = process.env.STUDIO_PRIVATE_INDUSTRY_GRAPH_ATTESTATIONS;
@@ -442,7 +433,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   write('public/apple-touch-icon.png', readFileSync('assets/apple-touch-icon.png'));
   write('public/LICENSE', readFileSync('LICENSE'));
   for (const path of sampleFiles()) write(`public/${path}`, readFileSync(path));
-  for (const [file, index] of [['zava-hat-blue.png', 0], ['zava-hat-red.png', 1], ['zava-bowl-blue.png', 3]]) write(`public/samples/${file}`, illustrationPng(index));
+  for (const [image, index] of sampleImages) write(`public/samples/${image}.png`, illustrationPng(index));
 
   // Server-only modules and private data.
   for (const path of [...SERVER_MODULES, ...serverConfigFiles()]) {

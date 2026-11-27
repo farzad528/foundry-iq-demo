@@ -576,13 +576,14 @@ function renderNativeGraph(arm, side) {
     if (statement.outcome === 'absence') block.append(node('p', 'Foundry IQ returned no rows for this pattern, so no such path exists in the graph.', 'graph-note'));
     else if (statement.outcome === 'none') block.append(node('p', 'The graph has no relationship for this. Nothing was substituted.', 'graph-note'));
     if (count) {
-      // The entity graph draws every returned row; the path rows below list them with their citations.
-      const visual = renderEntityGraph(statement, { display: shownValue, citations: ids => citationLinks(ids, side, arm) });
+      const visual = side === 'enhanced' && renderEntityGraph(statement, { display: shownValue, citations: ids => citationLinks(ids, side, arm) });
       if (visual) block.append(visual);
-      const list = node('ul', undefined, 'graph-rows');
-      statement.rows.slice(0, 4).forEach(row => list.append(renderPathRow(statement, row, side, arm)));
-      block.append(list);
-      if (count > 4) block.append(node('p', `Showing 4 of ${count} path rows${visual ? '; the graph above draws all of them' : ''}. Every row is in the API log.`, 'meta'));
+      else {
+        const list = node('ul', undefined, 'graph-rows');
+        statement.rows.slice(0, 4).forEach(row => list.append(renderPathRow(statement, row, side, arm)));
+        block.append(list);
+        if (count > 4) block.append(node('p', `Showing 4 of ${count} path rows. Every row is in the API log.`, 'meta'));
+      }
     }
     section.append(block);
   }
@@ -641,9 +642,12 @@ function renderResults(result, scenario) {
   const sampleLabel = result.recorded ? `Recorded Sample (captured ${result.recorded.recordedAt})` : 'Deterministic Sample mode';
   element('results-title').replaceChildren(node('span', `Results for “${result.query}”`), ' ',
     node('span', `${result.mode === 'sample' ? `${sampleLabel} · ` : ''}up to ${element('count').value} per arm`, 'results-meta'));
-  const note = element('why-note');
-  note.hidden = !result.note?.text;
-  if (result.note?.text) note.replaceChildren(node('strong', 'Why AFTER wins'), node('span', result.note.text), node('span', result.note.source, 'note-source'));
+  const assessment = result.note;
+  const note = element('evidence-note');
+  note.replaceChildren(node('strong', 'What the model gets'),
+    node('span', assessment ? `BEFORE: ${assessment.label}` : 'Unassessed', 'note-label'),
+    node('span', assessment?.text ?? 'This comparison has not been matched to reviewed retrieval evidence.'));
+  if (assessment) note.append(node('span', assessment.source, 'note-source'));
   renderArm('baseline', result.baseline, scenario, result);
   renderArm('enhanced', result.enhanced, scenario, result);
   element('metrics').replaceChildren();
