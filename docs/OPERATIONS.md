@@ -48,6 +48,12 @@ content, citations, graph rows, topics and applicable retrieval constraints. Mat
 note; different evidence or image bytes, an unreviewed query, or another result count stays **Unassessed**. A new capture
 that changes the evidence requires review before its note can be reused.
 
+Green marks identify reviewed, verbatim spans in the visible result snippets on either arm. A mark pulses once and then
+stays visible; with reduced motion it is static. When the evidence spans several results, numbered parts show how much
+of the reviewed evidence each arm retrieved at the selected count. Highlights require the reviewed comparison and an
+exact ranked hit and literal span; graph rows, topic shares and other metadata are not snippet text. The API log and
+raw hit JSON stay unchanged.
+
 ## Local development
 
 ```bash

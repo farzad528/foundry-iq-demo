@@ -8,7 +8,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { illustrationPng } from './generate-studio.mjs';
 import { studioScenarios } from '../lib/studio.mjs';
 import { filterFields, isFacet } from '../lib/industry.mjs';
-import { evidenceNoteProblems } from '../lib/evidence-note.mjs';
+import { evidenceHighlightProblems, evidenceNoteProblems } from '../lib/evidence-note.mjs';
+import { snippetRanges } from '../assets/display.mjs';
 import { SEARCH_API_VERSION } from '../config/studio-live.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -383,7 +384,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     throw new Error('Recorded Sample API logs must use the host placeholder and contain no request IDs.');
   }
   const notes = existsSync('config/studio-notes.json') ? JSON.parse(readFileSync('config/studio-notes.json', 'utf8')) : { entries: {} };
-  const noteProblems = evidenceNoteProblems(notes, recorded, { optional: process.env.STUDIO_NOTES_OPTIONAL === '1' });
+  const noteProblems = [...evidenceNoteProblems(notes, recorded, { optional: process.env.STUDIO_NOTES_OPTIONAL === '1' }),
+    ...evidenceHighlightProblems(notes, recorded, snippetRanges)];
   for (const [image, index] of sampleImages) if (notes.imageDigests?.[image]
     && notes.imageDigests[image] !== createHash('sha256').update(illustrationPng(index)).digest('hex')) noteProblems.push(`${image}: reviewed reference image changed`);
   if (noteProblems.length) throw new Error(`Invalid evidence notes (${noteProblems.length}):\n${noteProblems.slice(0, 8).join('\n')}`);

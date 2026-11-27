@@ -136,6 +136,41 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
       });
       assert.ok(screenshot.afterX > screenshot.beforeX && screenshot.beforeY === screenshot.afterY);
     }
+    await page.selectOption('#scenario', 'S07');
+    await page.locator('#query').fill('The battery brick on my Zava drill gave up in week six. Store credit or a repair?');
+    const policyResponse = page.waitForResponse('**/api/demo/run');
+    await page.locator('#query').press('Enter');
+    const policy = await (await policyResponse).json();
+    await page.waitForFunction(() => document.querySelector('#status').textContent === 'Comparison complete.');
+    assert.match(await page.locator('.grounding-summary').textContent(), /AFTER retrieves all 3 parts; BEFORE retrieves 2 of 3/);
+    for (const side of ['baseline', 'enhanced']) {
+      for (const { id, rank, spans, part } of policy.note.highlights[side]) {
+        const card = page.locator(`#${side}-evidence-${rank - 1}`);
+        assert.equal(await card.locator('.grounding-part').textContent(), `Part ${part} of 3`);
+        assert.equal(policy[side].hits[rank - 1].id, id);
+        assert.deepEqual((await card.locator('.snippet mark').allTextContents()).sort(), [...spans].sort());
+      }
+    }
+    const mark = page.locator('#enhanced mark').first();
+    const markStyle = () => mark.evaluate(el => {
+      const { animationName, animationIterationCount, backgroundColor } = getComputedStyle(el);
+      return { animationName, animationIterationCount, backgroundColor };
+    });
+    const animated = await markStyle();
+    assert.equal(animated.animationName, 'grounding-pulse');
+    assert.equal(animated.animationIterationCount, '1');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    assert.equal((await markStyle()).animationName, 'none');
+    assert.notEqual((await markStyle()).backgroundColor, 'rgba(0, 0, 0, 0)');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.locator('#settings-toggle').click();
+    await page.selectOption('#count', '5');
+    await page.locator('#query').press('Enter');
+    await page.waitForFunction(() => document.querySelector('.grounding-summary')?.textContent.includes('AFTER retrieves 2 of 3; BEFORE retrieves 1 of 3'));
+    assert.equal(await page.locator('#enhanced .grounding-part').count(), 2);
+    await page.selectOption('#count', '10');
+    await page.locator('#settings-toggle').click();
+
     // Exercise a recorded single-column industry statement through the same renderer.
     const { entries } = JSON.parse(readFileSync(new URL('../config/studio-recorded.json', import.meta.url), 'utf8'));
     const fallback = Object.values(entries).find(entry => entry.industry === 'energy' && entry.scenarioId === 'S08'
@@ -147,6 +182,7 @@ test('studio desktop/mobile comparisons, keyboard, reset and late response isola
     assert.ok(await page.locator('#enhanced .graph-rows .graph-cited').count(), 'non-visual statements keep their cited text rows');
     assert.equal(await page.locator('#evidence-note .note-label').textContent(), 'Unassessed');
     assert.equal(await page.locator('#evidence-note .note-source').count(), 0);
+    assert.equal(await page.locator('.snippet mark, .grounding-summary').count(), 0);
     await page.unroute('**/api/demo/run');
     await page.selectOption('#scenario', 'S11');
     // Evidence count lives in Advanced options.

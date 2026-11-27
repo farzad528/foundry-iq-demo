@@ -1,5 +1,5 @@
 import { initHeader, currentLanguage, currentLanguageLabel, setLanguageLocked } from './header.mjs';
-import { displayText, passageView, repairMojibake, notConfigured } from './display.mjs';
+import { displayText, passageView, repairMojibake, notConfigured, snippetRanges } from './display.mjs';
 import { renderEntityGraph, renderTopicMap } from './graph-viz.mjs';
 
 const element = id => document.getElementById(id);
@@ -302,7 +302,26 @@ function sourceLink(hit) {
 }
 const OPEN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
 
-function renderHit(hit, side, index, baselineIds) {
+function renderSnippet({ text, ranges }, { excerpt = false } = {}) {
+  const snippet = node('p', undefined, `snippet${excerpt && !ranges.length ? ' clamp-long' : ''}`);
+  if (!ranges.length) {
+    snippet.textContent = text || 'No passage returned.';
+    return snippet;
+  }
+  let end = 0;
+  for (const range of ranges) {
+    const start = excerpt ? Math.max(end, range.start - 90) : end;
+    if (start > end) snippet.append('\u2026 ');
+    snippet.append(text.slice(start, range.start), node('mark', text.slice(range.start, range.end), 'grounding-mark'));
+    end = range.end;
+  }
+  const tail = excerpt ? end + 90 : text.length;
+  snippet.append(text.slice(end, tail));
+  if (tail < text.length) snippet.append(' \u2026');
+  return snippet;
+}
+
+function renderHit(hit, side, index, baselineIds, reviewed, parts) {
   const card = node('article', undefined, 'card' + (hit.thumbnailUrl ? ' image-card' : '') + (hit.page !== undefined ? ' pdf-card' : ''));
   card.id = `${side}-evidence-${index}`;
   card.tabIndex = -1;
@@ -320,8 +339,11 @@ function renderHit(hit, side, index, baselineIds) {
   open.addEventListener('click', () => openDrawer(side, index, open));
   const heading = node('h3');
   heading.append(open);
-  // Public-document chunks can be long: cards show the first lines, and the details drawer shows the full passage.
-  content.append(heading, node('p', shownPassage(hit) || 'No passage returned.', industry === 'zava' ? 'snippet' : 'snippet clamp-long'));
+  // Long industry cards keep the reviewed evidence in view; the drawer still shows the full passage.
+  content.append(heading);
+  if (parts && reviewed?.part) content.append(node('p', `Part ${reviewed.part} of ${parts}`, 'grounding-part'));
+  const passage = reviewed?.passage || { text: shownPassage(hit), ranges: [] };
+  content.append(renderSnippet(passage, { excerpt: industry !== 'zava' }));
   const meta = node('div', undefined, 'meta');
   meta.append(node('span', hit.sourceId || hit.id || 'No source ID'));
   if (hit.page !== undefined) meta.append(node('span', `Page ${hit.page}`));
@@ -344,7 +366,7 @@ function renderHit(hit, side, index, baselineIds) {
   return card;
 }
 
-function renderArm(side, arm, scenario, result) {
+function renderArm(side, arm, scenario, result, reviewed, parts) {
   const container = element(side);
   const heading = node('div', undefined, 'arm-heading');
   heading.append(node('div', side === 'baseline' ? 'BEFORE' : 'AFTER', 'arm-label'),
@@ -456,7 +478,7 @@ function renderArm(side, arm, scenario, result) {
   }
   const hits = node('div', undefined, arm.kind === 'gallery' || arm.hits?.some(hit => hit.thumbnailUrl) ? 'gallery' : '');
   const baselineIds = result.baseline?.hits?.map(hit => hit.id);
-  (arm.hits || []).forEach((hit, index) => hits.append(renderHit(hit, side, index, baselineIds)));
+  (arm.hits || []).forEach((hit, index) => hits.append(renderHit(hit, side, index, baselineIds, reviewed.get(index), parts)));
   if (arm.themesOnly) hits.append(node('p', 'These themes and their share of passages come straight from the topic graph; no passage search was needed.', 'meta'));
   else if (!arm.hits?.length && !arm.curatedOnly) hits.append(node('p', arm.graph?.kind === 'native' ? 'No cited passages were returned for these paths.' : 'No matching results for this query in this arm.', 'empty'));
   if (arm.graph?.kind === 'native' && arm.hits?.length) container.append(node('h3', 'Cited passages', 'section-label'));
@@ -643,13 +665,29 @@ function renderResults(result, scenario) {
   element('results-title').replaceChildren(node('span', `Results for “${result.query}”`), ' ',
     node('span', `${result.mode === 'sample' ? `${sampleLabel} · ` : ''}up to ${element('count').value} per arm`, 'results-meta'));
   const assessment = result.note;
+  const highlights = assessment?.highlights;
+  const reviewed = Object.fromEntries(['baseline', 'enhanced'].map(side => [side,
+    new Map((highlights?.[side] || []).flatMap(({ rank, id, spans, part }) => {
+      const hit = result[side]?.hits?.[rank - 1];
+      if (!hit || hit.id !== id) return [];
+      const passage = snippetRanges(hit, spans, { englishOnly: industry !== 'zava' });
+      return passage.ranges.length === spans.length && spans.length ? [[rank - 1, { part, passage }]] : [];
+    }))]));
+  const partCount = side => new Set([...reviewed[side].values()].map(item => item.part).filter(Boolean)).size;
+  const parts = highlights?.parts;
   const note = element('evidence-note');
   note.replaceChildren(node('strong', 'What the model gets'),
     node('span', assessment ? `BEFORE: ${assessment.label}` : 'Unassessed', 'note-label'),
     node('span', assessment?.text ?? 'This comparison has not been matched to reviewed retrieval evidence.'));
   if (assessment) note.append(node('span', assessment.source, 'note-source'));
-  renderArm('baseline', result.baseline, scenario, result);
-  renderArm('enhanced', result.enhanced, scenario, result);
+  const before = partCount('baseline'), after = partCount('enhanced');
+  if (parts && (before || after)) {
+    const coverage = after === parts && before === parts ? 'Both arms retrieve all parts.'
+      : `AFTER retrieves ${after === parts ? `all ${parts} parts` : `${after} of ${parts}`}; BEFORE retrieves ${before} of ${parts}.`;
+    note.append(node('p', `The reviewed evidence spans ${parts} results. ${coverage}`, 'grounding-summary'));
+  }
+  renderArm('baseline', result.baseline, scenario, result, reviewed.baseline, parts);
+  renderArm('enhanced', result.enhanced, scenario, result, reviewed.enhanced, parts);
   element('metrics').replaceChildren();
   for (const side of ['baseline', 'enhanced']) {
     const evaluation = result.comparison?.evaluation?.[side];

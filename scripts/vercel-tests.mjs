@@ -6,7 +6,7 @@ import { randomBytes } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import assert from 'node:assert/strict';
 import { createVercelApp } from '../lib/vercel-app.mjs';
-import { comparisonEvidenceDigest, evidenceNoteProblems, reviewedEvidenceNote } from '../lib/evidence-note.mjs';
+import { comparisonEvidenceDigest, evidenceHighlightProblems, evidenceNoteProblems, reviewedEvidenceNote } from '../lib/evidence-note.mjs';
 import { liveStatus, searchOnlyFetch, attemptBudget, attestedMetadata, disabledScenarios, disabledIndustries, graphServiceStatus, LIVE_SCENARIOS } from '../lib/search-adapter.mjs';
 import { transformBindings, reduceAttestations, industryBindingsFrom, checkIndustryCatalog, aboutWithDataSources, industryRecordingProblems, pageWithIndustries, industryGraphFrom, industryGraphPresetProblems, API_ROUTES, apiEntry, rootApiEntry, rootVercelConfig, vercelConfig } from './build-vercel.mjs';
 import { packPrivateBundle, unpackPrivateBundle, buildEnvironment, buildStamp, MAX_BUNDLE_CHARS } from './vercel-build.mjs';
@@ -15,7 +15,7 @@ import { SEARCH_API_VERSION, AGENTIC_SEARCH_API_VERSION } from '../config/studio
 import { illustrationPng } from './generate-studio.mjs';
 import { retryAfterSeconds } from '../lib/studio.mjs';
 import { imageOnlyQuery } from '../config/studio-languages.mjs';
-import { displayText, notConfigured, passageView, repairMojibake, frontMatter, METADATA_ONLY } from '../assets/display.mjs';
+import { displayText, notConfigured, passageView, repairMojibake, frontMatter, METADATA_ONLY, snippetRanges } from '../assets/display.mjs';
 import { sanitize, safeUrl } from '../lib/normalize.mjs';
 import { readBounded } from '../lib/protocol.mjs';
 import { entityGraphModel, layoutEntityGraph, packCircles, topicMapModel, layoutTopicMap } from '../assets/graph-viz.mjs';
@@ -395,7 +395,9 @@ test('assessment requires the same reviewed evidence, not just the same question
   const reviewed = { label: 'No material gap', text: 'Both arms return a brick-drilling passage.' };
   const evidence = comparisonEvidenceDigest(original, 10);
   const recorded = { recordedAt: '2026-11-25', entries: { [key]: entry } };
-  const notes = { entries: { [key]: { 5: null, 10: { ...reviewed, evidence } } } };
+  const { id, snippet } = original.enhanced.hits[0];
+  const highlights = { enhanced: [{ rank: 1, id, spans: [snippet] }] };
+  const notes = { entries: { [key]: { 5: null, 10: { ...reviewed, evidence } } }, highlights: { [key]: highlights } };
   let changed = false;
   const { app } = harness({ recorded, notes, handler: async () => {
     const raw = await searchResponse().json();
@@ -403,7 +405,8 @@ test('assessment requires the same reviewed evidence, not just the same question
     if (changed) raw.value[0].content = 'Hammer drill for wood only.';
     return Response.json(raw);
   } });
-  assert.deepEqual((await run(app)).note, { ...reviewed, source: 'Evidence reviewed against the 2026-11-25 Live recording' });
+  assert.deepEqual((await run(app)).note, { ...reviewed, source: 'Evidence reviewed against the 2026-11-25 Live recording',
+    highlights: { baseline: [], ...highlights } });
   assert.equal((await run(app, { ...body, query: 'Unreviewed text' })).note, undefined);
   assert.equal((await run(app, { ...body, topK: 5 })).note, undefined, 'this count was explicitly unassessed');
   changed = true;
@@ -412,6 +415,13 @@ test('assessment requires the same reviewed evidence, not just the same question
   assert.equal(sample.note.text, reviewed.text, 'changed Live evidence does not change Sample');
   assert.equal((await run(app, { ...body, mode: 'sample', topK: 5 })).note, undefined);
   assert.deepEqual(sample.enhanced.apiLog, original.enhanced.apiLog);
+});
+
+test('snippet marks require a unique verbatim match that survives display cleanup', () => {
+  const hit = { snippet: '---\ntitle: Internal title\n---\n**Isolate lot A.** Check lot B. Check lot B.' };
+  const { text, ranges } = snippetRanges(hit, ['Internal title', '**Isolate lot A.**', 'Isolate lot A.', 'lot A.', 'Check lot B.'], { englishOnly: true });
+  assert.deepEqual(ranges.map(({ start, end }) => text.slice(start, end)), ['Isolate lot A.']);
+  assert.equal(snippetRanges({ snippet: 'Hold  for review.' }, ['Hold for review.']).ranges.length, 0, 'display cleanup cannot create a reviewed literal');
 });
 
 test('assessment distinguishes the bundled query image from a different image', () => {
@@ -834,6 +844,7 @@ test('recorded comparisons pin each evidence count and use that count’s review
   const recorded = load('recorded'), notes = load('notes');
   assert.deepEqual(Object.keys(notes.entries).sort(), Object.keys(recorded.entries).sort());
   assert.deepEqual(evidenceNoteProblems(notes, recorded), []);
+  assert.deepEqual(evidenceHighlightProblems(notes, recorded, snippetRanges), []);
   const entry = Object.entries(recorded.entries).find(([key]) => key.startsWith('en|S10|'));
   const [key, capture] = entry;
   capture.result.enhanced.hits[0].coordinates.cells[1].content = '16';
@@ -847,6 +858,12 @@ test('recorded comparisons pin each evidence count and use that count’s review
   assert.match(ten.note.text, /sixth/);
   assert.equal(five.note.label, 'Missing evidence');
   assert.match(five.note.text, /first five/);
+  assert.deepEqual(ten.note.highlights.baseline.map(item => item.rank), [2, 6]);
+  assert.deepEqual(five.note.highlights.baseline.map(item => item.rank), [2]);
+  assert.deepEqual(five.note.highlights.enhanced.map(item => item.rank), [1]);
+  const wrongRank = structuredClone(notes.highlights[rerank]);
+  wrongRank.baseline[0].rank--;
+  assert.match(evidenceHighlightProblems({ ...notes, highlights: { [rerank]: wrongRank } }, recorded, snippetRanges)[0], /must match literal text/);
 });
 
 // Industry demos: public U.S. government corpora compiled in by build configuration; English only; filters, facets,

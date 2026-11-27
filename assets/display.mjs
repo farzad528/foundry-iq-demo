@@ -132,6 +132,22 @@ export function passageView(hit, { englishOnly = false, siblings = [] } = {}) {
     title = same.map(other => frontMatter(other.snippet)?.fields?.title).find(value => typeof value === 'string' && value.trim())
       || same.map(other => other.title).find(value => typeof value === 'string' && value.trim() && value !== 'Passage') || 'Passage';
   }
+
   return { title: displayText(title, { englishOnly }), header: header?.fields || {},
     passage: header?.metadataOnly ? METADATA_ONLY : displayText(header ? header.body : hit?.snippet, { englishOnly }) };
+}
+
+/** Match only unambiguous verbatim spans that remain visible after display-only cleanup. */
+export function snippetRanges(hit, spans, options) {
+  const text = passageView(hit, options).passage || '';
+  const raw = hit?.snippet || '';
+  const ranges = [];
+  for (const span of spans || []) {
+    if (typeof span !== 'string' || !span.trim()) continue;
+    const rawStart = raw.indexOf(span), start = text.indexOf(span), end = start + span.length;
+    if (rawStart < 0 || start < 0 || raw.indexOf(span, rawStart + 1) !== -1 || text.indexOf(span, start + 1) !== -1
+      || ranges.some(range => start < range.end && end > range.start)) continue;
+    ranges.push({ start, end });
+  }
+  return { text, ranges: ranges.sort((a, b) => a.start - b.start) };
 }
