@@ -1670,3 +1670,117 @@ test('a Vercel build unpacks the bundle into private file paths, and production 
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+// A product-image industry (fixture only; the real catalog entry ships after its presets are probed and recorded).
+const fashionIndustry = () => ({ id: 'fashion', label: 'Fashion retail', short: 'Fashion', group: 'Retail', blurb: 'Fixture.', sources: [], languages: ['en'],
+  status: 'ready', scenarios: ['S05', 'S06', 'S11'], boostSubtypes: ['newest', 'season'], facetLabels: { articleType: 'Article type' },
+  sourceHosts: ['www.kaggle.com'], dataNote: 'Public product catalog (fixture)', scenarioDescriptions: { S11: 'Product photos searched by text or image.' },
+  defaults: { S05: { facets: ['articleType,count:5'] }, S06: { scoringParameters: { season: ['seasonTags-Summer'] } } },
+  presets: { S05: [{ id: 'FPI-S05-01', query: 'navy kurta', filter: "gender eq 'Women'", orderby: 'year desc' }],
+    S06: [{ id: 'FPI-S06-01', query: 'light jacket', boostSubtype: 'season', scoringParameters: ['seasonTags-Fall,Winter'] }],
+    S11: [{ id: 'FPI-S11-01', query: 'red running shoes' }] } });
+const fashionImage = { field: 'imageVector', profile: 'fpi-image-profile', vectorizer: 'fpi-vision', model: 'azure-vision-multimodal',
+  modelVersion: '2023-04-15', dimensions: 1024, manifestHash: 'b'.repeat(64) };
+const fashionSchema = () => ({ name: 'foundry-iq-fashion', fields: [
+  { name: 'id', type: 'Edm.String', key: true, searchable: true, filterable: true, analyzer: 'keyword' }, stringField('sourceId', { filterable: true }),
+  ...['title', 'content'].map(name => ({ name, type: 'Edm.String', searchable: true, analyzer: 'en.lucene' })),
+  ...['scope', 'variant'].map(name => stringField(name, { filterable: true })),
+  ...['gender', 'articleType', 'season'].map(name => stringField(name, { filterable: true, facetable: true })),
+  { name: 'year', type: 'Edm.Int32', retrievable: true, filterable: true, sortable: true, facetable: true }, stringField('thumbnailUrl'),
+  ...['imageModel', 'imageModelVersion', 'imageManifestHash'].map(name => stringField(name, { filterable: true })),
+  { name: 'imageDimensions', type: 'Edm.Int32', retrievable: true, filterable: true },
+  { name: 'imageVector', type: 'Collection(Edm.Single)', searchable: true, retrievable: false, dimensions: 1024, vectorSearchProfile: 'fpi-image-profile' }],
+  scoringProfiles: [{ name: 'fpi-newest', functions: [{ type: 'magnitude', fieldName: 'year' }] },
+    { name: 'fpi-season', functions: [{ type: 'tag', fieldName: 'season', tag: { tagsParameter: 'seasonTags' } }] }],
+  vectorSearch: { profiles: [{ name: 'fpi-image-profile', algorithm: 'hnsw', vectorizer: 'fpi-vision' }], algorithms: [{ name: 'hnsw', kind: 'hnsw' }],
+    vectorizers: [{ name: 'fpi-vision', kind: 'aiServicesVision', aiServicesVisionParameters: {
+      resourceUri: 'https://vision-test.cognitiveservices.azure.com', modelVersion: '2023-04-15', apiKey: null, authIdentity: null } }] } });
+const fashionDoc = (id, extra = {}) => ({ id, sourceId: id, title: `Shoe ${id}`, content: `Red running shoe ${id}`, scope: 'public', gender: 'Men',
+  articleType: 'Sports Shoes', season: 'Summer', year: 2017, thumbnailUrl: `/datasets/fashion/thumbs/${id}.webp`, imageModel: 'azure-vision-multimodal',
+  imageModelVersion: '2023-04-15', imageDimensions: 1024, imageManifestHash: 'b'.repeat(64), '@search.score': 0.8, ...extra });
+async function withFashion(run) {
+  industryCatalog.industries.push(fashionIndustry());
+  try { return await run(); } finally { industryCatalog.industries.pop(); }
+}
+function fashionHarness(handler, image = fashionImage) {
+  const entries = [{ index: 'foundry-iq-fashion', etag: '"fashion-1"', schema: fashionSchema() }];
+  const binding = { industries: { fashion: { index: 'foundry-iq-fashion', semanticConfiguration: 'fpi-semantic', vectorField: 'imageVector',
+    scoringProfiles: { newest: 'fpi-newest', season: 'fpi-season' }, ...(image ? { image } : {}) } } };
+  const bindings = industryBindingsFrom(binding, attestations(undefined, undefined, entries), ['fashion']);
+  return { bindings, entries, ...harness({ extra: entries, industries: { enabled: ['fashion'], bindings }, handler }) };
+}
+const fashionBody = (scenarioId, patch = {}) => ({ industry: 'fashion', scenarioId, mode: 'live', query: 'red running shoes', ...patch });
+
+test('a product-image industry runs S11 text-to-image and image queries on its own Vision vectors and checks the returned corpus', () => withFashion(async () => {
+  const { app, calls } = fashionHarness(async () => json({ value: [fashionDoc('fpi-1'), fashionDoc('fpi-2', { thumbnailUrl: 'https://evil.example/x.webp' })] }));
+  const fashionCatalog = await (await catalogFor(app, '?industry=fashion')).json();
+  const s11 = fashionCatalog.scenarios.find(scenario => scenario.id === 'S11');
+  assert.equal(fashionCatalog.industry.dataNote, 'Public product catalog (fixture)', 'each industry names its own data source');
+  assert.deepEqual([s11.renderer, s11.input, s11.imageInput.maxBytes, s11.description], ['imageGallery', ['text', 'image-inline'], 40960, 'Product photos searched by text or image.']);
+  const text = await (await app.handle('run', post('run', fashionBody('S11')), env())).json();
+  assert.equal(text.executionStatus, 'success');
+  const body = call => JSON.parse(call.init.body);
+  const vectorCall = calls.find(call => body(call).vectorQueries);
+  assert.equal(searchVersion(vectorCall.url), AGENTIC_SEARCH_API_VERSION);
+  assert.deepEqual(body(vectorCall).vectorQueries, [{ kind: 'text', text: 'red running shoes', fields: 'imageVector', k: 10, exhaustive: true }]);
+  assert.equal(body(vectorCall).search, undefined);
+  assert.ok(calls.every(call => !body(call).select.split(',').includes('url')), 'an index without url never selects it');
+  assert.equal(text.enhanced.hits[0].thumbnailUrl, '/datasets/fashion/thumbs/fpi-1.webp');
+  assert.equal(text.enhanced.trace.configuration.imageEncoder.corpusManifestHash, 'b'.repeat(64));
+  assert.equal(safeUrl('/datasets/fashion/thumbs/fpi-1.webp'), '/datasets/fashion/thumbs/fpi-1.webp');
+  assert.equal(text.enhanced.hits[1].thumbnailUrl, undefined, 'off-origin thumbnails are dropped on the server');
+  calls.length = 0;
+  const png = illustrationPng(0).toString('base64');
+  const image = await (await app.handle('run', post('run', fashionBody('S11', { query: 'Image-only reference search', imageInput: { mimeType: 'image/png', base64: png } })), env())).json();
+  assert.equal(image.executionStatus, 'success');
+  assert.deepEqual(Object.keys(body(calls.find(call => body(call).vectorQueries)).vectorQueries[0]).sort(), ['base64Image', 'exhaustive', 'fields', 'k', 'kind']);
+  assert.ok(!JSON.stringify(image).includes(png), 'image bytes are not echoed');
+  for (const [patch, pattern] of [[{ scenarioId: 'S05', imageInput: { mimeType: 'image/png', base64: png } }, /only for Live image search/],
+    [{ mode: 'sample', imageInput: { mimeType: 'image/png', base64: png } }, /only for Live image search/],
+    [{ query: Array(71).fill('red').join(' ') }, /up to 70 words/]]) {
+    const response = await app.handle('run', post('run', fashionBody('S11', patch)), env());
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).error, pattern);
+  }
+  const drift = fashionHarness(async () => json({ value: [fashionDoc('fpi-1', { imageManifestHash: 'c'.repeat(64) })] }));
+  assert.equal((await (await drift.app.handle('run', post('run', fashionBody('S11')), env())).json()).enhanced.error.code, 'studio_image_corpus_mismatch');
+  const unbound = fashionHarness(async () => json({ value: [] }), null);
+  assert.equal((await (await unbound.app.handle('run', post('run', fashionBody('S11')), env())).json()).enhanced.error.code, 'studio_capability_unavailable');
+}));
+
+test('industry S05 sort and S06 tag-boost parameters come only from reviewed presets and defaults, checked against the attested schema', () => withFashion(async () => {
+  const { app, calls, bindings, entries } = fashionHarness(async () => json({ value: [fashionDoc('fpi-1')] }));
+  const body = call => JSON.parse(call.init.body);
+  const s05 = await (await app.handle('run', post('run', fashionBody('S05', { query: 'navy kurta' })), env())).json();
+  const sorted = calls.map(body).find(payload => payload.orderby);
+  assert.equal(sorted.orderby, 'year desc');
+  assert.equal(sorted.filter, `${BASE_FILTER} and (gender eq 'Women')`);
+  assert.ok(s05.enhanced.applied.some(item => item.label === 'Sort' && item.value === 'year desc'));
+  calls.length = 0;
+  await app.handle('run', post('run', fashionBody('S06', { query: 'light jacket', options: { boostSubtype: 'season' } })), env());
+  assert.deepEqual(calls.map(body).find(payload => payload.scoringProfile).scoringParameters, ['seasonTags-Fall,Winter']);
+  calls.length = 0;
+  await app.handle('run', post('run', fashionBody('S06', { query: 'a free-text question', options: { boostSubtype: 'season' } })), env());
+  assert.deepEqual(calls.map(body).find(payload => payload.scoringProfile).scoringParameters, ['seasonTags-Summer'], 'catalog default for the subtype');
+  calls.length = 0;
+  await app.handle('run', post('run', fashionBody('S06', { query: 'light jacket', options: { boostSubtype: 'newest' } })), env());
+  assert.equal(calls.map(body).find(payload => payload.scoringProfile).scoringParameters, undefined, 'a preset’s parameters apply only to its own subtype');
+  for (const extra of [{ orderby: 'year desc' }, { scoringParameters: ['seasonTags-Summer'] }, { options: { orderby: 'year desc' } }]) {
+    assert.equal((await app.handle('run', post('run', fashionBody('S06', extra)), env())).status, 400, JSON.stringify(extra));
+  }
+  const full = attestations(undefined, undefined, entries);
+  assert.deepEqual(checkIndustryCatalog({ industries: [fashionIndustry()] }, ['fashion'], full, bindings), []);
+  const tampered = fashionIndustry();
+  tampered.presets.S05[0].orderby = 'gender desc';
+  tampered.presets.S03 = [{ id: 'x', query: 'q', orderby: 'year desc' }];
+  tampered.presets.S06[0].scoringParameters = ['colourTags-Red'];
+  tampered.defaults.S06.scoringParameters.newest = ['seasonTags-Summer'];
+  tampered.presets.S11[0].imageFile = 'shoe.png';
+  const problems = checkIndustryCatalog({ industries: [tampered] }, ['fashion'], full, bindings);
+  for (const expected of [/FPI-S05-01: orderby/, /x: orderby/, /FPI-S06-01: scoring parameters/, /default scoring parameters for newest/, /S11 presets are text-only/]) {
+    assert.ok(problems.some(problem => expected.test(problem)), `${expected}: ${problems}`);
+  }
+  const noImage = structuredClone(bindings);
+  delete noImage.industries.fashion.image;
+  assert.ok(checkIndustryCatalog({ industries: [fashionIndustry()] }, ['fashion'], full, noImage).some(problem => /S11 needs a private image binding/.test(problem)));
+}));

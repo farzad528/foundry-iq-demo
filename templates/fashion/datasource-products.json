@@ -1,0 +1,11 @@
+{
+  "name": "<products-datasource>",
+  "type": "azureblob",
+  "credentials": { "connectionString": "ResourceId=/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account>;" },
+  "container": { "name": "fashion-catalog", "query": "products/" },
+  "dataDeletionDetectionPolicy": {
+    "@odata.type": "#Microsoft.Azure.Search.SoftDeleteColumnDeletionDetectionPolicy",
+    "softDeleteColumnName": "IsDeleted",
+    "softDeleteMarkerValue": "true"
+  }
+}

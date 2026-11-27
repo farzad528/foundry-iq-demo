@@ -71,7 +71,7 @@ npm run dev        # npm run build, then npm start on http://localhost:3000
 ## Tests and CI
 
 ```bash
-npm test                         # unit suites: Vercel runtime, Zava comparisons, languages, README
+npm test                         # unit suites: Vercel runtime, Zava comparisons, languages, README, fashion prep
 npm run build && npm run validate
 npx playwright install chromium
 npm run test:browser             # builds, then drives the local app in headless Chromium
@@ -346,7 +346,8 @@ licenses and applicability come from the Industry datasets contract
 | `energy` | Energy & utilities | `foundry-iq-energy` | S01–S10 |
 
 - Industry demos are English-only: the language setting is disabled with a note.
-  S11 (images) stays with the Zava store.
+  S11 (images) stays with the Zava store unless an industry is a product-image
+  catalog with an image binding (see “Product-image industries” below).
 - **Industry S08/S09** run native Foundry IQ entity-graph and topic-graph search
   on a dedicated graph Search service (`lib/industry-graph.mjs`), reached only
   through `AZURE_SEARCH_GRAPH_ENDPOINT` and `AZURE_SEARCH_GRAPH_QUERY_KEY` with the
@@ -405,15 +406,17 @@ licenses and applicability come from the Industry datasets contract
 | S02 | keyword | `kind: text` vector query on `contentVector`, `k: 50`, pre-filter |
 | S03 | keyword + preset filter | hybrid + the same preset filter |
 | S04 | one shared hybrid candidate set | semantic L2 over those exact IDs (`<id>-semantic`) |
-| S05 | keyword, no preset filter | hybrid + preset filter + preset facets |
-| S06 | hybrid | hybrid + `<id>-freshness`, `-authority` or `-impact` |
+| S05 | keyword, no preset filter | hybrid + preset filter + preset facets (+ the preset's `orderby`, if any) |
+| S06 | hybrid | hybrid + `<id>-freshness`, `-authority` or `-impact` (or the industry's own `boostSubtypes`), with reviewed `scoringParameters` for tag profiles |
 | S07 | hybrid | native agentic (`2026-11-01-preview`, `maxRuntimeInSeconds: 10`) |
 | S10 | keyword over `extractionAnalyzer eq 'prebuilt-read'` pages | `prebuilt-layout` rows; both filtered to the preset's `sourceHash` (no `variant` filter) |
+| S11 | keyword over `title,content` | `imageBinary` (uploaded image) or `text` (text-to-image) vector query on the bound image field, `exhaustive: true`, pre-filter (`2026-11-01-preview`) |
 
-Filters, facets, scoring profiles and S10 documents come only from the preset
-allowlist in `config/studio-industries.json`, matched by exact question. The
-browser can't send any of them. Free text runs without a preset filter (S05 uses
-the default facets, and S10 searches the first example's PDF).
+Filters, facets, sorts, scoring parameters, scoring profiles and S10 documents
+come only from the preset allowlist in `config/studio-industries.json` (or the
+industry's `defaults`), matched by exact question. The browser can't send any of
+them. Free text runs without a preset filter (S05 uses the default facets, S06
+the default scoring parameters, and S10 searches the first example's PDF).
 
 **Build inputs and checks.**
 
@@ -430,6 +433,11 @@ npm run build
 - The build fails if a preset filter appears outside S03/S05, uses a field that
   isn't filterable or a `search.*` function other than `search.in`; if a facet is
   malformed or not facetable; or if an S10 preset lacks a PDF hash.
+- It also fails if a preset `orderby` isn't S05, isn't `<field> asc|desc` or the
+  field isn't sortable; if preset or default `scoringParameters` aren't S06, lack
+  a `boostSubtype`, or name a `tagsParameter` that the subtype's attested
+  scoring profile doesn't define; if an S11 preset carries an image; or if an
+  industry lists S11 without an `image` binding.
 - A release build also needs a recording and a note for every preset.
   `STUDIO_INDUSTRY_SAMPLES_OPTIONAL=1` relaxes recordings for development builds
   only. S07 planning varies between runs, so an S07 note that claims sub-queries
@@ -449,6 +457,67 @@ framework made **no Azure changes**: only read-only Get Index calls (attestation
 and read-only queries for local verification. If an index is rebuilt (for
 example `foundry-iq-energy`), its ETag changes: re-attest, rebuild and
 re-record. The query key reads these public-domain indexes too.
+
+### Product-image industries (S11) and the Fashion Product Images dataset
+
+The industry framework supports a product-image catalog with S05 (facets,
+filters and an optional preset sort), S06 (per-industry scoring profiles, for
+example `newest`, `season`, `occasion`, `colour`) and S11 (image search). It uses
+standard index search only (keyword, vector and hybrid; no agentic retrieval),
+with the semantic ranker off unless measured as worthwhile.
+
+**Status: not enabled.** The planned `fashion` industry (Kaggle “Fashion Product
+Images”, ~44k products) is blocked on a rights review: the dataset's MIT tag is
+set by the uploader, the images were collected from a retailer, and the
+Hugging Face mirror declares no license. Nothing is downloaded, provisioned,
+recorded or deployed until that review and each Azure step are approved.
+
+- **Catalog entry** (`config/studio-industries.json`): `scenarios` including
+  `S11`, its own `boostSubtypes`, an optional `dataNote` (shown instead of
+  “Public U.S. government data”), `scenarioDescriptions.S11`, and
+  `defaults.S06.scoringParameters` per tag subtype (for example
+  `{ "season": ["seasonTags-Summer"] }`). S05 presets may set `orderby`
+  (`year desc`); S06 presets may set `scoringParameters`.
+- **Private binding**: `industries.<id>.image` with `field`, `profile`,
+  `vectorizer` (`aiServicesVision`, Search system identity, no key),
+  `model`, `modelVersion` (`2023-04-15`), `dimensions` (1024) and
+  `manifestHash`. The key field must be `id` (keyword analyzer); `url` is
+  optional for a product catalog.
+- **Live S11** accepts an optional PNG, JPEG or WebP up to 40 KiB, sent once as
+  `imageBinary` and never stored; without an image the text (up to 70 words, the
+  Vision limit) runs text-to-image. Every hit must carry the bound
+  `imageModel`, `imageModelVersion`, `imageDimensions` and `imageManifestHash`,
+  or the arm fails with `studio_image_corpus_mismatch`.
+- **Thumbnails** are returned only as this build's own
+  `/datasets/<id>/thumbs/<name>.webp` paths (CSP `img-src 'self'`); any other
+  value is dropped on the server. Copying the 256 px WebP thumbnails into the
+  build (and its artifact check) is deferred until the rights review allows
+  redistribution.
+
+**Ingestion (Blob indexer, one readable JSON per product).**
+
+1. Offline: `node scripts/prepare-fashion.mjs --styles <styles.csv> --out <dir>
+   --images <512px-jpgs> --source <text> --license <text> [--size 3000]
+   [--cap 150] [--seed fashion-v1] [--exclude <reviewed-ids.txt>]`. It selects a
+   deterministic subset (Men, Women and Unisex Apparel, Footwear and
+   Accessories; no Boys/Girls, Innerwear, Loungewear and Nightwear, Personal
+   Care, Free Items or Sporting Goods; no rows missing a name, type or colour;
+   duplicates removed; capped per article type), writes
+   `products/fpi-<id>.json` with real metadata only (no price, rating,
+   popularity or stock) and `manifest.json` with `imageManifestHash`. Resizing
+   images and the manual image review are separate offline steps.
+2. Upload `products/` and `images/fpi-<id>.jpg` to a private container.
+3. Create the objects in `templates/fashion/` (placeholders only):
+   `index.json`, `datasource-products.json` / `indexer-products.json`
+   (`parsingMode: json`), and `datasource-images.json` / `skillset-images.json` /
+   `indexer-images.json` (Azure Vision multimodal embeddings skill, preview, on
+   the blob URL). Both indexers write the same `id`, so each document merges
+   metadata and image vector. Data sources use the Search managed identity.
+4. Keep it current: edit or add a product's blobs and the hourly schedule picks
+   up the change (blob last-modified). To remove a product, set blob metadata
+   `IsDeleted=true` on both blobs, let the indexers run, then delete the blobs.
+   A schema test (`scripts/fashion-tests.mjs`) checks the templates against
+   the industry S05/S06/S11 schema checks.
 
 ## Revoke or rotate keys
 

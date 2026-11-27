@@ -10,7 +10,7 @@
     "build:vercel": "node scripts/vercel-build.mjs",
     "start": "node --env-file-if-exists=.env.local scripts/serve.mjs",
     "dev": "npm run build && npm start",
-    "test": "node --test scripts/vercel-tests.mjs scripts/studio-tests.mjs scripts/studio-language-tests.mjs scripts/readme-tests.mjs",
+    "test": "node --test scripts/vercel-tests.mjs scripts/studio-tests.mjs scripts/studio-language-tests.mjs scripts/readme-tests.mjs scripts/fashion-tests.mjs",
     "test:browser": "npm run build && node --test scripts/studio-browser-tests.mjs",
     "validate": "node scripts/validate-artifact.mjs"
   },

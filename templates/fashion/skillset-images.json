@@ -1,0 +1,21 @@
+{
+  "name": "<images-skillset>",
+  "description": "Azure Vision multimodal embeddings (preview) for each 512 px product image blob.",
+  "skills": [
+    {
+      "@odata.type": "#Microsoft.Skills.Vision.VectorizeSkill",
+      "name": "image-embedding",
+      "context": "/document",
+      "modelVersion": "2023-04-15",
+      "inputs": [
+        { "name": "url", "source": "/document/metadata_storage_path" },
+        { "name": "queryString", "source": "/document/metadata_storage_sas_token" }
+      ],
+      "outputs": [{ "name": "vector", "targetName": "imageVector" }]
+    }
+  ],
+  "cognitiveServices": {
+    "@odata.type": "#Microsoft.Azure.Search.AIServicesByIdentity",
+    "subdomainUrl": "https://<vision-resource>.cognitiveservices.azure.com"
+  }
+}

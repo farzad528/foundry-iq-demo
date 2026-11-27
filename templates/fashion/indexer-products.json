@@ -1,0 +1,10 @@
+{
+  "name": "<products-indexer>",
+  "dataSourceName": "<products-datasource>",
+  "targetIndexName": "<index-name>",
+  "schedule": { "interval": "PT1H" },
+  "parameters": {
+    "configuration": { "parsingMode": "json", "dataToExtract": "contentAndMetadata", "indexedFileNameExtensions": ".json" }
+  },
+  "fieldMappings": []
+}

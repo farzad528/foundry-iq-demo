@@ -1,0 +1,20 @@
+{
+  "name": "<images-indexer>",
+  "dataSourceName": "<images-datasource>",
+  "targetIndexName": "<index-name>",
+  "skillsetName": "<images-skillset>",
+  "schedule": { "interval": "PT1H" },
+  "parameters": {
+    "configuration": { "dataToExtract": "storageMetadata", "imageAction": "none", "indexedFileNameExtensions": ".jpg" }
+  },
+  "fieldMappings": [
+    {
+      "sourceFieldName": "metadata_storage_name",
+      "targetFieldName": "id",
+      "mappingFunction": { "name": "extractTokenAtPosition", "parameters": { "delimiter": ".", "position": 0 } }
+    }
+  ],
+  "outputFieldMappings": [
+    { "sourceFieldName": "/document/imageVector", "targetFieldName": "imageVector" }
+  ]
+}
