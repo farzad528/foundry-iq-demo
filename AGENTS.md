@@ -30,6 +30,9 @@ two-space JavaScript style and explicit imports.
   "Why AFTER wins" notes. `samples/`: fictional Zava documents served for citations.
 - `scripts/build-vercel.mjs` (build), `scripts/serve.mjs` (local server), `scripts/validate-artifact.mjs`, the
   `scripts/*-tests.mjs` suites and `scripts/generate-studio.mjs` (Sample illustrations and test corpus).
+- `vercel.json`, `api/`, `scripts/vercel-build.mjs`: Vercel Git deployments of `main`. The root config and Function
+  wrappers are generated from `scripts/build-vercel.mjs` (a test keeps them in sync); `npm run build:vercel` unpacks the
+  private inputs from the Production Secret `STUDIO_PRIVATE_BUNDLE`.
 - `dist/`: generated output; never edit or commit it.
 
 ## Commands
@@ -71,7 +74,8 @@ build sets `STUDIO_PRIVATE_BINDINGS`, `STUDIO_PRIVATE_ATTESTATIONS`, `STUDIO_PRI
 ## Approval gates
 
 Code changes do not approve Azure or Vercel changes. Provisioning, RBAC, key creation, index changes, paid canaries,
-deployments, promotions and cleanup each need explicit approval. CI is build and test only: no secrets, no Azure calls,
-no deployment. Never commit private bindings, attestations, `.env*` values, Vercel files, evidence or screenshots.
+deployments, promotions and cleanup each need explicit approval. Merging to `main` deploys to production through Vercel's
+Git integration, so the owner's merge is that approval. CI is build and test only: no secrets, no Azure calls,
+no deployment. Never commit private bindings, attestations, `.env*` values, `.vercel/` link files, evidence or screenshots.
 Fixtures and recordings are not proof of another deployment's health. The product artwork keeps its own terms
 (`assets/PROVENANCE.md`); only the app code and synthetic content are MIT licensed.

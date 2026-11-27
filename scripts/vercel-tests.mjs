@@ -1,9 +1,14 @@
 import test from 'node:test';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { randomBytes } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
 import assert from 'node:assert/strict';
 import { createVercelApp } from '../lib/vercel-app.mjs';
 import { liveStatus, searchOnlyFetch, attemptBudget, attestedMetadata, disabledScenarios, disabledIndustries, graphServiceStatus, LIVE_SCENARIOS } from '../lib/search-adapter.mjs';
-import { transformBindings, reduceAttestations, industryBindingsFrom, checkIndustryCatalog, aboutWithDataSources, industryRecordingProblems, pageWithIndustries, industryGraphFrom, industryGraphPresetProblems } from './build-vercel.mjs';
+import { transformBindings, reduceAttestations, industryBindingsFrom, checkIndustryCatalog, aboutWithDataSources, industryRecordingProblems, pageWithIndustries, industryGraphFrom, industryGraphPresetProblems, API_ROUTES, apiEntry, rootApiEntry, rootVercelConfig, vercelConfig } from './build-vercel.mjs';
+import { packPrivateBundle, unpackPrivateBundle, buildEnvironment, buildStamp, MAX_BUNDLE_CHARS } from './vercel-build.mjs';
 import { industryCatalog, industryById, filterFields, isFacet, BASE_FILTER } from '../lib/industry.mjs';
 import { SEARCH_API_VERSION, AGENTIC_SEARCH_API_VERSION } from '../config/studio-live.mjs';
 import { illustrationPng } from './generate-studio.mjs';
@@ -1520,4 +1525,82 @@ test('the topic map sizes bubbles by share, keeps sub-themes inside their theme 
   }
   assert.ok(checked >= 5, `checked ${checked} recorded topic hierarchies`);
   assert.equal(topicMapModel({ hierarchy: [{ id: 'x', title: 'No share' }] }), null, 'a theme without a share is not drawn');
+});
+
+// Vercel Git deployments of main: committed root config and wrappers, and the private build bundle.
+test('Git builds use the same headers, routes and Functions as manual deployments, from committed root files', () => {
+  const read = file => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+  assert.deepEqual(JSON.parse(read('vercel.json')), rootVercelConfig(), 'regenerate vercel.json from scripts/build-vercel.mjs');
+  const manual = vercelConfig({ outputDirectory: 'public', serverFiles: 'server/**' });
+  const { installCommand, buildCommand, outputDirectory, functions, ...shared } = rootVercelConfig();
+  const { outputDirectory: manualOutput, functions: manualFunctions, ...manualShared } = manual;
+  assert.deepEqual(shared, manualShared, 'headers, rewrites and redirects are identical');
+  assert.equal(manualOutput, 'public');
+  assert.deepEqual(manualFunctions, { 'api/**/*.mjs': { maxDuration: 60, includeFiles: 'server/**' } });
+  assert.equal(buildCommand, 'npm run build:vercel');
+  assert.equal(installCommand, 'npm ci');
+  assert.equal(outputDirectory, 'dist/vercel/public');
+  assert.deepEqual(functions, { 'api/**/*.mjs': { maxDuration: 60, includeFiles: 'dist/vercel/server/**' } });
+  assert.ok(manual.headers[0].headers.some(header => header.key === 'Content-Security-Policy' && header.value.includes("script-src 'self'")));
+  for (const route of API_ROUTES) {
+    assert.equal(read(route.file), rootApiEntry(route), route.file);
+    assert.ok(rootApiEntry(route).endsWith(apiEntry(route.route, route.verb, `${'../'.repeat(route.file.split('/').length - 1)}dist/vercel/server/app.mjs`)));
+  }
+  const { scripts } = JSON.parse(read('package.json'));
+  assert.equal(scripts['build:vercel'], 'node scripts/vercel-build.mjs');
+  // @vercel/node reruns a script named vercel-build or now-build once per Function; the build command must not use those names.
+  assert.equal(scripts['vercel-build'] ?? scripts['now-build'], undefined);
+});
+
+test('the private build bundle round-trips, stays under the Vercel limit and is validated before use', () => {
+  const files = { bindings: '{ "a": 1 }', attestations: '{"entries":[]}', graph: '{"g":true}', industryBindings: '{"retail":{}}' };
+  const value = packPrivateBundle(files, 'retail,energy');
+  assert.ok(value.length < MAX_BUNDLE_CHARS);
+  assert.deepEqual(unpackPrivateBundle(value), { industries: 'retail,energy', files: { ...files, bindings: '{"a":1}' } });
+  const pack = (body, encode = text => text) => gzipSync(Buffer.from(encode(JSON.stringify(body)))).toString('base64');
+  for (const [bad, message] of [
+    ['not base64!', /base64/],
+    ['A'.repeat(MAX_BUNDLE_CHARS + 4), /under/],
+    [Buffer.from('plain text').toString('base64'), /valid packed bundle/],
+    [pack({ version: 2, files }), /unsupported format/],
+    [pack({ version: 1, files: { bindings: '{}', attestations: '{}' } }), /missing graph/],
+    [pack({ version: 1, files: { ...files, extra: '{}' } }), /unexpected file/],
+    [pack({ version: 1, industries: 'retail', files: { bindings: '{}', attestations: '{}', graph: '{}' } }), /without industryBindings/],
+    [pack({ version: 1, files: { ...files, industryGraph: '{}' } }), /together/],
+    [pack({ version: 1, industries: 'Retail;rm', files }), /invalid industry/],
+    [pack({ version: 1, files: { ...files, graph: '{oops' } }), /graph is not valid JSON/],
+  ]) assert.throws(() => unpackPrivateBundle(bad), message);
+  assert.throws(() => packPrivateBundle({ ...files, attestations: JSON.stringify({ blob: randomBytes(60000).toString('base64') }) }), /under/);
+});
+
+test('a Vercel build unpacks the bundle into private file paths, and production never falls back to the Sample-only app', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'bundle-test-'));
+  try {
+    const inherited = { PATH: 'x', STUDIO_PRIVATE_GRAPH: '/stale/graph.json', STUDIO_NOTES_OPTIONAL: '1', STUDIO_INDUSTRIES: 'energy' };
+    const preview = buildEnvironment({ ...inherited, VERCEL_ENV: 'preview' }, directory);
+    assert.equal(preview.private, false);
+    assert.deepEqual(preview.env, { PATH: 'x', VERCEL_ENV: 'preview' }, 'no bundle: public build, inherited build switches removed');
+    assert.throws(() => buildEnvironment({ VERCEL_ENV: 'production' }, directory), /refusing to deploy the Sample-only app/);
+    // A repeated build command within one deployment is recognised by a hash of its inputs (never the bundle itself).
+    assert.equal(buildStamp({ VERCEL_ENV: 'production' }), null);
+    const stamp = buildStamp({ VERCEL_DEPLOYMENT_ID: 'dpl_1', VERCEL_ENV: 'production', STUDIO_PRIVATE_BUNDLE: 'QUJD' });
+    assert.match(stamp, /^[0-9a-f]{64}$/);
+    for (const other of [{ VERCEL_DEPLOYMENT_ID: 'dpl_2', VERCEL_ENV: 'production', STUDIO_PRIVATE_BUNDLE: 'QUJD' },
+      { VERCEL_DEPLOYMENT_ID: 'dpl_1', VERCEL_ENV: 'preview', STUDIO_PRIVATE_BUNDLE: 'QUJD' }, { VERCEL_DEPLOYMENT_ID: 'dpl_1', VERCEL_ENV: 'production' }]) {
+      assert.notEqual(buildStamp(other), stamp);
+    }
+    const files = { bindings: '{"b":1}', attestations: '{"a":1}', graph: '{"g":1}', industryBindings: '{"i":1}', industryGraph: '{"x":1}', industryGraphAttestations: '{"y":1}' };
+    const built = buildEnvironment({ ...inherited, VERCEL_ENV: 'production', STUDIO_PRIVATE_BUNDLE: packPrivateBundle(files, 'retail') }, directory);
+    assert.equal(built.private, true);
+    assert.equal(built.env.STUDIO_PRIVATE_BUNDLE, undefined, 'the packed value is not passed to the build');
+    assert.equal(built.env.STUDIO_NOTES_OPTIONAL, undefined);
+    assert.equal(built.env.STUDIO_INDUSTRIES, 'retail');
+    for (const [name, variable] of [['bindings', 'STUDIO_PRIVATE_BINDINGS'], ['attestations', 'STUDIO_PRIVATE_ATTESTATIONS'], ['graph', 'STUDIO_PRIVATE_GRAPH'],
+      ['industryBindings', 'STUDIO_PRIVATE_INDUSTRIES'], ['industryGraph', 'STUDIO_PRIVATE_INDUSTRY_GRAPH'], ['industryGraphAttestations', 'STUDIO_PRIVATE_INDUSTRY_GRAPH_ATTESTATIONS']]) {
+      assert.equal(built.env[variable], join(directory, `${name}.json`));
+      assert.equal(readFileSync(built.env[variable], 'utf8'), files[name]);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
